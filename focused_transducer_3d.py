@@ -20,7 +20,7 @@ if MPI.COMM_WORLD.rank == 0:
     # Setup model
     model.add("Piston")
     model.setCurrent("Piston")
-    L, r, rmax = 7, 3, 3.3
+    L, r, rmax = 0.07, 0.03, 0.033
     cylinder = model.occ.addCylinder(0, 0, 0, 0, 0, L, rmax)
     disk = model.occ.addDisk(0, 0, 0, r, r)
     fragment = model.occ.fragment([(3, cylinder)], [(2, disk)])
@@ -45,6 +45,7 @@ if MPI.COMM_WORLD.rank == 0:
 
     # Meshing
     model.mesh.generate(3)
+    # model.mesh.refine()
     # model.mesh.refine()
 
     gmsh.write("mesh3D.msh")
