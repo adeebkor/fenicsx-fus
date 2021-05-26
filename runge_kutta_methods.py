@@ -107,6 +107,8 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
+        print("Steps:", step)
+        
         # Update time
         t += dt
 

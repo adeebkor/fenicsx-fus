@@ -10,19 +10,18 @@ from petsc4py import PETSc
 
 import runge_kutta_methods as rk
 
+
 # Define boundary condition class
 class Source:
-    def __init__(self, t, c0):
+    def __init__(self, t):
         self.t = t
-        self.c0 = c0
 
     def __call__(self, x):
-        p0 = 0.7E6
-        f0 = 1.7E6
+        p0 = 1 # 0.7E6
+        f0 = 10 # 1.7E6
         w0 = 2 * np.pi * f0
-        c0 = self.c0
-        F = 0.05
-        return p0*np.sin(w0*(self.t+(x[0]**2+x[1]**2)/2/c0/F))
+        p = np.full(x.shape[1], p0*np.sin(w0*self.t), dtype=PETSc.ScalarType)
+        return p
 
 
 def hmin(mesh):
@@ -48,7 +47,7 @@ class DiffractionProblem:
         ds = Measure('ds', subdomain_data=meshtag, domain=mesh)
 
         # Physical parameters
-        self.c0 = 1482
+        self.c0 = 4.0 # 1482
 
         # Define variational formulation
         self.a = inner(self.u, self.v)*dx
@@ -57,18 +56,18 @@ class DiffractionProblem:
 
         self.u_n = Function(self.V)
         self.v_n = Function(self.V)
-        self.L = self.c0**2*(-inner(grad(self.u_n), grad(self.v))*dx + \
+        self.L = self.c0**2*(-inner(grad(self.u_n), grad(self.v))*dx - \
                              1/self.c0*inner(self.v_n, self.v)*ds(2))
 
         # Define source
         self.u_source = Function(self.V)
-        self.source = Source(0.0, self.c0)
+        self.source = Source(0.0)
 
         # Get source dofs
         self.source_facets = meshtag.indices[meshtag.values==1]
         self.source_dofs = locate_dofs_topological(self.V, fdim,
-                                                   self.source_facets)
-        
+                                                   self.source_facets)        
+
         # Build solver
         self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
@@ -113,7 +112,7 @@ class DiffractionProblem:
                       mode=PETSc.ScatterMode.REVERSE)
 
         set_bc(b, bcs)
-
+      
         # Solve
         self.solver.solve(b, result)
 
@@ -121,27 +120,31 @@ class DiffractionProblem:
 
 
 # Read mesh
-with XDMFFile(MPI.COMM_WORLD, "piston.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="piston")
+with XDMFFile(MPI.COMM_WORLD, "rectangle.xdmf", "r") as xdmf:
+    mesh = xdmf.read_mesh(name="rectangle")
     tdim = mesh.topology.dim
     fdim = tdim-1
     mesh.topology.create_connectivity(fdim, tdim)
     mesh.topology.create_connectivity(fdim, 0)
-    mt = xdmf.read_meshtags(mesh, name="surfaces")
+    mt = xdmf.read_meshtags(mesh, name="edges")
 
 # Create model
-eqn = DiffractionProblem(mesh, mt, 2)
+k = 3
+eqn = DiffractionProblem(mesh, mt, k)
 
 # Temporal parameters
 h = hmin(mesh)
 CFL = 0.9
 dt = CFL * h / (eqn.c0 * (2 * k + 1))
 tstart = 0.0
-tend = 0.5E-6
+tend = 0.1
 num_steps = int(tend/dt)
-print("Step:", num_steps)
+PETSc.Sys.syncPrint("Total steps:", num_steps)
+PETSc.Sys.syncFlush()
 
 # Solve
-fname = "test"
+fname = "test2d_piston"
 # rk.ode452(eqn.f0, eqn.f1, *eqn.init(), tstart, tend, fname)
-rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt=dt, num_steps=num_steps, rk_order=4, filename=fname)
+rk.solve2(eqn.f0, eqn.f1, *eqn.init(),
+          dt=dt, num_steps=num_steps,
+          rk_order=4, filename=fname)
