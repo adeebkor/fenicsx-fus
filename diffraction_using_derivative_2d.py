@@ -58,10 +58,11 @@ class DiffractionProblem:
         """For dv/dt = f(t, u, v), return f"""
 
         # Update boundary condition
+        p0 = 10
         f0 = 100
         w0 = 2 * np.pi * f0
         with self.g.vector.localForm() as g_local:
-            g_local.set(w0/self.c0 * np.cos(w0 * t))
+            g_local.set(p0*w0/self.c0 * np.cos(w0 * t))
 
         # Update fields that f depends on
         u.copy(result=self.u_n.vector)
@@ -92,8 +93,17 @@ class DiffractionProblem:
 #     mt = xdmf.read_meshtags(mesh, name="edges")
 
 # Read mesh
-with XDMFFile(MPI.COMM_WORLD, "piston2d.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="piston2d")
+# with XDMFFile(MPI.COMM_WORLD, "piston2d.xdmf", "r") as xdmf:
+#     mesh = xdmf.read_mesh(name="piston2d")
+#     tdim = mesh.topology.dim
+#     fdim = tdim-1
+#     mesh.topology.create_connectivity(fdim, tdim)
+#     mesh.topology.create_connectivity(fdim, 0)
+#     mt = xdmf.read_meshtags(mesh, name="edges")
+
+# Read mesh
+with XDMFFile(MPI.COMM_WORLD, "piston2d_new.xdmf", "r") as xdmf:
+    mesh = xdmf.read_mesh(name="piston2d_new")
     tdim = mesh.topology.dim
     fdim = tdim-1
     mesh.topology.create_connectivity(fdim, tdim)
@@ -106,12 +116,12 @@ eqn = DiffractionProblem(mesh, mt, k)
 
 # Temporal parameters
 t = 0  # start time
-T = 0.5  # final time
+T = 0.1  # final time
 
 # RK4
 dt = 0.002
 num_steps = int(T / dt)
-fname = "diffraction_using_derivative_2d"
+fname = "diffraction_using_derivative_2d_cos"
 # tstart = time.time()
 # rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt=dt, num_steps=num_steps, rk_order=4, filename=fname)
 rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)

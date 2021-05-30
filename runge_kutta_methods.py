@@ -390,7 +390,8 @@ def ode452(f0, f1, u, v, start_time, final_time, fname):
                 u.vector.axpy(dt * b_runge[i], ku[i])
                 v.vector.axpy(dt * b_runge[i], kv[i])
 
-            file.write_function(u, t=t)
+            if step%20 == 0:
+                file.write_function(u, t=t)
 
     file.close()
 
