@@ -81,7 +81,7 @@ mesh.topology.create_connectivity(1, 0)
 mt = create_meshtags(mesh, 1,
                      cpp.graph.AdjacencyList_int32(local_entities),
                      np.int32(local_values))
-mt.name = "edges"
+mt.name = "facets"
 
 # Write mesh in XDMF
 with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "w") as file:

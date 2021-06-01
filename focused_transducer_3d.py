@@ -74,18 +74,18 @@ else:
 
 mesh = create_mesh(MPI.COMM_WORLD, cells, x, 
                    ufl_mesh_from_gmsh(gmsh_cell_id, 3))
-mesh.name = "piston"
+mesh.name = "piston3d"
 local_entities, local_values = extract_local_entities(mesh, 2,
                                                       marked_facets,
                                                       facet_values)
 mesh.topology.create_connectivity(2, 0)
 mt = create_meshtags(mesh, 2, cpp.graph.AdjacencyList_int32(local_entities),
                      np.int32(local_values))
-mt.name = "surfaces"
+mt.name = "facets"
 
 # Write mesh in XDMF
 with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston3D.xdmf", "w") as file:
     file.write_mesh(mesh)
     mesh.topology.create_connectivity(2, 3)
     file.write_meshtags(
-        mt, geometry_xpath="/Xdmf/Domain/Grid[@Name='piston']/Geometry")
+        mt, geometry_xpath="/Xdmf/Domain/Grid[@Name='piston3d']/Geometry")
