@@ -104,7 +104,7 @@ class Model2:
         self.freq = 100
         self.w0 = 2 * np.pi * self.freq
         self.p0 = 1.0
-        self.delta = 1e-3
+        self.delta = 1e-4
 
         # Define variational formulation
         self.a = inner(self.u, self.v)*dx \
@@ -190,8 +190,8 @@ class Model3:
         self.freq = 100
         self.w0 = 2 * np.pi * self.freq
         self.p0 = 1.0
-        self.delta = 1e-3
-        self.beta = 1e-2
+        self.delta = 1e-4
+        self.beta = 1e-3
         self.rho0 = 1.0
 
         # Define variational formulation
@@ -270,22 +270,22 @@ class Model3:
 
 
 # Read mesh
-with XDMFFile(MPI.COMM_WORLD, "piston2d.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="piston2d")
+with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston3d.xdmf", "r") as xdmf:
+    mesh = xdmf.read_mesh(name="piston3d")
     tdim = mesh.topology.dim
     fdim = tdim-1
     mesh.topology.create_connectivity(fdim, tdim)
     mesh.topology.create_connectivity(fdim, 0)
-    mt = xdmf.read_meshtags(mesh, name="edges")
+    mt = xdmf.read_meshtags(mesh, name="facets")
 
 # Create model
 k = 1
-eqn = Model2(mesh, mt, k)
+eqn = Model3(mesh, mt, k)
 
 # Temporal parameters
 t = 0.0  # start time
 T = 0.2  # final time
 
 # RK4
-fname = "model2_2d"
+fname = "solution/3d/model3_3d"
 rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
