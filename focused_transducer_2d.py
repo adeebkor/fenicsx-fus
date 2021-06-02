@@ -84,7 +84,7 @@ mt = create_meshtags(mesh, 1,
 mt.name = "facets"
 
 # Write mesh in XDMF
-with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "w") as file:
+with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2D.xdmf", "w") as file:
     file.write_mesh(mesh)
     mesh.topology.create_connectivity(1, 2)
     file.write_meshtags(
