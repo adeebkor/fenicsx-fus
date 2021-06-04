@@ -270,7 +270,7 @@ class Model3:
 
 
 # Read mesh
-with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2D.xdmf", "r") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
     mesh = xdmf.read_mesh(name="piston2d")
     tdim = mesh.topology.dim
     fdim = tdim-1
@@ -284,9 +284,9 @@ model = "Model 1"
 dimension = "2d"
 
 # Set parameters
-c0 = 1.0
-f0 = 125
-p0 = 1.0
+c0 = 1482  # m/s
+f0 = 2e6  # Hz
+p0 = 4.3e5  # Pa
 delta = 1e-4
 beta = 1e-1
 rho0 = 1.0
@@ -302,10 +302,10 @@ elif model == "Model 3":
 
 # Temporal parameters
 t = 0.0  # start time
-T = 0.1  # final time
+T = 0.5e-5  # final time
 CFL = 0.9
 hmin = get_hmin(mesh)
-dt = CFL * hmin / (c0 * (2 * k + 1))
+dt = 1e-9 # CFL * hmin / (c0 * (2 * k + 1))
 nstep = int(T / dt)
 print("Total steps:", nstep)
 
@@ -314,5 +314,5 @@ fname = "solution/2d/{}_{}".format(
     model.lower().replace(" ", ""),
     dimension
 )
-rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
-# rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
+# rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
+rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
