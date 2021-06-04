@@ -14,17 +14,21 @@ import gmsh
 gmsh.initialize()
 gmsh.option.setNumber("General.Terminal", 0)
 # gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 0.1)
+# gmsh.option.setNumber("Mesh.MeshSizeMax", 1e-5)
+# gmsh.option.setNumber("Mesh.MeshSizeFactor", 1)
 model = gmsh.model()
 
 if MPI.COMM_WORLD.rank == 0:
     # Setup model
     model.add("Piston2D")
     model.setCurrent("Piston2D")
-    L, r, rmax = 0.07, 0.05, 0.033
-    rect = model.occ.addRectangle(-0.04, -rmax, 0.0, L, 2*rmax)
+    L, r, rmax = 0.07, 0.05, 0.033  # cm
+
+    # Create object
+    rect1 = model.occ.addRectangle(-0.04, -rmax, 0.0, L, 2*rmax)
+    disk1 = model.occ.addDisk(0, 0, 0, r, r)
+    union = model.occ.fuse([(2, rect1)], [(2, disk1)])[0]
     rect2 = model.occ.addRectangle(-r, -rmax, 0.0, L+0.01, 2*rmax)
-    disk = model.occ.addDisk(0, 0, 0, r, r)
-    union = model.occ.fuse([(2, rect)], [(2, disk)])[0]
     isect = model.occ.intersect(union, [(2, rect2)])
 
     # Tag physical entities
@@ -45,7 +49,33 @@ if MPI.COMM_WORLD.rank == 0:
     model.addPhysicalGroup(1, transducer, transducer_marker)
     model.setPhysicalName(1, transducer_marker, "Transducer")
 
+    # Define mesh size
+    model.mesh.field.add("Distance", 1)
+    model.mesh.field.setNumbers(1, "FacesList", walls)
+
+    resolution = r / 500
+    model.mesh.field.add("Threshold", 2)
+    model.mesh.field.setNumber(2, "IField", 1)
+    model.mesh.field.setNumber(2, "LcMin", resolution)
+    model.mesh.field.setNumber(2, "LcMax", 20*resolution)
+    model.mesh.field.setNumber(2, "DistMin", 0.5*r)
+    model.mesh.field.setNumber(2, "DistMax", r)
+
+    model.mesh.field.add("Distance", 3)
+    model.mesh.field.setNumbers(3, "FacesList", transducer)
+    model.mesh.field.add("Threshold", 4)
+    model.mesh.field.setNumber(4, "IField", 3)
+    model.mesh.field.setNumber(4, "LcMin", 5*resolution)
+    model.mesh.field.setNumber(4, "LcMax", 10*resolution)
+    model.mesh.field.setNumber(4, "DistMin", 0.1)
+    model.mesh.field.setNumber(4, "DistMax", 0.5)
+
+    model.mesh.field.add("Min", 5)
+    model.mesh.field.setNumbers(5, "FieldsList", [2, 4])
+    model.mesh.field.setAsBackgroundMesh(5)
+
     # Meshing
+    model.occ.synchronize()
     model.mesh.generate(2)
     # model.mesh.refine()
     # model.mesh.refine()
