@@ -1,4 +1,4 @@
 __pycache__/
-*.xdmf
-*.msh
-*.h5
+/mesh
+/simple_example
+/solution/
