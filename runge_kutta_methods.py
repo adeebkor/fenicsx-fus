@@ -112,7 +112,8 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
         # Update time
         t += dt
 
-        file.write_function(u, t=t)
+        if step%20 == 0:
+            file.write_function(u, t=t)
 
     file.close()
 
