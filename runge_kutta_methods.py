@@ -112,7 +112,7 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
         # Update time
         t += dt
 
-        if step%20 == 0:
+        if step%50 == 0:
             file.write_function(u, t=t)
 
     file.close()
@@ -391,7 +391,7 @@ def ode452(f0, f1, u, v, start_time, final_time, fname):
                 u.vector.axpy(dt * b_runge[i], ku[i])
                 v.vector.axpy(dt * b_runge[i], kv[i])
 
-            if step%20 == 0:
+            if step%100 == 0:
                 file.write_function(u, t=t)
 
     file.close()
