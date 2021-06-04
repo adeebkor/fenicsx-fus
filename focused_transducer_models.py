@@ -7,14 +7,14 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 import runge_kutta_methods as rk
-
+from utils import get_hmin
 
 class Model1:
     """
     Model that consider only diffraction
     """
 
-    def __init__(self, mesh, meshtag, k):
+    def __init__(self, mesh, meshtag, k, c0, freq0, p0):
         self.V = FunctionSpace(mesh, ("Lagrange", k))
         self.u, self.v = TrialFunction(self.V), TestFunction(self.V)
         self.g = Function(self.V)
@@ -23,10 +23,10 @@ class Model1:
         ds = Measure('ds', subdomain_data=meshtag, domain=mesh)
 
         # Physical parameters
-        self.c0 = 1.0
-        self.freq = 100
+        self.c0 = c0
+        self.freq = freq0
         self.w0 = 2 * np.pi * self.freq
-        self.p0 = 1.0
+        self.p0 = p0
 
         # Define variational formulation
         self.a = inner(self.u, self.v)*dx
@@ -90,7 +90,7 @@ class Model2:
     Model that consider diffraction + absorption
     """
 
-    def __init__(self, mesh, meshtag, k):
+    def __init__(self, mesh, meshtag, k, c0, freq0, p0, delta):
         self.V = FunctionSpace(mesh, ("Lagrange", k))
         self.u, self.v = TrialFunction(self.V), TestFunction(self.V)
         self.g = Function(self.V)
@@ -100,11 +100,11 @@ class Model2:
         ds = Measure('ds', subdomain_data=meshtag, domain=mesh)
 
         # Physical parameters
-        self.c0 = 1.0
-        self.freq = 100
+        self.c0 = c0
+        self.freq = freq0
         self.w0 = 2 * np.pi * self.freq
-        self.p0 = 1.0
-        self.delta = 1e-4
+        self.p0 = p0
+        self.delta = delta
 
         # Define variational formulation
         self.a = inner(self.u, self.v)*dx \
@@ -176,7 +176,7 @@ class Model3:
     nonlinearity.
     """
 
-    def __init__(self, mesh, meshtag, k):
+    def __init__(self, mesh, meshtag, k, c0, freq0, p0, delta, beta, rho0):
         self.V = FunctionSpace(mesh, ("Lagrange", k))
         self.u, self.v = TrialFunction(self.V), TestFunction(self.V)
         self.g = Function(self.V)
@@ -186,13 +186,13 @@ class Model3:
         ds = Measure('ds', subdomain_data=meshtag, domain=mesh)
 
         # Physical parameters
-        self.c0 = 1.0
-        self.freq = 100
+        self.c0 = c0
+        self.freq = freq0
         self.w0 = 2 * np.pi * self.freq
-        self.p0 = 1.0
-        self.delta = 1e-4
-        self.beta = 1e-3
-        self.rho0 = 1.0
+        self.p0 = p0
+        self.delta = delta
+        self.beta = beta
+        self.rho0 = rho0
 
         # Define variational formulation
         self.u_n = Function(self.V)
@@ -278,14 +278,41 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2D.xdmf", "r") as xdmf:
     mesh.topology.create_connectivity(fdim, 0)
     mt = xdmf.read_meshtags(mesh, name="facets")
 
-# Create model
+
+# Choose model
+model = "Model 1"
+dimension = "2d"
+
+# Set parameters
+c0 = 1.0
+f0 = 125
+p0 = 1.0
+delta = 1e-4
+beta = 1e-1
+rho0 = 1.0
 k = 1
-eqn = Model3(mesh, mt, k)
+
+# Instantiate model
+if model == "Model 1":
+    eqn = Model1(mesh, mt, k, c0, f0, p0)
+elif model == "Model 2":
+    eqn = Model2(mesh, mt, k, c0, f0, p0, delta)
+elif model == "Model 3":
+    eqn = Model3(mesh, mt, k, c0, f0, p0, delta, beta, rho0)
 
 # Temporal parameters
 t = 0.0  # start time
-T = 0.2  # final time
+T = 0.1  # final time
+CFL = 0.9
+hmin = get_hmin(mesh)
+dt = CFL * hmin / (c0 * (2 * k + 1))
+nstep = int(T / dt)
+print("Total steps:", nstep)
 
 # RK4
-fname = "solution/2d/model3_2d"
+fname = "solution/2d/{}_{}".format(
+    model.lower().replace(" ", ""),
+    dimension
+)
 rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
+# rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
