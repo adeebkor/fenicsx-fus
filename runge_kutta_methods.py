@@ -1,5 +1,6 @@
 import numpy as np
 from mpi4py import MPI
+from petsc4py import PETSc
 
 import dolfinx.io
 
@@ -107,7 +108,7 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        print("Steps:", step)
+        PETSc.Sys.syncPrint("Steps:", step)
         
         # Update time
         t += dt
