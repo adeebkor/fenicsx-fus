@@ -232,7 +232,7 @@ f0 = 1e6
 p0 = 1e6
 delta = 3e-6
 beta = 3.5
-rho0 = 3.5
+rho0 = 1000
 k = 1
 wx = 0.06
 wy = 0.06
@@ -267,11 +267,12 @@ elif model == "Model 3":
 # Temporal parameters
 t = 0.0  # start time
 T = wx / c0 + 2.0 / f0  # final time
+# print("Final time:", T)
 CFL = 0.9
 hmin = get_hmin(mesh)
 dt = CFL * hmin / (c0 * (2 * k + 1))
 nstep = int(T / dt)
-print("Total steps:", nstep)
+PETSc.Sys.syncPrint("Total steps:", nstep)
 
 # RK4
 fname = "solution/2d/{}_{}-plane_wave".format(
