@@ -280,7 +280,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
 
 
 # Choose model
-model = "Model 1"
+model = "Model 2"
 dimension = "2d"
 
 # Set parameters
@@ -302,10 +302,11 @@ elif model == "Model 3":
 
 # Temporal parameters
 t = 0.0  # start time
-T = 0.5e-5  # final time
+T = 0.08 / c0 + 2.0 / f0 # 0.5e-5  # final time
+PETSc.Sys.syncPrint("Final time:", T)
 CFL = 0.9
 hmin = get_hmin(mesh)
-dt = 1e-9 # CFL * hmin / (c0 * (2 * k + 1))
+dt = CFL * hmin / (c0 * (2 * k + 1))
 nstep = int(T / dt)
 print("Total steps:", nstep)
 
