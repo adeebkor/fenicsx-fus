@@ -62,7 +62,7 @@ class Model1:
             -> PETSc.Vec:
         """For dv/dt = f1(t, u, v), return f1"""
 
-        # Update boundart condition
+        # Update boundary condition
         with self.g.vector.localForm() as g_local:
             g_local.set(self.p0*self.w0/self.c0 * np.sin(self.w0 * t))
 
