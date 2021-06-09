@@ -1,13 +1,16 @@
 import numpy as np
+from dolfinx.generation import RectangleMesh
 from dolfinx import FunctionSpace, Function
+from dolfinx.cpp.geometry import select_colliding_cells
 from dolfinx.fem import assemble_matrix, assemble_vector
+from dolfinx.geometry import BoundingBoxTree, compute_collisions_point
 from dolfinx.io import XDMFFile
 from ufl import TrialFunction, TestFunction, Measure, inner, grad, dx
 from mpi4py import MPI
 from petsc4py import PETSc
 
 import runge_kutta_methods as rk
-from utils import get_hmin
+from utils import get_hmin, get_eval_params
 
 class Model1:
     """
@@ -278,9 +281,14 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
     mesh.topology.create_connectivity(fdim, 0)
     mt = xdmf.read_meshtags(mesh, name="facets")
 
+# mesh = RectangleMesh(
+#     MPI.COMM_WORLD,
+#     [np.array([0., 0., 0.]), np.array([1., 1., 0])],
+#     [10, 10]
+# )
 
 # Choose model
-model = "Model 2"
+model = "Model 1"
 dimension = "2d"
 
 # Set parameters
@@ -290,7 +298,7 @@ p0 = 4.3e5  # Pa
 delta = 1e-4
 beta = 1e-1
 rho0 = 1.0
-k = 1
+k = 2
 
 # Instantiate model
 if model == "Model 1":
@@ -308,7 +316,7 @@ CFL = 0.9
 hmin = get_hmin(mesh)
 dt = CFL * hmin / (c0 * (2 * k + 1))
 nstep = int(T / dt)
-print("Total steps:", nstep)
+PETSc.Sys.syncPrint("Total steps:", nstep)
 
 # RK4
 fname = "solution/2d/{}_{}".format(
@@ -316,4 +324,12 @@ fname = "solution/2d/{}_{}".format(
     dimension
 )
 # rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
-rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
+# rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
+
+npts = 10000
+x0 = np.linspace(-0.05, 0.03, npts)
+points = np.zeros((3, npts))
+points[0] = x0
+x, cells = get_eval_params(mesh, points)
+rk.solve2_eval(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, x, cells,
+               "test_eval_model3_p2")

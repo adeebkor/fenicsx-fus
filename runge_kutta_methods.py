@@ -108,7 +108,7 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        PETSc.Sys.syncPrint("Steps:", step)
+        PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
         
         # Update time
         t += dt
@@ -117,6 +117,80 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
             file.write_function(u, t=t)
 
     file.close()
+
+    return u
+
+
+def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order, x, cells, fname):
+    """
+    Solve 2nd order time dependent PDE using the Runge Kutta method with
+    evaluation at points
+    """
+
+    # Create solution vectors at RK intermediate stages
+    un, vn = u.vector.copy(), v.vector.copy()
+
+    # Solution at start of time step
+    u0, v0 = u.vector.copy(), v.vector.copy()
+
+    # Get Runge-Kutta timestepping data
+    n_RK, a_runge, b_runge, c_runge = butcher(rk_order)
+
+    # Create lists to hold intermediate vectors
+    ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
+
+    # Create array to store solutions at time step
+    num_of_snapshot = num_steps // 50 + 2
+    ns = 0
+    U = np.zeros((num_of_snapshot, x.shape[0]))
+    u_eval = u.eval(x, cells)
+    U[ns] = u_eval.flatten()
+
+
+    t = 0.0
+    for step in range(num_steps):
+        # print("Time step:", step, t, dt)
+
+        # Store solution at start of time step
+        u.vector.copy(result=u0)
+        v.vector.copy(result=v0)
+
+        # Runge-Kutta step
+        for i in range(n_RK):
+            u0.copy(result=un)
+            v0.copy(result=vn)
+
+            for j in range(i):
+                a = dt * a_runge[i, j]
+                un.axpy(a, ku[j])
+                vn.axpy(a, kv[j])
+
+            # RK evaluation time
+            tn = t + c_runge[i]*dt
+
+            # Compute RHS vector
+            ku[i] = f0(tn, un, vn, result=ku[i])
+            kv[i] = f1(tn, un, vn, result=kv[i])
+
+            # Update solution
+            u.vector.axpy(dt * b_runge[i], ku[i])
+            v.vector.axpy(dt * b_runge[i], kv[i])
+
+        PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
+        
+        # Update time
+        t += dt
+
+        if step%50 == 0:
+            ns += 1
+            u_eval = u.eval(x, cells)
+            U[ns] = u_eval.flatten()
+
+        with open("{}.npy".format(fname), 'wb') as file:
+            np.save(file, x)
+            np.save(file, U)
+        
+        exit()
 
     return u
 
