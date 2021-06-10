@@ -186,12 +186,10 @@ def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order, x, cells, fname):
             u_eval = u.eval(x, cells)
             U[ns] = u_eval.flatten()
 
-        with open("{}.npy".format(fname), 'wb') as file:
-            np.save(file, x)
-            np.save(file, U)
+    with open("{}.npy".format(fname), 'wb') as file:
+        np.save(file, x)
+        np.save(file, U)
         
-        exit()
-
     return u
 
 
