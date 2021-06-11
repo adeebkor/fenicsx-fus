@@ -17,7 +17,7 @@ ims = []
 for i in range(U.shape[0]):
     p = plt.plot(x0, U[i, :], animated=True, color='k')
 
-    plt.xlim([0.08, 0.15])
+    plt.xlim([0.1, 0.15])
 
     ims.append((p))
 

@@ -283,7 +283,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
 
 
 # Choose model
-model = "Model 1"
+model = "Model 3"
 dimension = "2d"
 
 # Set parameters

@@ -53,7 +53,7 @@ if MPI.COMM_WORLD.rank == 0:
     model.mesh.field.add("Distance", 1)
     model.mesh.field.setNumbers(1, "FacesList", walls)
 
-    resolution = r / 2500
+    resolution = r / 1000
     model.mesh.field.add("Threshold", 2)
     model.mesh.field.setNumber(2, "IField", 1)
     model.mesh.field.setNumber(2, "LcMin", resolution)
