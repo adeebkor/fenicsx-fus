@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # Load data file
-with open("model3-1d.npy", "rb") as file:
+with open("test_1d_.npy", "rb") as file:
     U = np.load(file)
 
 print("Number of snapshot:", U.shape)
 
-x0 = np.linspace(0, 0.1 * 4.5, 20000)
+x0 = np.linspace(0, 0.1 * 4.5, 10000)
 
 # Animate the figure
 fig = plt.figure()

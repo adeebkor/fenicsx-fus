@@ -273,8 +273,8 @@ class Model3:
 
 
 # Read mesh
-with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="piston2d")
+with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/domain1d.xdmf", "r") as xdmf:
+    mesh = xdmf.read_mesh(name="domain1d")
     tdim = mesh.topology.dim
     fdim = tdim-1
     mesh.topology.create_connectivity(fdim, tdim)
@@ -284,18 +284,19 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
 
 # Choose model
 model = "Model 3"
-dimension = "2d"
+dimension = "1d"
 
 # Set parameters
-c0 = 1482  # m/s
-f0 = 2e6  # Hz
+c0 = 1481.44  # m/s
+mu0 = 1.0016E-3  # 
+rho0 = 999.6  # kg/m^3
+f0 = 0.1E6  # Hz
 w0 = 2 * np.pi * f0
-p0 = 4.3e5  # Pa
-delta = 1e-4
+p0 = 5E6  # Pa
+delta = 4*mu0/3/rho0
 alpha = 0.217
 delta_ = 2 * alpha * c0**3 / w0**2
-beta = 3.5
-rho0 = 1000
+beta = 10
 k = 1
 
 # Instantiate model
@@ -308,7 +309,7 @@ elif model == "Model 3":
 
 # Temporal parameters
 t = 0.0  # start time
-T = 0.08 / c0 + 2.0 / f0 # 0.5e-5  # final time
+T = (0.1*4.5) / c0 + 2.0 / f0 # 0.5e-5  # final time
 PETSc.Sys.syncPrint("Final time:", T)
 CFL = 0.9
 hmin = get_hmin(mesh)
@@ -317,20 +318,18 @@ nstep = int(T / dt)
 PETSc.Sys.syncPrint("Total steps:", nstep)
 
 # RK4
-fname = "solution/2d/{}_{}".format(
-    model.lower().replace(" ", ""),
-    dimension
-)
+# fname = "solution/2d/{}_{}".format(
+#     model.lower().replace(" ", ""),
+#     dimension
+# )
 # rk.ode452(eqn.f0, eqn.f1, *eqn.init(), t, T, fname)
 # rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
 
 npts = 10000
-x, y = np.mgrid[-0.03:0.03:100j, -0.03:0.03:100j]
-# x0 = np.linspace(-0.05, 0.03, npts)
+x0 = np.linspace(0, 0.1*4.5, npts)
 points = np.zeros((3, npts))
-points[0] = x.flatten()
-points[1] = y.flatten()
+points[0] = x0.flatten()
 idx, x, cells = get_eval_params(mesh, points)
 rk.solve2_eval(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4,
                npts, idx, x, cells,
-               "test_eval_model1_p2")
+               "test_1d_")

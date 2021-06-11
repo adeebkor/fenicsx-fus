@@ -234,8 +234,8 @@ k = 2 * np.pi / lmbda
 # FE parameters
 epw = 5
 nw = L / lmbda
-nx = int(epw * nw)
-degree = 2
+nx = 160 # int(epw * nw)
+degree = 3
 
 # Generate mesh
 mesh = IntervalMesh(
