@@ -281,11 +281,6 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/piston2d.xdmf", "r") as xdmf:
     mesh.topology.create_connectivity(fdim, 0)
     mt = xdmf.read_meshtags(mesh, name="facets")
 
-# mesh = RectangleMesh(
-#     MPI.COMM_WORLD,
-#     [np.array([0., 0., 0.]), np.array([1., 1., 0])],
-#     [10, 10]
-# )
 
 # Choose model
 model = "Model 1"
@@ -294,11 +289,14 @@ dimension = "2d"
 # Set parameters
 c0 = 1482  # m/s
 f0 = 2e6  # Hz
+w0 = 2 * np.pi * f0
 p0 = 4.3e5  # Pa
 delta = 1e-4
-beta = 1e-1
-rho0 = 1.0
-k = 2
+alpha = 0.217
+delta_ = 2 * alpha * c0**3 / w0**2
+beta = 3.5
+rho0 = 1000
+k = 1
 
 # Instantiate model
 if model == "Model 1":
@@ -327,9 +325,12 @@ fname = "solution/2d/{}_{}".format(
 # rk.solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, fname)
 
 npts = 10000
-x0 = np.linspace(-0.05, 0.03, npts)
+x, y = np.mgrid[-0.03:0.03:100j, -0.03:0.03:100j]
+# x0 = np.linspace(-0.05, 0.03, npts)
 points = np.zeros((3, npts))
-points[0] = x0
-x, cells = get_eval_params(mesh, points)
-rk.solve2_eval(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4, x, cells,
-               "test_eval_model3_p2")
+points[0] = x.flatten()
+points[1] = y.flatten()
+idx, x, cells = get_eval_params(mesh, points)
+rk.solve2_eval(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4,
+               npts, idx, x, cells,
+               "test_eval_model1_p2")

@@ -25,7 +25,8 @@ def get_eval_params(mesh, points):
     tree = BoundingBoxTree(mesh, mesh.topology.dim)
     cells = []
     points_on_proc = []
-    for point in points.T:
+    idx_on_proc = []
+    for i, point in enumerate(points.T):
         # Find cells that are close to the point
         cell_candidates = compute_collisions_point(tree, point)
         # Choose one of the cells that contains the point
@@ -34,6 +35,7 @@ def get_eval_params(mesh, points):
         if len(cell) == 1:
             points_on_proc.append(point)
             cells.append(cell[0])
+            idx_on_proc.append(i)
     
     points_on_proc = np.array(points_on_proc, dtype=np.float64)
-    return points_on_proc, cells
+    return idx_on_proc, points_on_proc, cells

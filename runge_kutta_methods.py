@@ -108,12 +108,12 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
         
         # Update time
         t += dt
 
-        if step%50 == 0:
+        if step%100 == 0:
+            PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
             file.write_function(u, t=t)
 
     file.close()
@@ -121,7 +121,8 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
     return u
 
 
-def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order, x, cells, fname):
+def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order,
+                npts, idx, x, cells, fname):
     """
     Solve 2nd order time dependent PDE using the Runge Kutta method with
     evaluation at points
@@ -140,12 +141,12 @@ def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order, x, cells, fname):
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
 
     # Create array to store solutions at time step
-    num_of_snapshot = num_steps // 50 + 2
+    num_of_snapshot = num_steps // 100 + 2
     ns = 0
-    U = np.zeros((num_of_snapshot, x.shape[0]))
-    u_eval = u.eval(x, cells)
-    U[ns] = u_eval.flatten()
+    Ug = np.full((num_of_snapshot, npts), -np.inf)
 
+    if len(idx) != 0:
+        Ug[ns, idx] = u.eval(x, cells).flatten()
 
     t = 0.0
     for step in range(num_steps):
@@ -176,22 +177,24 @@ def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order, x, cells, fname):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
         
         # Update time
         t += dt
 
-        if step%50 == 0:
+        if step%100 == 0:
+            PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
             ns += 1
-            u_eval = u.eval(x, cells)
-            U[ns] = u_eval.flatten()
 
+            if len(idx) != 0:
+                Ug[ns, idx] = u.eval(x, cells).flatten()
+
+    U = np.zeros((num_of_snapshot, npts), dtype=None)
+    MPI.COMM_WORLD.Reduce(Ug, U, op=MPI.MAX, root=0)
+
+    if MPI.COMM_WORLD.rank == 0:
         with open("{}.npy".format(fname), 'wb') as file:
-            np.save(file, x)
             np.save(file, U)
         
-        exit()
-
     return u
 
 
