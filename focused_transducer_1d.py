@@ -53,4 +53,5 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/domain1d.xdmf", "w") as file:
     file.write_mesh(mesh)
     file.write_meshtags(
         mt,
-        geometry_xpath="/Xdmf/Domain/Grid[@Name='{}']/Geometry".format(mesh.name))
+        geometry_xpath="/Xdmf/Domain/Grid[@Name='{}']/Geometry".format(
+            mesh.name))
