@@ -13,9 +13,6 @@ import gmsh
 # Initialization
 gmsh.initialize()
 gmsh.option.setNumber("General.Terminal", 0)
-# gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 0.1)
-# gmsh.option.setNumber("Mesh.MeshSizeMax", 1e-5)
-# gmsh.option.setNumber("Mesh.MeshSizeFactor", 1)
 model = gmsh.model()
 
 if MPI.COMM_WORLD.rank == 0:
@@ -77,8 +74,6 @@ if MPI.COMM_WORLD.rank == 0:
     # Meshing
     model.occ.synchronize()
     model.mesh.generate(2)
-    # model.mesh.refine()
-    # model.mesh.refine()
 
     gmsh.write("mesh/gmsh/piston2D.msh")
 
@@ -168,8 +163,6 @@ if MPI.COMM_WORLD.rank == 0:
 
     # Meshing
     model.mesh.generate(2)
-    # model.mesh.refine()
-    # model.mesh.refine()
 
     gmsh.write("mesh/gmsh/piston2D-1.msh")
 
