@@ -67,7 +67,7 @@ class Model1:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(self.p0*self.w0/self.c0 * np.sin(self.w0 * t))
+            g_local.set(-self.p0*self.w0/self.c0 * np.cos(self.w0 * t))
 
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
@@ -148,10 +148,10 @@ class Model2:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(self.p0*self.w0/self.c0 * np.sin(self.w0 * t))
+            g_local.set(-self.p0*self.w0/self.c0 * np.cos(self.w0 * t))
 
         with self.dg.vector.localForm() as dg_local:
-            dg_local.set(self.p0*self.w0**2/self.c0 * np.cos(self.w0 * t))
+            dg_local.set(self.p0*self.w0**2/self.c0 * np.sin(self.w0 * t))
             # dg_local.set(0.0)
 
         # Update fields that f depends on
@@ -241,10 +241,10 @@ class Model3:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(self.p0*self.w0/self.c0 * np.sin(self.w0 * t))
+            g_local.set(-self.p0*self.w0/self.c0 * np.cos(self.w0 * t))
 
         with self.dg.vector.localForm() as dg_local:
-            dg_local.set(self.p0*self.w0**2/self.c0 * np.cos(self.w0 * t))
+            dg_local.set(self.p0*self.w0**2/self.c0 * np.sin(self.w0 * t))
             # dg_local.set(0.0)
 
         # Update fields that f depends on
@@ -283,7 +283,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/domain1d.xdmf", "r") as xdmf:
 
 
 # Choose model
-model = "Model 3"
+model = "Model 2"
 dimension = "1d"
 
 # Set parameters
@@ -293,7 +293,7 @@ rho0 = 999.6  # kg/m^3
 f0 = 0.1E6  # Hz
 w0 = 2 * np.pi * f0
 p0 = 5E6  # Pa
-delta = 4*mu0/3/rho0
+delta = 1e-1 # 4*mu0/3/rho0
 alpha = 0.217
 delta_ = 2 * alpha * c0**3 / w0**2
 beta = 10
