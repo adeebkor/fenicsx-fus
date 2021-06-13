@@ -11,13 +11,13 @@ print("Number of snapshot:", U.shape)
 x0 = np.linspace(0, 0.1 * 4.5, 10000)
 
 # Animate the figure
-fig = plt.figure()
+fig = plt.figure(figsize=(16,8))
 
 ims = []
 for i in range(U.shape[0]):
     p = plt.plot(x0, U[i, :], animated=True, color='k')
 
-    plt.xlim([0.1, 0.15])
+    # plt.xlim([0.15, 0.2])
 
     ims.append((p))
 
