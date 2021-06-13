@@ -2,4 +2,4 @@ __pycache__/
 /mesh
 /simple_example
 /solution/
-test-dolfinx.py
+test-model.npy
