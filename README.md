@@ -1,5 +1,5 @@
 # High-intensity focused ultrasound simulation
 
-[![DOLFINx CI](https://github.com/adeebkor/hifu-simulation/actions/workflows/ccpp.yml/badge.svg)](https://github.com/adeebkor/hifu-simulation/actions/workflows/ccpp.yml)
+[![HIFU CI](https://github.com/adeebkor/hifu-simulation/actions/workflows/python-app.yml/badge.svg)](https://github.com/adeebkor/hifu-simulation/actions/workflows/python-app.yml)
 
 FEniCSx implementation for high-intensity focused ultrasound simulation.
