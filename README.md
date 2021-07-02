@@ -1,3 +1,5 @@
 # High-intensity focused ultrasound simulation
 
-This repository contains all of my stuff related to HIFU simulation. For example, FEniCS-X implementation and reproducing results/ideas from various papers.
+[![HIFU CI](https://github.com/adeebkor/hifu-simulation/actions/workflows/python-app.yml/badge.svg)](https://github.com/adeebkor/hifu-simulation/actions/workflows/python-app.yml)
+
+FEniCSx implementation for high-intensity focused ultrasound simulation.
