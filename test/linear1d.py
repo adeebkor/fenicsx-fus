@@ -32,10 +32,10 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 1  # degree of basis function
+degree = 2  # degree of basis function
 
 # Mesh parameters
-epw = 128  # number of element per wavelength
+epw = 4 # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -74,6 +74,8 @@ print("Number of steps:", nstep)
 
 # Instantiate model
 eqn = Linear(mesh, mt, degree, c0, f0, p0)
+print(eqn.V.dofmap.index_map.size_global)
+exit()
 
 # Solve
 u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
