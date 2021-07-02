@@ -287,8 +287,8 @@ class LinearPulse:
         self.p0 = p0
 
         # Temporal parameters
-        self.Td = 6/f0
-        self.Tw = 3/f0
+        self.Td = 6/self.freq
+        self.Tw = 3/self.freq
         self.Tend = 2*self.Td
 
         # Define variational formulation
@@ -327,7 +327,12 @@ class LinearPulse:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(-self.p0*self.w0/self.c0 * np.cos(self.w0 * t) * \
+            g_local.set(-self.p0*self.w0/self.c0 * \
+                        np.cos(self.w0 * (t-self.Td)) * \
+                        np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
+                        (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0))
+                        +4*self.p0/self.c0/self.Tw * \
+                        np.sin(self.w0 * (t-self.Td)) * \
                         np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
                         (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0)))
 

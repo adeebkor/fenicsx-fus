@@ -59,7 +59,7 @@ def solve1(f, u, dt, num_steps, rk_order):
     return u
 
 
-def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
+def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=None):
     """Solve 2nd order time dependent PDE using the Runge Kutta method"""
 
     # Create solution vectors at RK intermediate stages
@@ -74,10 +74,11 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
     # Create lists to hold intermediate vectors
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
 
-    file = dolfinx.io.XDMFFile(
-        MPI.COMM_WORLD, "{}.xdmf".format(filename), "w")
-    file.write_mesh(u.function_space.mesh)
-    file.write_function(u, t=0.0)
+    if filename is not None:
+        file = dolfinx.io.XDMFFile(
+            MPI.COMM_WORLD, "{}.xdmf".format(filename), "w")
+        file.write_mesh(u.function_space.mesh)
+        file.write_function(u, t=0.0)
 
     t = 0.0
     for step in range(num_steps):
@@ -112,13 +113,16 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=""):
         # Update time
         t += dt
 
-        if step%100 == 0:
+        if step%1000 == 0:
             PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
-            file.write_function(u, t=t)
+            
+            if filename is not None:
+                file.write_function(u, t=t)
 
-    file.close()
+    if filename is not None:
+        file.close()
 
-    return u
+    return u, t
 
 
 def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order,
@@ -404,7 +408,7 @@ def ode451(f, u, start_time, final_time, fname):
     return u
 
 
-def ode452(f0, f1, u, v, start_time, final_time, fname):
+def ode452(f0, f1, u, v, start_time, final_time, fname=None):
     """Solve 2nd order in time PDE problem using adaptive step size."""
 
     # Create solution vectors at RK intermediate stages
@@ -420,9 +424,10 @@ def ode452(f0, f1, u, v, start_time, final_time, fname):
     # Create lists to hold intermediate k values
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
 
-    file = dolfinx.io.XDMFFile(MPI.COMM_WORLD, "{}.xdmf".format(fname), "w")
-    file.write_mesh(u.function_space.mesh)
-    file.write_function(u, t=start_time)
+    if fname is not None:
+        file = dolfinx.io.XDMFFile(MPI.COMM_WORLD, "{}.xdmf".format(fname), "w")
+        file.write_mesh(u.function_space.mesh)
+        file.write_function(u, t=start_time)
 
     eps = 1e-3
     t = start_time
@@ -469,12 +474,13 @@ def ode452(f0, f1, u, v, start_time, final_time, fname):
                 u.vector.axpy(dt * b_runge[i], ku[i])
                 v.vector.axpy(dt * b_runge[i], kv[i])
 
-            if step%100 == 0:
-                file.write_function(u, t=t)
+            if step%100 == 0 and fname is not None:
+                    file.write_function(u, t=t)
 
-    file.close()
+    if fname is not None:
+        file.close()
 
-    return u
+    return u, t
 
 
 def butcher(order):
