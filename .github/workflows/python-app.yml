@@ -67,7 +67,7 @@ jobs:
     - name: Build Python interface (dolfinx)
       run: python3 -m pip -v install ./dolfinx/python/
     
-    - name: Run demos
+    - name: Run tests
       run: |
         pytest test/
           
