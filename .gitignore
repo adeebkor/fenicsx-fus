@@ -1,5 +1,5 @@
 __pycache__/
-/mesh
-/simple_example
-/solution/
-test-model.npy
+data/
+mesh/
+plots/
+solution/
