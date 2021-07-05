@@ -69,7 +69,7 @@ jobs:
     
     - name: Run demos
       run: |
-        python3 test.py
+        pytest test/
           
     
 
