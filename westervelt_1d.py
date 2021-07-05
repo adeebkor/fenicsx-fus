@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import jv
 from mpi4py import MPI
+from petsc4py import PETSc
 
 from dolfinx import IntervalMesh, FunctionSpace, Function
 from dolfinx.fem import assemble_scalar
@@ -35,7 +36,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 4  # degree of basis function
 
 # Mesh parameters
-epw = 16  # number of element per wavelength
+epw = 64  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -73,11 +74,13 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt1D(mesh, mt, degree, c0, f0, p0, 1E-10, beta, rho0)
+eqn = Westervelt1D(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
 print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
 u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                     mode=PETSc.ScatterMode.FORWARD)
 print("tf:", tf)
 
 
@@ -131,16 +134,13 @@ u_analytic = u_e.eval(x, cells).flatten()
 plt.plot(x.T[0], u_eval, x.T[0], u_analytic, 'r--')
 plt.xlim([0.0, 10*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_soln1_n{}_p{}.png".format(nx, degree))
+plt.savefig("plots/westervelt_1d_p{}_epw{}_soln1.png".format(degree, epw))
 
 plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_soln2_n{}_p{}.png".format(nx, degree))
+plt.savefig("plots/westervelt_1d_p{}_epw{}_soln2.png".format(degree, epw))
 
 plt.xlim([L-10*lmbda, L])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_soln3_n{}_p{}.png".format(nx, degree))
+plt.savefig("plots/westervelt_1d_p{}_epw{}_soln3.png".format(degree, epw))
 plt.close()
-
-print("Relative L2 error of FEM solution (data points):",
-      np.linalg.norm(u_eval-u_analytic)/np.linalg.norm(u_analytic))
