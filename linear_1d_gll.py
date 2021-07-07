@@ -40,6 +40,8 @@ nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
 
+print("Element size:", h)
+
 # Generate mesh
 mesh = IntervalMesh(
     MPI.COMM_WORLD,
