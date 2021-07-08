@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
@@ -81,8 +83,10 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=None):
         file.write_function(u, t=0.0)
 
     t = 0.0
+    ts = time.time()
     for step in range(num_steps):
-        # print("Time step:", step, t, dt)
+        # if step%100 == 1:
+        ts = time.time()
 
         # Store solution at start of time step
         u.vector.copy(result=u0)
@@ -109,15 +113,20 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=None):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        
         # Update time
         t += dt
-
-        if step%1000 == 0:
-            PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
+        
+        te = time.time() - ts
+        PETSc.Sys.syncPrint("Steps:{}/{}, Solve time: {}".format(step,num_steps,te))
+        
+        # if step%100 == 0:
+            # te = time.time() - ts
+            # PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
+            # print("Steps:{}/{}".format(step,num_steps))
+            # print("Steps:{}/{}, Solve time: {}".format(step,num_steps,te))
             
-            if filename is not None:
-                file.write_function(u, t=t)
+            # if filename is not None:
+                # file.write_function(u, t=t)
 
     if filename is not None:
         file.close()
