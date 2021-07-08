@@ -45,9 +45,9 @@ print("Element size:", h)
 
 # Generate mesh
 mesh = IntervalMesh(
-	MPI.COMM_WORLD,
-	nx,
-	[0, L]
+    MPI.COMM_WORLD,
+    nx,
+    [0, L]
 )
 
 # Tag boundaries
@@ -89,26 +89,26 @@ print("tf:", tf)
 
 # Calculate L2
 class Analytical:
-	def __init__(self, c0, f0, p0, rho0, beta, t):
-		self.c0 = c0
-		self.f0 = f0
-		self.w0 = 2 * np.pi * f0
-		self.p0 = p0
-		self.u0 = p0 / rho0 / c0
-		self.rho0 = rho0
-		self.beta = beta
-		self.t = t
-	
-	def __call__(self, x):
-		xsh = self.c0**2 / self.w0 / self.beta / self.u0
-		sigma = (x[0]+0.0000001) / xsh
-		
-		val = np.zeros(sigma.shape[0])
-		for term in range(1, 50):
-			val += 2/term/sigma * jv(term, term*sigma) * \
-				   np.sin(term*self.w0*(self.t - x[0]/self.c0))
+    def __init__(self, c0, f0, p0, rho0, beta, t):
+        self.c0 = c0
+        self.f0 = f0
+        self.w0 = 2 * np.pi * f0
+        self.p0 = p0
+        self.u0 = p0 / rho0 / c0
+        self.rho0 = rho0
+        self.beta = beta
+        self.t = t
 
-		return self.p0 * val
+    def __call__(self, x):
+        xsh = self.c0**2 / self.w0 / self.beta / self.u0
+        sigma = (x[0]+0.0000001) / xsh
+
+        val = np.zeros(sigma.shape[0])
+        for term in range(1, 50):
+            val += 2/term/sigma * jv(term, term*sigma) * \
+                   np.sin(term*self.w0*(self.t - x[0]/self.c0))
+
+        return self.p0 * val
 
 
 u_ba = Function(eqn.V)
