@@ -6,6 +6,7 @@ from petsc4py import PETSc
 from dolfinx import RectangleMesh, FunctionSpace, Function
 from dolfinx.cpp.mesh import CellType
 from dolfinx.fem import assemble_scalar
+from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
@@ -36,10 +37,10 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 1  # degree of basis function
 
 # Mesh parameters
-epw = 16  # number of element per wavelength
+epw = 8  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
-h = L / n
+h = np.sqrt(2*(L / n)**2)
 
 print("Element size:", h)
 
@@ -67,7 +68,6 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
-
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
@@ -80,3 +80,63 @@ print("Number of steps:", nstep)
 eqn = Linear(mesh, mt, degree, c0, f0, p0)
 dofs = eqn.V.dofmap.index_map.size_global
 print("Degree of freedoms:", dofs)
+
+# Solve
+u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                     mode=PETSc.ScatterMode.FORWARD)
+print("tf:", tf)
+
+
+# Calculate L2 and H1 errors of FEM solution and best approximation
+class Analytical:
+    def __init__(self, c0, f0, p0, t):
+        self.p0 = p0
+        self.c0 = c0
+        self.f0 = f0
+        self.w0 = 2 * np.pi * f0
+        self.t = t
+
+    def __call__(self, x):
+        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
+              np.heaviside(self.t-x[0]/self.c0, 0)
+
+        return val
+
+
+u_ba = Function(eqn.V)
+u_ba.interpolate(Analytical(c0, f0, p0, tf))
+
+V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
+u_e = Function(V_e)
+u_e.interpolate(Analytical(c0, f0, p0, tf))
+
+# L2 error
+diff_fe = u - u_e
+L2_diff_fe = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(diff_fe, diff_fe) * dx), op=MPI.SUM)
+
+diff_ba = u_ba - u_e
+L2_diff_ba = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(diff_ba, diff_ba) * dx), op=MPI.SUM)
+
+L2_exact = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
+
+L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
+print("Relative L2 error of FEM solution:", L2_error_fe)
+
+L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
+print("Relative L2 error of BA solution:", L2_error_ba)
+
+# Plot solution
+filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
+with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+	file.write_mesh(mesh)
+	file.write_function(u)
+
+filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
+with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+	file.write_mesh(mesh)
+	file.write_function(u_e)
+
