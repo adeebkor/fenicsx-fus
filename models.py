@@ -39,10 +39,10 @@ class Linear:
 
         # Build solver
         self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
-        # self.solver.setType(PETSc.KSP.Type.PREONLY)
-        # self.solver.getPC().setType(PETSc.PC.Type.LU)
-        self.solver.setType("cg")
-        self.solver.getPC().setType("jacobi")
+        self.solver.setType(PETSc.KSP.Type.PREONLY)
+        self.solver.getPC().setType(PETSc.PC.Type.LU)
+        # self.solver.setType("cg")
+        # self.solver.getPC().setType("jacobi")
         self.solver.setOperators(self.M)
 
     def init(self):
@@ -64,7 +64,7 @@ class Linear:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(-self.p0*self.w0/self.c0 * np.cos(self.w0 * t))
+            g_local.set(self.p0*self.w0/self.c0 * np.cos(self.w0 * t))
 
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
