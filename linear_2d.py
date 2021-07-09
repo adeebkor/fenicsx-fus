@@ -34,7 +34,7 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 1  # degree of basis function
+degree = 4  # degree of basis function
 
 # Mesh parameters
 epw = 8  # number of element per wavelength
@@ -42,7 +42,7 @@ nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
 
-print("Element size:", h)
+PETSc.Sys.syncPrint("Element size:", h)
 
 # Generate mesh
 mesh = RectangleMesh(
@@ -71,21 +71,21 @@ tend = L / c0 + 2 / f0  # simulation final time (s)
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = 100 # int(2 * tend / dt)
 
-print("Final time:", tend)
-print("Number of steps:", nstep)
+PETSc.Sys.syncPrint("Final time:", tend)
+PETSc.Sys.syncPrint("Number of steps:", nstep)
 
 # Instantiate model
 eqn = Linear(mesh, mt, degree, c0, f0, p0)
 dofs = eqn.V.dofmap.index_map.size_global
-print("Degree of freedoms:", dofs)
+PETSc.Sys.syncPrint("Degree of freedoms:", dofs)
 
 # Solve
 u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
 u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                      mode=PETSc.ScatterMode.FORWARD)
-print("tf:", tf)
+PETSc.Sys.syncPrint("tf:", tf)
 
 
 # Calculate L2 and H1 errors of FEM solution and best approximation
@@ -124,10 +124,10 @@ L2_exact = mesh.mpi_comm().allreduce(
     assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
 
 L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
-print("Relative L2 error of FEM solution:", L2_error_fe)
+PETSc.Sys.syncPrint("Relative L2 error of FEM solution:", L2_error_fe)
 
 L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
-print("Relative L2 error of BA solution:", L2_error_ba)
+PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
 filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
@@ -136,7 +136,6 @@ with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
 	file.write_function(u)
 
 filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
-with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
 	file.write_mesh(mesh)
 	file.write_function(u_e)
-
