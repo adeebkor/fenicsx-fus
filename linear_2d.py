@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from mpi4py import MPI
 from petsc4py import PETSc
 
@@ -37,7 +36,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 4  # degree of basis function
 
 # Mesh parameters
-epw = 8  # number of element per wavelength
+epw = 64  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
