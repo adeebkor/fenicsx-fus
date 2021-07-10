@@ -36,7 +36,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 4  # degree of basis function
 
 # Mesh parameters
-epw = 64  # number of element per wavelength
+epw = 8  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
@@ -67,10 +67,10 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
-CFL = 0.9
+CFL = 0.6
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = 100 # int(2 * tend / dt)
+nstep = int(2 * tend / dt)
 
 PETSc.Sys.syncPrint("Final time:", tend)
 PETSc.Sys.syncPrint("Number of steps:", nstep)
