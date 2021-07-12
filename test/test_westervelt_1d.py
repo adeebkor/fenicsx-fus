@@ -7,7 +7,7 @@ from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import Westervelt1D
+from models import Westervelt
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -67,7 +67,7 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt1D(mesh, mt, degree, c0, f0, p0, 1E-10, beta, rho0)
+eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 1E-10, beta, rho0)
 print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
