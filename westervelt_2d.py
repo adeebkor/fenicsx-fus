@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import jv
 from mpi4py import MPI
 from petsc4py import PETSc
 
@@ -32,10 +33,10 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 4  # degree of basis function
+degree = 3  # degree of basis function
 
 # Mesh parameters
-epw = 16  # number of element per wavelength
+epw = 8  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
@@ -66,7 +67,7 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
-CFL = 0.6
+CFL = 0.7
 dt = CFL * h / (c0 * (2 * degree + 1))
 
 nstep = int(tend / dt)
@@ -75,7 +76,7 @@ PETSc.Sys.syncPrint("Final time:", tend)
 PETSc.Sys.syncPrint("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt(mesh, mt, degree, c0, f0, p0)
+eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
 dofs = eqn.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms:", dofs)
 
@@ -140,7 +141,7 @@ with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
 	file.write_mesh(mesh)
 	file.write_function(u)
 
-filename_e = "solution/2d/westervelt_exact_p{}_epw{}.xdmf".format(degree, epw)
+filename_e = "solution/2d/westervelt_exact_p{}_eps{}.xdmf".format(degree, epw)
 with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
 	file.write_mesh(mesh)
 	file.write_function(u_e)
