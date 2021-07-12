@@ -87,7 +87,7 @@ u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
 print("tf:", tf)
 
 
-# Calculate L2
+# Calculate L2 error
 class Analytical:
     def __init__(self, c0, f0, p0, rho0, beta, t):
         self.c0 = c0

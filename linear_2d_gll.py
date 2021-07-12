@@ -87,7 +87,7 @@ u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
 PETSc.Sys.syncPrint("tf:", tf)
 
 
-# Calculate L2 and H1 errors of FEM solution and best approximation
+# Calculate L2 error
 class Analytical:
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0

@@ -9,7 +9,6 @@ from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from utils import get_eval_params, get_hmin
 from models import Linear
 from runge_kutta_methods import solve2
 
@@ -87,7 +86,7 @@ u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
 PETSc.Sys.syncPrint("tf:", tf)
 
 
-# Calculate L2 and H1 errors of FEM solution and best approximation
+# Calculate L2 error
 class Analytical:
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0
@@ -129,12 +128,12 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-# filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
-# with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-# 	file.write_mesh(mesh)
-# 	file.write_function(u)
-# 
-# filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
-# with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
-# 	file.write_mesh(mesh)
-# 	file.write_function(u_e)
+filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
+with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+	file.write_mesh(mesh)
+	file.write_function(u)
+
+filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
+with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
+	file.write_mesh(mesh)
+	file.write_function(u_e)
