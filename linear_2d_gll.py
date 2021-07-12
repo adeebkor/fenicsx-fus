@@ -133,8 +133,3 @@ filename = "solution/2d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
 with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
 	file.write_mesh(mesh)
 	file.write_function(u)
-
-# filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
-# with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
-	# file.write_mesh(mesh)
-	# file.write_function(u_e)
