@@ -104,4 +104,4 @@ L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
 
 def test_L2_error():
-    assert(L2_error < 1E-4)
+    assert(L2_error < 1E-3)
