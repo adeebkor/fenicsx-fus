@@ -9,7 +9,7 @@ from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
 from utils import get_eval_params
-from models import Linear1D
+from models import Linear
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -32,10 +32,10 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 1  # degree of basis function
+degree = 2  # degree of basis function
 
 # Mesh parameters
-epw = 256  # number of element per wavelength
+epw = 8  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -75,7 +75,7 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Linear1D(mesh, mt, degree, c0, f0, p0)
+eqn = Linear(mesh, mt, degree, c0, f0, p0)
 dofs = eqn.V.dofmap.index_map.size_global
 print("Degree of freedoms: ", dofs)
 
