@@ -36,7 +36,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 4  # degree of basis function
 
 # Mesh parameters
-epw = 8  # number of element per wavelength
+epw = 16  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
@@ -70,7 +70,7 @@ tend = L / c0 + 2 / f0  # simulation final time (s)
 CFL = 0.6
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = int(tend / dt)
 
 PETSc.Sys.syncPrint("Final time:", tend)
 PETSc.Sys.syncPrint("Number of steps:", nstep)
@@ -129,12 +129,12 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
-with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-	file.write_mesh(mesh)
-	file.write_function(u)
-
-filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
-with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
-	file.write_mesh(mesh)
-	file.write_function(u_e)
+# filename = "solution/2d/linear_p{}_epw{}.xdmf".format(degree, epw)
+# with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+# 	file.write_mesh(mesh)
+# 	file.write_function(u)
+# 
+# filename_e = "solution/2d/linear_exact_p{}_epw{}.xdmf".format(degree, epw)
+# with XDMFFile(MPI.COMM_WORLD, filename_e, "w") as file:
+# 	file.write_mesh(mesh)
+# 	file.write_function(u_e)
