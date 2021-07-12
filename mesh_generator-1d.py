@@ -9,7 +9,7 @@ L = 0.1 * 4.5  # domain length (m)
 
 # Physical parameters
 c0 = 1481.44  # speed of sound (m/s)
-mu0 = 1.0016E-3  # viscosity of medium () 
+mu0 = 1.0016E-3  # viscosity of medium ()
 rho0 = 999.6  # density of medium (kg/m^3)
 f0 = 0.1E6  # source frequency (Hz)
 delta = 4*mu0/3/rho0  # diffusivity of sound ()

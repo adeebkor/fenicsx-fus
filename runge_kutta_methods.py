@@ -109,13 +109,12 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=None):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        
         # Update time
         t += dt
 
-        if step%1000 == 0:
-            PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
-            
+        if step % 1000 == 0:
+            PETSc.Sys.syncPrint("Steps:{}/{}".format(step, num_steps))
+
             if filename is not None:
                 file.write_function(u, t=t)
 
@@ -181,12 +180,11 @@ def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order,
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-        
         # Update time
         t += dt
 
-        if step%100 == 0:
-            PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
+        if step % 100 == 0:
+            PETSc.Sys.syncPrint("Steps:{}/{}".format(step, num_steps))
             ns += 1
 
             if len(idx) != 0:
@@ -198,7 +196,7 @@ def solve2_eval(f0, f1, u, v, dt, num_steps, rk_order,
     if MPI.COMM_WORLD.rank == 0:
         with open("{}.npy".format(fname), 'wb') as file:
             np.save(file, U)
-        
+
     return u
 
 
@@ -280,7 +278,7 @@ def ode232(f0, f1, u, v, start_time, final_time, fname):
 
     # Get Runge-Kutta timestepping data
     n_RK, a_runge, b_runge, c_runge = butcher(23)
-    CT = [-5/72, 1/12, 1/9, -1/8]    
+    CT = [-5/72, 1/12, 1/9, -1/8]
 
     # Create lists to hold intermediate k values
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
@@ -425,7 +423,8 @@ def ode452(f0, f1, u, v, start_time, final_time, fname=None):
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
 
     if fname is not None:
-        file = dolfinx.io.XDMFFile(MPI.COMM_WORLD, "{}.xdmf".format(fname), "w")
+        file = dolfinx.io.XDMFFile(
+            MPI.COMM_WORLD, "{}.xdmf".format(fname), "w")
         file.write_mesh(u.function_space.mesh)
         file.write_function(u, t=start_time)
 
@@ -474,8 +473,8 @@ def ode452(f0, f1, u, v, start_time, final_time, fname=None):
                 u.vector.axpy(dt * b_runge[i], ku[i])
                 v.vector.axpy(dt * b_runge[i], kv[i])
 
-            if step%100 == 0 and fname is not None:
-                    file.write_function(u, t=t)
+            if step % 100 == 0 and fname is not None:
+                file.write_function(u, t=t)
 
     if fname is not None:
         file.close()
@@ -542,5 +541,5 @@ def butcher(order):
         a_runge[1, 0] = 1/2
         a_runge[2, 0:2] = [0, 3/4]
         a_runge[3, 0:3] = [2/9, 1/3, 4/9]
-    
+
     return n_RK, a_runge, b_runge, c_runge
