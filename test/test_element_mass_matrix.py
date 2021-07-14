@@ -46,7 +46,7 @@ def generate_mesh(dimension):
 mesh = generate_mesh(2)
 
 # Create function space
-p = 2
+p = 3
 V = dolfinx.FunctionSpace(mesh, ("Lagrange", p))
 
 # Define variational form
