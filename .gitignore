@@ -1,5 +1,9 @@
 __pycache__/
 data/.ipynb_checkpoints/
 fenicsx/
+gc/
 mesh/
 solution/
+
+test/dolfinx_jit_parameters.json
+compile_fenicsx.txt
