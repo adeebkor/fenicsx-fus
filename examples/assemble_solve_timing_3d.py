@@ -107,31 +107,22 @@ for opt in optimization_options:
 
             # ufl.action 
             un = Function(V)
-
-            b_act = Function(V)
-            b_act.x.array[:] = 0
-
-            b_ufl = Function(V)
-            b_ufl.x.array[:] = 0
+            un.x.array[:] = 1
 
             uh_act = Function(V)
 
             ts_ufl = time.time()
-            assemble_vector(b_ufl.vector, L)
-            b_ufl.vector.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                                     mode=PETSc.ScatterMode.REVERSE)
-            b_ufl.x.scatter_forward()
-            un.x.array[:] = 1 / b_ufl.x.array[:]
-            un.x.scatter_forward()
+            b_ufl = assemble_vector(L)
+            b_ufl.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                              mode=PETSc.ScatterMode.REVERSE)
 
             a_act_ = action(am_, un)
             a_act = Form(a_act_, jit_parameters=jit_parameters)
+            A_act = assemble_vector(a_act)
+            A_act.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                              mode=PETSc.ScatterMode.REVERSE)
             
-            assemble_vector(b_act.vector, a_act)
-            b_act.x.scatter_reverse(ScatterMode.add)
-            b_act.x.scatter_forward()
-
-            uh_act.x.array[:] = 1 / b_act.x.array[:]
+            uh_act.vector.pointwiseDivide(b_ufl, A_act)
             te_ufl = time.time() - ts_ufl
 
             diff_act = uh_act - f
