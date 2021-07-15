@@ -67,10 +67,10 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
 
-CFL = 0.9
+CFL = 0.7
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = int(tend / dt)
 
 print("Final time:", tend)
 print("Number of steps:", nstep)

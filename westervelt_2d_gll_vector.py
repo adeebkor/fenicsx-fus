@@ -11,7 +11,7 @@ from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import WesterveltGLL
+from models import WesterveltGLLv
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -37,7 +37,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 3  # degree of basis function
 
 # Mesh parameters
-epw = 8  # number of element per wavelength
+epw = 4  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2*(L / n)**2)
@@ -77,7 +77,7 @@ PETSc.Sys.syncPrint("Final time:", tend)
 PETSc.Sys.syncPrint("Number of steps:", nstep)
 
 # Instantiate model
-eqn = WesterveltGLL(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
+eqn = WesterveltGLLv(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
 dofs = eqn.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms:", dofs)
 
@@ -140,7 +140,8 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-filename = "solution/2d/westervelt_gll_p{}_epw{}.xdmf".format(degree, epw)
-with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-	file.write_mesh(mesh)
-	file.write_function(u)
+# filename = "solution/2d/westervelt_gllv_p{}_epw{}.xdmf".format(degree, epw)
+# with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+# 	file.write_mesh(mesh)
+# 	file.write_function(u)
+
