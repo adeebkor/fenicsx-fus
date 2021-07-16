@@ -516,13 +516,13 @@ class LinearPulse:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(-self.p0*self.w0/self.c0 * \
-                        np.cos(self.w0 * (t-self.Td)) * \
-                        np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
+            g_local.set(-self.p0*self.w0/self.c0 *
+                        np.cos(self.w0 * (t-self.Td)) *
+                        np.exp(-((t-self.Td)/(self.Tw/2))**2) *
                         (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0))
-                        +4*self.p0/self.c0/self.Tw * \
-                        np.sin(self.w0 * (t-self.Td)) * \
-                        np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
+                        + 4*self.p0/self.c0/self.Tw *
+                        np.sin(self.w0 * (t-self.Td)) *
+                        np.exp(-((t-self.Td)/(self.Tw/2))**2) *
                         (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0)))
 
         # Update fields that depends on
@@ -542,4 +542,3 @@ class LinearPulse:
         self.solver.solve(b, result)
 
         return result
- 

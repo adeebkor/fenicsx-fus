@@ -36,6 +36,6 @@ def get_eval_params(mesh, points):
             points_on_proc.append(point)
             cells.append(cell[0])
             idx_on_proc.append(i)
-    
+
     points_on_proc = np.array(points_on_proc, dtype=np.float64)
     return idx_on_proc, points_on_proc, cells
