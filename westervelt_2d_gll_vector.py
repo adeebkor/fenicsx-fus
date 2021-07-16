@@ -144,4 +144,3 @@ PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 # with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
 # 	file.write_mesh(mesh)
 # 	file.write_function(u)
-
