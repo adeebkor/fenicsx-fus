@@ -5,8 +5,8 @@ from dolfinx.io import (XDMFFile, extract_gmsh_geometry,
                         extract_gmsh_topology_and_markers, ufl_mesh_from_gmsh)
 from dolfinx.mesh import create_mesh, create_meshtags
 from mpi4py import MPI
-import gmsh
 
+import gmsh
 import warnings
 warnings.filterwarnings("ignore")
 

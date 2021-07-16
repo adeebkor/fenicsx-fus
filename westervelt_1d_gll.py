@@ -10,7 +10,7 @@ from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
 from utils import get_eval_params
-from models import Westervelt
+from models import WesterveltGLL
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -76,7 +76,7 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
+eqn = WesterveltGLL(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
 dofs = eqn.V.dofmap.index_map.size_global
 print("Degree of freedoms:", dofs)
 
@@ -150,15 +150,15 @@ u_analytic = u_e.eval(x, cells).flatten()
 plt.plot(x.T[0], u_eval_fe, x.T[0], u_analytic, 'r--')
 plt.xlim([0.0, 10*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln1.png".format(degree, epw))
+plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln1.png".format(degree, epw))
 
 plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln2.png".format(degree, epw))
+plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln2.png".format(degree, epw))
 
 plt.xlim([L-10*lmbda, L])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln3.png".format(degree, epw))
+plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln3.png".format(degree, epw))
 plt.close()
 
 print("L2 error (FE using array):",

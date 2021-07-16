@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import jv
 from mpi4py import MPI
 from petsc4py import PETSc
 
@@ -10,30 +9,30 @@ from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
 from utils import get_eval_params
-from models import Westervelt
+from models import LinearGLL
 from runge_kutta_methods import solve2
 
 # Material parameters
-c0 = 1500  # speed of sound (m / s)
+c0 = 1500  # speed of sound (m/s)
 rho0 = 1000  # density of medium (kg / m^3)
 beta = 3.5  # coefficient of nonlinearity
 
 # Source parameters
 f0 = 5E6  # source frequency (Hz)
 w0 = 2 * np.pi * f0  # angular frequency (rad / s)
-p0 = 1.5E6  # pressure amplitude (Pa)
-u0 = p0 / rho0 / c0  # velocity amplitude (m / s)
+u0 = 1  # velocity amplitude (m / s)
+p0 = rho0*c0*u0  # pressure amplitude (Pa)
 
 # Domain parameters
 xsh = rho0*c0**3/beta/p0/w0  # shock formation distance (m)
-L = 0.9*xsh  # domain length (m)
+L = 0.9 * xsh  # domain length (m)
 
 # Physical parameters
 lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 3  # degree of basis function
+degree = 2  # degree of basis function
 
 # Mesh parameters
 epw = 16  # number of element per wavelength
@@ -76,9 +75,8 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
-dofs = eqn.V.dofmap.index_map.size_global
-print("Degree of freedoms:", dofs)
+eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
+print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
 
 # Solve
 u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
@@ -89,34 +87,26 @@ print("tf:", tf)
 
 # Calculate L2 error
 class Analytical:
-    def __init__(self, c0, f0, p0, rho0, beta, t):
+    def __init__(self, c0, f0, p0, t):
+        self.p0 = p0
         self.c0 = c0
         self.f0 = f0
         self.w0 = 2 * np.pi * f0
-        self.p0 = p0
-        self.u0 = p0 / rho0 / c0
-        self.rho0 = rho0
-        self.beta = beta
         self.t = t
 
     def __call__(self, x):
-        xsh = self.c0**2 / self.w0 / self.beta / self.u0
-        sigma = (x[0]+0.0000001) / xsh
+        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
+              np.heaviside(self.t-x[0]/self.c0, 0)
 
-        val = np.zeros(sigma.shape[0])
-        for term in range(1, 50):
-            val += 2/term/sigma * jv(term, term*sigma) * \
-                   np.sin(term*self.w0*(self.t - x[0]/self.c0))
-
-        return self.p0 * val
+        return val
 
 
 u_ba = Function(eqn.V)
-u_ba.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
+u_ba.interpolate(Analytical(c0, f0, p0, tf))
 
 V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
 u_e = Function(V_e)
-u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
+u_e.interpolate(Analytical(c0, f0, p0, tf))
 
 # L2 error
 diff_fe = u - u_e
@@ -137,8 +127,8 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 print("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-npts = 3 * dofs
-x0 = np.linspace(0.00001, L, npts)
+npts = 3 * degree * (nx+1)
+x0 = np.linspace(0, L, npts)
 points = np.zeros((3, npts))
 points[0] = x0
 idx, x, cells = get_eval_params(mesh, points)
@@ -150,15 +140,15 @@ u_analytic = u_e.eval(x, cells).flatten()
 plt.plot(x.T[0], u_eval_fe, x.T[0], u_analytic, 'r--')
 plt.xlim([0.0, 10*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln1.png".format(degree, epw))
+plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln1.png".format(degree, epw))
 
 plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln2.png".format(degree, epw))
+plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln2.png".format(degree, epw))
 
 plt.xlim([L-10*lmbda, L])
 plt.legend(["FEM", "Analytical"])
-plt.savefig("plots/westervelt_1d_p{}_epw{}_soln3.png".format(degree, epw))
+plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln3.png".format(degree, epw))
 plt.close()
 
 print("L2 error (FE using array):",

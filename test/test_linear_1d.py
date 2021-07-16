@@ -6,7 +6,7 @@ from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import Linear1D
+from models import Linear
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -66,7 +66,7 @@ print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Linear1D(mesh, mt, degree, c0, f0, p0)
+eqn = Linear(mesh, mt, degree, c0, f0, p0)
 print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
 
 # Solve
@@ -104,4 +104,4 @@ L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
 
 def test_L2_error():
-    assert(L2_error < 1E-4)
+    assert(L2_error < 1E-3)
