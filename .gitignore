@@ -3,7 +3,10 @@ data/.ipynb_checkpoints/
 fenicsx/
 gc/
 mesh/
+plots/
 solution/
 
+data/*.pdf
+examples/*.pdf
 test/dolfinx_jit_parameters.json
 compile_fenicsx.txt
