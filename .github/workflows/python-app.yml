@@ -66,11 +66,12 @@ jobs:
     
     - name: Build Python interface (dolfinx)
       run: python3 -m pip -v install ./dolfinx/python/
+
+    - name: Flake8 checks
+      run: |
+        python3 -m flake8 *.py
+        python3 -m flake8 test/
     
     - name: Run tests
       run: |
         pytest test/
-          
-    
-
-    

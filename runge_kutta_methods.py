@@ -120,14 +120,9 @@ def solve2(f0, f1, u, v, dt, num_steps, rk_order, filename=None):
         PETSc.Sys.syncPrint(
             "Steps:{}/{}, Solve time: {}".format(step, num_steps, te))
 
-        # if step%100 == 0:
-        #   te = time.time() - ts
-        #   PETSc.Sys.syncPrint("Steps:{}/{}".format(step,num_steps))
-        #   print("Steps:{}/{}".format(step,num_steps))
-        #   print("Steps:{}/{}, Solve time: {}".format(step,num_steps,te))
-
-        #   if filename is not None:
-        #       file.write_function(u, t=t)
+        if step % 100 == 0:
+            if filename is not None:
+                file.write_function(u, t=t)
 
     if filename is not None:
         file.close()
