@@ -43,9 +43,9 @@ def quadrature_params(type, degree, n):
     elif type == "GLL":
         if n == 2:
             x = [-1,
-                  1]
+                 1]
             w = [1,
-                  1]
+                 1]
         elif n == 3:
             x = [-1,
                  0,
@@ -115,8 +115,10 @@ def quadrature_params(type, degree, n):
         return pts2d, wts2d
 
     elif degree == 3:
-        pts3d = np.array([[x, y, z] for z in pts1d for y in pts1d for x in pts1d])
-        wts3d = np.array([w1*w2*w3 for w1 in wts1d for w2 in wts1d for w3 in wts1d])
+        pts3d = np.array(
+            [[x, y, z] for z in pts1d for y in pts1d for x in pts1d])
+        wts3d = np.array(
+            [w1*w2*w3 for w1 in wts1d for w2 in wts1d for w3 in wts1d])
 
         return pts3d, wts3d
 

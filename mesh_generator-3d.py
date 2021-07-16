@@ -6,9 +6,9 @@ from dolfinx.io import (XDMFFile, extract_gmsh_geometry,
 from dolfinx.mesh import create_mesh, create_meshtags
 from mpi4py import MPI
 
+import gmsh
 import warnings
 warnings.filterwarnings("ignore")
-import gmsh
 
 # Initialization
 gmsh.initialize()
@@ -25,7 +25,7 @@ if MPI.COMM_WORLD.rank == 0:
     sph = model.occ.addSphere(0, 0, 0, r)
     union = model.occ.fuse([(3, cyl)], [(3, sph)])[0]
     isect = model.occ.intersect(union, [(3, cyl2)])
-    
+
     # Tag physical entities
     model.occ.synchronize()
     volumes = model.occ.getEntities(dim=3)
@@ -69,10 +69,10 @@ else:
     gmsh_cell_id = MPI.COMM_WORLD.bcast(None, root=0)
     num_nodes = MPI.COMM_WORLD.bcast(None, root=0)
     cells, x = np.empty([0, num_nodes]), np.empty([0, 3])
-    marked_facets, facet_values = np.empty((0, 3), dtype=np.int64), \
-                                  np.empty((0, ), dtype=np.int32)
+    marked_facets = np.empty((0, 3), dtype=np.int64)
+    facet_values = np.empty((0, ), dtype=np.int32)
 
-mesh = create_mesh(MPI.COMM_WORLD, cells, x, 
+mesh = create_mesh(MPI.COMM_WORLD, cells, x,
                    ufl_mesh_from_gmsh(gmsh_cell_id, 3))
 mesh.name = "piston3d"
 local_entities, local_values = extract_local_entities(mesh, 2,
