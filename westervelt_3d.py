@@ -49,7 +49,7 @@ mesh = BoxMesh(
 	MPI.COMM_WORLD,
 	[np.array([0., 0., 0.,]), np.array([L, L, L])],
 	[n, n, n],
-	CellType.tetrahedron
+	CellType.hexahedron
 )
 
 # Tag boundaries
