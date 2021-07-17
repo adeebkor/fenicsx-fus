@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for d in '1' '2' '3' '4'
+for d in '2' '3' '4' '5'
     do
     for e in '8' '16' '32' '64'
 	    do
