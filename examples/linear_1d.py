@@ -9,7 +9,7 @@ from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
 from utils import get_eval_params
-from models import LinearGLLv
+from models import Linear
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -35,7 +35,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 2  # degree of basis function
 
 # Mesh parameters
-epw = 16  # number of element per wavelength
+epw = 8  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -69,14 +69,15 @@ tend = L / c0 + 2 / f0  # simulation final time (s)
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = int(tend / dt)
 
 print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = LinearGLLv(mesh, mt, degree, c0, f0, p0)
-print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
+eqn = Linear(mesh, mt, degree, c0, f0, p0)
+dofs = eqn.V.dofmap.index_map.size_global
+print("Degree of freedoms: ", dofs)
 
 # Solve
 u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
@@ -127,33 +128,32 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 print("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-# npts = 3 * degree * (nx+1)
-# x0 = np.linspace(0, L, npts)
-# points = np.zeros((3, npts))
-# points[0] = x0
-# idx, x, cells = get_eval_params(mesh, points)
+npts = 3 * dofs
+x0 = np.linspace(0, L, npts)
+points = np.zeros((3, npts))
+points[0] = x0
+idx, x, cells = get_eval_params(mesh, points)
 
-# u_eval_fe = u.eval(x, cells).flatten()
-# u_eval_ba = u_ba.eval(x, cells).flatten()
-# u_analytic = u_e.eval(x, cells).flatten()
+u_eval_fe = u.eval(x, cells).flatten()
+u_eval_ba = u_ba.eval(x, cells).flatten()
+u_analytic = u_e.eval(x, cells).flatten()
 
-# plt.plot(x.T[0], u_eval_fe, x.T[0], u_analytic, 'r--')
-# plt.xlim([0.0, 10*lmbda])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln1.png".format(degree, epw))
+plt.plot(x.T[0], u_eval_fe, x.T[0], u_analytic, 'r--')
+plt.xlim([0.0, 10*lmbda])
+plt.legend(["FEM", "Analytical"])
+plt.savefig("plots/linear_1d_p{}_epw{}_soln1.png".format(degree, epw))
 
-# plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln2.png".format(degree, epw))
+plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
+plt.legend(["FEM", "Analytical"])
+plt.savefig("plots/linear_1d_p{}_epw{}_soln2.png".format(degree, epw))
 
-# plt.xlim([L-10*lmbda, L])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/linear_1d_gll_p{}_epw{}_soln3.png".format(degree, epw))
-# plt.close()
+plt.xlim([L-10*lmbda, L])
+plt.legend(["FEM", "Analytical"])
+plt.savefig("plots/linear_1d_p{}_epw{}_soln3.png".format(degree, epw))
+plt.close()
 
-# print("L2 error (FE using array):",
-#       np.linalg.norm(u_eval_fe-u_analytic)/np.linalg.norm(u_analytic))
+print("L2 error (FE using array):",
+      np.linalg.norm(u_eval_fe-u_analytic)/np.linalg.norm(u_analytic))
 
-# print("L2 error (BA using array):",
-#       np.linalg.norm(u_eval_ba-u_analytic)/np.linalg.norm(u_analytic))
-
+print("L2 error (BA using array):",
+      np.linalg.norm(u_eval_ba-u_analytic)/np.linalg.norm(u_analytic))

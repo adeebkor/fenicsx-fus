@@ -2,15 +2,14 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import RectangleMesh, FunctionSpace, Function
+from dolfinx import BoxMesh, FunctionSpace, Function
 from dolfinx.cpp.mesh import CellType
 from dolfinx.fem import assemble_scalar
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from utils import get_eval_params, get_hmin
-from models import LinearGLL
+from models import LinearGLLv
 from runge_kutta_methods import solve2
 
 # Material parameters
@@ -33,22 +32,22 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 2  # degree of basis function
+degree = 3  # degree of basis function
 
 # Mesh parameters
-epw = 32  # number of element per wavelength
+epw = 4  # number of element per wavelength
 nw = L / lmbda  # number of waves
 n = int(epw * nw + 1)  # total number of elements
-h = np.sqrt(2*(L / n)**2)
+h = np.sqrt(3*(L / n)**2)
 
 PETSc.Sys.syncPrint("Element size:", h)
 
 # Generate mesh
-mesh = RectangleMesh(
+mesh = BoxMesh(
 	MPI.COMM_WORLD,
-	[np.array([0., 0., 0.,]), np.array([L, L, 0.])],
-	[n, n],
-	CellType.quadrilateral
+	[np.array([0., 0., 0.,]), np.array([L, L, L])],
+	[n, n, n],
+	CellType.hexahedron
 )
 
 # Tag boundaries
@@ -67,16 +66,16 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
-CFL = 0.9
+CFL = 0.7
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = int(tend / dt)
 
 PETSc.Sys.syncPrint("Final time:", tend)
 PETSc.Sys.syncPrint("Number of steps:", nstep)
 
 # Instantiate model
-eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLLv(mesh, mt, degree, c0, f0, p0)
 dofs = eqn.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms:", dofs)
 
@@ -129,7 +128,7 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-filename = "solution/2d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
-with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-	file.write_mesh(mesh)
-	file.write_function(u)
+# filename = "solution/3d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
+# with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+# 	file.write_mesh(mesh)
+# 	file.write_function(u)

@@ -69,7 +69,7 @@ tend = L / c0 + 2 / f0  # simulation final time (s)
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
+nstep = int(tend / dt)
 
 print("Final time:", tend)
 print("Number of steps:", nstep)
