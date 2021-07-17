@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.special import jv
 from mpi4py import MPI
 from petsc4py import PETSc
@@ -9,7 +8,6 @@ from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from utils import get_eval_params
 from models import WesterveltGLLv
 from runge_kutta_methods import solve2
 
@@ -135,34 +133,3 @@ print("Relative L2 error of FEM solution:", L2_error_fe)
 
 L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 print("Relative L2 error of BA solution:", L2_error_ba)
-
-# Plot solution
-# npts = 3 * dofs
-# x0 = np.linspace(0.00001, L, npts)
-# points = np.zeros((3, npts))
-# points[0] = x0
-# idx, x, cells = get_eval_params(mesh, points)
-
-# u_eval_fe = u.eval(x, cells).flatten()
-# u_eval_ba = u_ba.eval(x, cells).flatten()
-# u_analytic = u_e.eval(x, cells).flatten()
-
-# plt.plot(x.T[0], u_eval_fe, x.T[0], u_analytic, 'r--')
-# plt.xlim([0.0, 10*lmbda])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln1.png".format(degree, epw))
-
-# plt.xlim([L/2-5*lmbda, L/2+5*lmbda])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln2.png".format(degree, epw))
-
-# plt.xlim([L-10*lmbda, L])
-# plt.legend(["FEM", "Analytical"])
-# plt.savefig("plots/westervelt_1d_gll_p{}_epw{}_soln3.png".format(degree, epw))
-# plt.close()
-
-# print("L2 error (FE using array):",
-      # np.linalg.norm(u_eval_fe-u_analytic)/np.linalg.norm(u_analytic))
-
-# print("L2 error (BA using array):",
-      # np.linalg.norm(u_eval_ba-u_analytic)/np.linalg.norm(u_analytic))

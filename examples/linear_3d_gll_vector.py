@@ -44,19 +44,19 @@ PETSc.Sys.syncPrint("Element size:", h)
 
 # Generate mesh
 mesh = BoxMesh(
-	MPI.COMM_WORLD,
-	[np.array([0., 0., 0.,]), np.array([L, L, L])],
-	[n, n, n],
-	CellType.hexahedron
+    MPI.COMM_WORLD,
+    [np.array([0., 0., 0.]), np.array([L, L, L])],
+    [n, n, n],
+    CellType.hexahedron
 )
 
 # Tag boundaries
 tdim = mesh.topology.dim
 
 facets0 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
 values = np.hstack((np.full(facets0.shape, 1, np.intc),
@@ -128,7 +128,7 @@ L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 # Plot solution
-# filename = "solution/3d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
-# with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-# 	file.write_mesh(mesh)
-# 	file.write_function(u)
+filename = "solution/3d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
+with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
+    file.write_mesh(mesh)
+    file.write_function(u)

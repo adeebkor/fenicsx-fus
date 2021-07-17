@@ -240,6 +240,7 @@ class LinearGLLv:
 
         return result
 
+
 class Lossy:
     """
     Model that consider diffraction + absorption
@@ -460,17 +461,23 @@ class WesterveltGLL:
         self.v_n = Function(self.V)
 
         self.a = inner(self.u, self.v)*dx(metadata=quad_params) \
-            + self.delta/self.c0*inner(self.u, self.v)*ds(2, metadata=quad_params) \
+            + self.delta/self.c0*inner(self.u, self.v) \
+            * ds(2, metadata=quad_params) \
             - 2*self.beta/self.rho0/self.c0**2*self.u_n \
             * inner(self.u, self.v)*dx(metadata=quad_params)
         self.M = assemble_matrix(self.a)
         self.M.assemble()
 
-        self.L = self.c0**2*(-inner(grad(self.u_n), grad(self.v))*dx(metadata=quad_params)
-                             + inner(self.g, self.v)*ds(1, metadata=quad_params)
-                             - 1/self.c0*inner(self.v_n, self.v)*ds(2, metadata=quad_params)) \
-            + self.delta*(-inner(grad(self.v_n), grad(self.v))*dx(metadata=quad_params)
-                          + inner(self.dg, self.v)*ds(1, metadata=quad_params)) \
+        self.L = self.c0**2*(- inner(grad(self.u_n), grad(self.v))
+                             * dx(metadata=quad_params)
+                             + inner(self.g, self.v)
+                             * ds(1, metadata=quad_params)
+                             - 1/self.c0*inner(self.v_n, self.v)
+                             * ds(2, metadata=quad_params)) \
+            + self.delta*(- inner(grad(self.v_n), grad(self.v))
+                          * dx(metadata=quad_params)
+                          + inner(self.dg, self.v)
+                          * ds(1, metadata=quad_params)) \
             + 2*self.beta/self.rho0/self.c0**2 \
             * inner(self.v_n*self.v_n, self.v)*dx(metadata=quad_params)
 
@@ -564,20 +571,25 @@ class WesterveltGLLv:
         self.v_n = Function(self.V)
         self.u.x.array[:] = 1
 
-        self.a = inner(self.u, self.v)*dx(metadata=quad_params) \
-            + self.delta/self.c0*inner(self.u, self.v)*ds(2, metadata=quad_params) \
+        self.a = inner(self.u, self.v) * dx(metadata=quad_params) \
+            + self.delta/self.c0*inner(self.u, self.v) \
+            * ds(2, metadata=quad_params) \
             - 2*self.beta/self.rho0/self.c0**2*self.u_n \
             * inner(self.u, self.v)*dx(metadata=quad_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
 
-
-        self.L = self.c0**2*(-inner(grad(self.u_n), grad(self.v))*dx(metadata=quad_params)
-                             + inner(self.g, self.v)*ds(1, metadata=quad_params)
-                             - 1/self.c0*inner(self.v_n, self.v)*ds(2, metadata=quad_params)) \
-            + self.delta*(-inner(grad(self.v_n), grad(self.v))*dx(metadata=quad_params)
-                          + inner(self.dg, self.v)*ds(1, metadata=quad_params)) \
+        self.L = self.c0**2*(- inner(grad(self.u_n), grad(self.v))
+                             * dx(metadata=quad_params)
+                             + inner(self.g, self.v)
+                             * ds(1, metadata=quad_params)
+                             - 1/self.c0*inner(self.v_n, self.v)
+                             * ds(2, metadata=quad_params)) \
+            + self.delta*(- inner(grad(self.v_n), grad(self.v))
+                          * dx(metadata=quad_params)
+                          + inner(self.dg, self.v)
+                          * ds(1, metadata=quad_params)) \
             + 2*self.beta/self.rho0/self.c0**2 \
             * inner(self.v_n*self.v_n, self.v)*dx(metadata=quad_params)
 
@@ -690,13 +702,13 @@ class LinearPulse:
 
         # Update boundary condition
         with self.g.vector.localForm() as g_local:
-            g_local.set(-self.p0*self.w0/self.c0 * \
-                        np.cos(self.w0 * (t-self.Td)) * \
-                        np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
+            g_local.set(-self.p0*self.w0/self.c0 *
+                        np.cos(self.w0 * (t-self.Td)) *
+                        np.exp(-((t-self.Td)/(self.Tw/2))**2) *
                         (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0))
-                        +4*self.p0/self.c0/self.Tw * \
-                        np.sin(self.w0 * (t-self.Td)) * \
-                        np.exp(-((t-self.Td)/(self.Tw/2))**2) * \
+                        + 4*self.p0/self.c0/self.Tw *
+                        np.sin(self.w0 * (t-self.Td)) *
+                        np.exp(-((t-self.Td)/(self.Tw/2))**2) *
                         (np.heaviside(t, 0)-np.heaviside(t-self.Tend, 0)))
 
         # Update fields that depends on
@@ -716,4 +728,3 @@ class LinearPulse:
         self.solver.solve(b, result)
 
         return result
- 

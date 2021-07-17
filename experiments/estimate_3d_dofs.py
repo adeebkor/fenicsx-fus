@@ -2,7 +2,7 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import BoxMesh, FunctionSpace, Function
+from dolfinx import BoxMesh, FunctionSpace
 from dolfinx.cpp.mesh import CellType
 
 # Material properties
@@ -32,10 +32,10 @@ h = np.sqrt(3*(L / n)**2)
 
 # Generate mesh
 mesh = BoxMesh(
-	MPI.COMM_WORLD,
-	[np.array([0., 0., 0.,]), np.array([L, L, L])],
-	[n, n, n],
-	CellType.hexahedron
+    MPI.COMM_WORLD,
+    [np.array([0., 0., 0.]), np.array([L, L, L])],
+    [n, n, n],
+    CellType.hexahedron
 )
 
 # Define function space

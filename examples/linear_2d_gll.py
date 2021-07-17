@@ -9,7 +9,6 @@ from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from utils import get_eval_params, get_hmin
 from models import LinearGLL
 from runge_kutta_methods import solve2
 
@@ -45,19 +44,19 @@ PETSc.Sys.syncPrint("Element size:", h)
 
 # Generate mesh
 mesh = RectangleMesh(
-	MPI.COMM_WORLD,
-	[np.array([0., 0., 0.,]), np.array([L, L, 0.])],
-	[n, n],
-	CellType.quadrilateral
+    MPI.COMM_WORLD,
+    [np.array([0., 0., 0.]), np.array([L, L, 0.])],
+    [n, n],
+    CellType.quadrilateral
 )
 
 # Tag boundaries
 tdim = mesh.topology.dim
 
 facets0 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
 values = np.hstack((np.full(facets0.shape, 1, np.intc),
@@ -131,5 +130,5 @@ PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 # Plot solution
 filename = "solution/2d/linear_gll_p{}_epw{}.xdmf".format(degree, epw)
 with XDMFFile(MPI.COMM_WORLD, filename, "w") as file:
-	file.write_mesh(mesh)
-	file.write_function(u)
+    file.write_mesh(mesh)
+    file.write_function(u)

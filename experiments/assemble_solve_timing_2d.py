@@ -6,16 +6,22 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 from dolfinx import UnitSquareMesh, FunctionSpace, Function, Form
-from dolfinx.cpp.common import ScatterMode
 from dolfinx.fem import assemble_matrix, assemble_vector, assemble_scalar
 from dolfinx.cpp.mesh import CellType
 from ufl import inner, TrialFunction, TestFunction, dx, action
 
-results = {"Dimension": [], "Degree": [], "Number of cells": [],
-           "Degrees of freedom": [], "Number of quadrature points": [],
-           "Options": [], 
-           "Time (matrix)": [], "Time (vector)": [], "Time (ufl.action)": [],
-           "L2 error (matrix)": [], "L2 error (vector)": [], "L2 error (ufl.action)": []}
+results = {"Dimension": [],
+           "Degree": [],
+           "Number of cells": [],
+           "Degrees of freedom": [],
+           "Number of quadrature points": [],
+           "Options": [],
+           "Time (matrix)": [],
+           "Time (vector)": [],
+           "Time (ufl.action)": [],
+           "L2 error (matrix)": [],
+           "L2 error (vector)": [],
+           "L2 error (ufl.action)": []}
 
 optimization_options = ["-O1", "-O2", "-O3", "-Ofast"]
 N = [4, 8, 16, 32, 64, 128, 256]
@@ -23,7 +29,7 @@ p = [2, 3, 4, 5]
 qp = [3, 4, 6, 8]
 
 for opt in optimization_options:
-    jit_parameters = {"cffi_extra_compile_args": ["-march=native", opt], 
+    jit_parameters = {"cffi_extra_compile_args": ["-march=native", opt],
                       "cffi_libraries": ["m"]}
     for degree, qdegree in zip(p, qp):
         for n in N:
@@ -40,7 +46,8 @@ for opt in optimization_options:
             v = TestFunction(V)
 
             f = Function(V)
-            f.interpolate(lambda x: 2 + np.sin(2*np.pi*x[0])*np.cos(2*np.pi*x[1]))
+            f.interpolate(lambda x: 2 + np.sin(2*np.pi*x[0])
+                          * np.cos(2*np.pi*x[1]))
 
             L_ = inner(f, v)*dx(metadata=md)
             L = Form(L_, jit_parameters=jit_parameters)
@@ -105,7 +112,7 @@ for opt in optimization_options:
                 assemble_scalar(inner(diff_petscv, diff_petscv) * dx),
                 op=MPI.SUM)
 
-            # ufl.action 
+            # ufl.action
             un = Function(V)
             un.x.array[:] = 1
 
@@ -121,7 +128,7 @@ for opt in optimization_options:
             A_act = assemble_vector(a_act)
             A_act.ghostUpdate(addv=PETSc.InsertMode.ADD,
                               mode=PETSc.ScatterMode.REVERSE)
-            
+
             uh_act.vector.pointwiseDivide(b_ufl, A_act)
             te_ufl = time.time() - ts_ufl
 
@@ -129,11 +136,15 @@ for opt in optimization_options:
             L2_error_act = mesh.mpi_comm().allreduce(
                 assemble_scalar(inner(diff_act, diff_act) * dx), op=MPI.SUM)
 
-            PETSc.Sys.syncPrint(
-                "Option: {} N: {}\t Degree: {} DOF: {}\t L2 error: {}, {}, {}".format(
-                opt, n, degree, dof, L2_error_petscm, L2_error_petscv, L2_error_act
-            ))
-            
+            str_data = f"Option: {opt} " \
+                       f"N: {n}\t " \
+                       f"Degree: {degree} " \
+                       f"DOF: {dof}\t " \
+                       f"L2 error: {L2_error_petscm}, " \
+                       f"{L2_error_petscv}, " \
+                       f"{L2_error_act}"
+            PETSc.Sys.syncPrint(str_data)
+
             # Data
             results["Dimension"].append(2)
             results["Degree"].append(degree)

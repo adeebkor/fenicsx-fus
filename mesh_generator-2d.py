@@ -5,10 +5,10 @@ from dolfinx.io import (XDMFFile, extract_gmsh_geometry,
                         extract_gmsh_topology_and_markers, ufl_mesh_from_gmsh)
 from dolfinx.mesh import create_mesh, create_meshtags
 from mpi4py import MPI
+import gmsh
 
 import warnings
 warnings.filterwarnings("ignore")
-import gmsh
 
 # Initialization
 gmsh.initialize()
@@ -93,8 +93,8 @@ else:
     gmsh_cell_id = MPI.COMM_WORLD.bcast(None, root=0)
     num_nodes = MPI.COMM_WORLD.bcast(None, root=0)
     cells, x = np.empty([0, num_nodes]), np.empty([0, 3])
-    marked_facets, facet_values = np.empty((0, 3), dtype=np.int64), \
-                                  np.empty((0,), dtype=np.int32)
+    marked_facets = np.empty((0, 3), dtype=np.int64)
+    facet_values = np.empty((0,), dtype=np.int32)
 
 mesh = create_mesh(MPI.COMM_WORLD, cells, x,
                    ufl_mesh_from_gmsh(gmsh_cell_id, 2))
@@ -182,8 +182,8 @@ else:
     gmsh_cell_id = MPI.COMM_WORLD.bcast(None, root=0)
     num_nodes = MPI.COMM_WORLD.bcast(None, root=0)
     cells, x = np.empty([0, num_nodes]), np.empty([0, 3])
-    marked_facets, facet_values = np.empty((0, 3), dtype=np.int64), \
-                                  np.empty((0,), dtype=np.int32)
+    marked_facets = np.empty((0, 3), dtype=np.int64)
+    facet_values = np.empty((0,), dtype=np.int32)
 
 mesh = create_mesh(MPI.COMM_WORLD, cells, x,
                    ufl_mesh_from_gmsh(gmsh_cell_id, 2))

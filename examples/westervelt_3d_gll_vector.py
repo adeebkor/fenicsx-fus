@@ -7,7 +7,6 @@ from petsc4py import PETSc
 from dolfinx import BoxMesh, FunctionSpace, Function
 from dolfinx.cpp.mesh import CellType
 from dolfinx.fem import assemble_scalar
-from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
@@ -46,19 +45,19 @@ PETSc.Sys.syncPrint("Element size:", h)
 
 # Generate mesh
 mesh = BoxMesh(
-	MPI.COMM_WORLD,
-	[np.array([0., 0., 0.,]), np.array([L, L, L])],
-	[n, n, n],
-	CellType.hexahedron
+    MPI.COMM_WORLD,
+    [np.array([0., 0., 0.]), np.array([L, L, L])],
+    [n, n, n],
+    CellType.hexahedron
 )
 
 # Tag boundaries
 tdim = mesh.topology.dim
 
 facets0 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-	mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+    mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
 values = np.hstack((np.full(facets0.shape, 1, np.intc),
@@ -72,3 +71,70 @@ CFL = 0.7
 dt = CFL * h / (c0 * (2 * degree + 1))
 
 nstep = int(tend / dt)
+
+PETSc.Sys.syncPrint("Final time:", tend)
+PETSc.Sys.syncPrint("Number of steps:", nstep)
+
+# Instantiate model
+eqn = WesterveltGLLv(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
+dofs = eqn.V.dofmap.index_map.size_global
+PETSc.Sys.syncPrint("Degree of freedoms:", dofs)
+
+# Solve
+ts_solve = time.time()
+u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+te_solve = time.time()-ts_solve
+PETSc.Sys.syncPrint("Total solve time:", te_solve)
+u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                     mode=PETSc.ScatterMode.FORWARD)
+PETSc.Sys.syncPrint("tf:", tf)
+
+
+# Calculate L2 error
+class Analytical:
+    def __init__(self, c0, f0, p0, rho0, beta, t):
+        self.c0 = c0
+        self.f0 = f0
+        self.w0 = 2 * np.pi * f0
+        self.p0 = p0
+        self.u0 = p0 / rho0 / c0
+        self.rho0 = rho0
+        self.beta = beta
+        self.t = t
+
+    def __call__(self, x):
+        xsh = self.c0**2 / self.w0 / self.beta / self.u0
+        sigma = (x[0]+0.0000001) / xsh
+
+        val = np.zeros(sigma.shape[0])
+        for term in range(1, 50):
+            val += 2/term/sigma * jv(term, term*sigma) * \
+                   np.sin(term*self.w0*(self.t - x[0]/self.c0))
+
+        return self.p0 * val
+
+
+u_ba = Function(eqn.V)
+u_ba.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
+
+V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
+u_e = Function(V_e)
+u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
+
+# L2 error
+diff_fe = u - u_e
+L2_diff_fe = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(diff_fe, diff_fe) * dx), op=MPI.SUM)
+
+diff_ba = u_ba - u_e
+L2_diff_ba = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(diff_ba, diff_ba) * dx), op=MPI.SUM)
+
+L2_exact = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
+
+L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
+PETSc.Sys.syncPrint("Relative L2 error of FEM solution:", L2_error_fe)
+
+L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
+PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
