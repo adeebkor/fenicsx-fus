@@ -186,8 +186,9 @@ class LinearGLLv:
         self.p0 = p0
 
         # Quadrature parameters
+        qd = {"2": 3, "3": 4, "4": 6, "5": 8}
         quad_params = {"quadrature_rule": "GLL",
-                       "quadrature_degree": k+1}
+                       "quadrature_degree": qd[str(k)]}
 
         # Define variational formulation
         self.u.x.array[:] = 1
