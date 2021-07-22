@@ -126,10 +126,10 @@ L2_diff_ba = mesh.mpi_comm().allreduce(
 L2_exact = mesh.mpi_comm().allreduce(
     assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
 
-L2_error_fe = abs(np.sqrt(L2_diff_fe))
+L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of FEM solution:", L2_error_fe)
 
-L2_error_ba = abs(np.sqrt(L2_diff_ba))
+L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 if MPI.COMM_WORLD.rank == 0:

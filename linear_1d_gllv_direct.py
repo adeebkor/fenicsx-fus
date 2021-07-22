@@ -6,12 +6,14 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 from dolfinx import IntervalMesh, FunctionSpace, Function
+from dolfinx.cpp.mesh import CellType
 from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
 from models import LinearGLLv
-from runge_kutta_methods import solve2
+# from runge_kutta_methods import solve2
+from rk import RKF, DP5, Tsit5
 
 # Settings
 linear_solver = "Direct"
@@ -70,14 +72,15 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
+# tend /= 50
 
-CFL = float(sys.argv[3])
-dt = CFL * h / (c0 * (2 * degree + 1))
+# CFL = float(sys.argv[3])
+# dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(tend / dt)
+# nstep = int(tend / dt)
 
 PETSc.Sys.syncPrint("Final time:", tend)
-PETSc.Sys.syncPrint("Number of steps:", nstep)
+# PETSc.Sys.syncPrint("Number of steps:", nstep)
 
 # Instantiate model
 eqn = LinearGLLv(mesh, mt, degree, c0, f0, p0)
@@ -85,7 +88,10 @@ dof = eqn.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms: ", dof)
 
 # Solve
-u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, rk_level)
+# u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, rk_level)
+# u, tf = RKF(eqn.f0, eqn.f1, *eqn.init(), tstart, tend)
+# u, tf = DP5(eqn.f0, eqn.f1, *eqn.init(), tstart, tend)
+u, tf, nstep = Tsit5(eqn.f0, eqn.f1, *eqn.init(), tstart, tend, eps=float(sys.argv[3]))
 u.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                      mode=PETSc.ScatterMode.FORWARD)
 PETSc.Sys.syncPrint("tf:", tf)
@@ -123,10 +129,13 @@ diff_ba = u_ba - u_e
 L2_diff_ba = mesh.mpi_comm().allreduce(
     assemble_scalar(inner(diff_ba, diff_ba) * dx), op=MPI.SUM)
 
-L2_error_fe = abs(np.sqrt(L2_diff_fe))
+L2_exact = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
+
+L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of FEM solution:", L2_error_fe)
 
-L2_error_ba = abs(np.sqrt(L2_diff_ba))
+L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 PETSc.Sys.syncPrint("Relative L2 error of BA solution:", L2_error_ba)
 
 if MPI.COMM_WORLD.rank == 0:
@@ -137,8 +146,8 @@ if MPI.COMM_WORLD.rank == 0:
     data["Dimension"].append(1)
     data["Linear solver"].append(linear_solver)
     data["RK level"].append(rk_level)
-    data["CFL"].append(CFL)
-    data["Time step"].append(dt)
+    data["Tolerance"].append(float(sys.argv[3]))
+    data["Time step"].append('nan')
     data["Total step"].append(nstep)
     data["Final time"].append(tf)
     data["Basis degree"].append(degree)
