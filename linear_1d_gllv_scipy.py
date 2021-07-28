@@ -1,3 +1,6 @@
+import sys
+import json
+
 import numpy as np
 from scipy.integrate import RK45, DOP853, RK23
 from mpi4py import MPI
@@ -9,8 +12,7 @@ from dolfinx.fem import assemble_scalar, assemble_vector
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import LinearGLLvs, Linears
-from runge_kutta_methods import solve2
+from models import LinearGLLvs
 
 # Material properties
 c0 = 1500  # speed of sound (m/s)
@@ -32,10 +34,10 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 3  # degree of basis function
+degree = int(sys.argv[1])  # degree of basis function
 
 # Mesh parameters
-epw = 16  # number of element per wavelength
+epw = int(sys.argv[2])  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -74,14 +76,13 @@ nstep = int(tend / dt)
 PETSc.Sys.syncPrint("Final time:", tend)
 
 # Instantiate model
-# eqn = LinearGLLvs(mesh, mt, degree, c0, f0, p0)
-eqn = Linears(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLLvs(mesh, mt, degree, c0, f0, p0)
 dof = eqn.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms: ", dof)
 
-# u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+tol = float(sys.argv[3])
 y0 = np.zeros((2*dof,))
-problem = RK45(eqn.f, tstart, y0, tend, rtol=1e-6, atol=1e-6)
+problem = RK45(eqn.f, tstart, y0, tend, rtol=tol, atol=tol)
 
 step = 0
 while problem.t < tend:
@@ -134,3 +135,25 @@ print("Relative L2 error of FEM solution:", L2_error_fe)
 
 L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
 print("Relative L2 error of BA solution:", L2_error_ba)
+
+if MPI.COMM_WORLD.rank == 0:
+    with open("data/simulation_data_scipy.json") as file:
+        data = json.load(file)
+
+    data["Type"].append("GLLv-SciPy")
+    data["Dimension"].append(1)
+    data["Linear solver"].append("Direct")
+    data["RK level"].append(4)
+    data["Tolerance"].append(tol)
+    data["Time step"].append('nan')
+    data["Total step"].append(nstep)
+    data["Final time"].append(tf)
+    data["Basis degree"].append(degree)
+    data["Number of element per wavelength"].append(epw)
+    data["Degrees of freedom"].append(dof)
+    data["Element size"].append(h)
+    data["L2 error (FE)"].append(L2_error_fe)
+    data["L2 error (BA)"].append(L2_error_ba)
+
+    with open("data/simulation_data_scipy.json", "w") as file:
+        json.dump(data, file)
