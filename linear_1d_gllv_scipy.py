@@ -68,11 +68,6 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
 
-CFL = 0.9
-dt = CFL * h / (c0 * (2 * degree + 1))
-
-nstep = int(tend / dt)
-
 PETSc.Sys.syncPrint("Final time:", tend)
 
 # Instantiate model
@@ -88,7 +83,8 @@ step = 0
 while problem.t < tend:
     problem.step()
     step += 1
-    print(step, problem.t)
+    if step % 1000 == 0:
+        print(step, problem.t)
 
 u = Function(eqn.V)
 u.x.array[:] = problem.y[:dof]
@@ -130,23 +126,23 @@ L2_diff_ba = mesh.mpi_comm().allreduce(
 L2_exact = mesh.mpi_comm().allreduce(
     assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
 
-L2_error_fe = abs(np.sqrt(L2_diff_fe) / np.sqrt(L2_exact))
+L2_error_fe = abs(np.sqrt(L2_diff_fe))
 print("Relative L2 error of FEM solution:", L2_error_fe)
 
-L2_error_ba = abs(np.sqrt(L2_diff_ba) / np.sqrt(L2_exact))
+L2_error_ba = abs(np.sqrt(L2_diff_ba))
 print("Relative L2 error of BA solution:", L2_error_ba)
 
 if MPI.COMM_WORLD.rank == 0:
-    with open("data/simulation_data_scipy.json") as file:
+    with open("data/simulation_data_scipy_new.json") as file:
         data = json.load(file)
 
     data["Type"].append("GLLv-SciPy")
     data["Dimension"].append(1)
-    data["Linear solver"].append("Direct")
-    data["RK level"].append(4)
+    data["Linear solver"].append("Diagonal")
+    data["RK level"].append("RK45")
     data["Tolerance"].append(tol)
     data["Time step"].append('nan')
-    data["Total step"].append(nstep)
+    data["Total step"].append(step)
     data["Final time"].append(tf)
     data["Basis degree"].append(degree)
     data["Number of element per wavelength"].append(epw)
@@ -155,5 +151,5 @@ if MPI.COMM_WORLD.rank == 0:
     data["L2 error (FE)"].append(L2_error_fe)
     data["L2 error (BA)"].append(L2_error_ba)
 
-    with open("data/simulation_data_scipy.json", "w") as file:
+    with open("data/simulation_data_scipy_new.json", "w") as file:
         json.dump(data, file)
