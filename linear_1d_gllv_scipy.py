@@ -10,24 +10,24 @@ from dolfinx import IntervalMesh, FunctionSpace, Function
 from dolfinx.cpp.mesh import CellType
 from dolfinx.fem import assemble_scalar, assemble_vector
 from dolfinx.mesh import locate_entities_boundary, MeshTags
-from ufl import inner, dx
+from ufl import inner, dx, grad
 
 from models import LinearGLLvs
 
 # Material properties
-c0 = 1500  # speed of sound (m/s)
-rho0 = 1000  # density of medium (kg / m^3)
+c0 = 1.0  # speed of sound (m/s)
+rho0 = 1.0  # density of medium (kg / m^3)
 beta = 3.5  # coefficient of nonlinearity
 
 # Source parameters
-f0 = 5E6  # source frequency (Hz)
+f0 = 10.0  # source frequency (Hz)
 w0 = 2 * np.pi * f0  # angular frequency (rad / s)
 u0 = 1  # velocity amplitude (m / s)
 p0 = rho0*c0*u0  # pressure amplitude (Pa)
 
 # Domain parameters
 xsh = rho0*c0**3/beta/p0/w0  # shock formation distance (m)
-L = 0.9 * xsh  # domain length (m)
+L = 1.0 # 0.9 * xsh  # domain length (m)
 
 # Physical parameters
 lmbda = c0/f0  # wavelength (m)
@@ -132,8 +132,24 @@ print("Relative L2 error of FEM solution:", L2_error_fe)
 L2_error_ba = abs(np.sqrt(L2_diff_ba))
 print("Relative L2 error of BA solution:", L2_error_ba)
 
+# H1 error
+H1_diff_fe = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(grad(diff_fe), grad(diff_fe)) * dx), op=MPI.SUM)
+
+H1_diff_ba = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(grad(diff_ba), grad(diff_ba)) * dx), op=MPI.SUM)
+
+H1_exact = mesh.mpi_comm().allreduce(
+    assemble_scalar(inner(grad(u_e), grad(u_e)) * dx), op=MPI.SUM)
+
+H1_error_fe = abs(np.sqrt(H1_diff_fe) / np.sqrt(H1_exact))
+print("Relative H1 error of FEM solution:", H1_error_fe)
+
+H1_error_ba = abs(np.sqrt(H1_diff_ba) / np.sqrt(H1_exact))
+print("Relative H1 error of BA solution:", H1_error_ba)
+
 if MPI.COMM_WORLD.rank == 0:
-    with open("data/simulation_data_scipy_new.json") as file:
+    with open("data/simulation_data.json") as file:
         data = json.load(file)
 
     data["Type"].append("GLLv-SciPy")
@@ -150,6 +166,8 @@ if MPI.COMM_WORLD.rank == 0:
     data["Element size"].append(h)
     data["L2 error (FE)"].append(L2_error_fe)
     data["L2 error (BA)"].append(L2_error_ba)
+    data["H1 error (FE)"].append(H1_error_fe)
+    data["H1 error (BA)"].append(H1_error_ba)
 
-    with open("data/simulation_data_scipy_new.json", "w") as file:
+    with open("data/simulation_data.json", "w") as file:
         json.dump(data, file)
