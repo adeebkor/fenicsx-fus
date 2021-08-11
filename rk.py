@@ -73,7 +73,7 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
 	if filename is not None:
 		file.close()
 
-	return u, t
+	return u, t, step
 
 
 
