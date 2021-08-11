@@ -7,6 +7,7 @@ from dolfinx.fem import assemble_matrix, assemble_vector
 from ufl import (FiniteElement, TrialFunction, TestFunction, Measure, inner,
                  grad, dx)
 
+
 class Wave:
     """
     Base class for wave models.
@@ -40,7 +41,7 @@ class Wave:
     def f0(self, t: float, u: PETSc.Vec, v: PETSc.Vec, result: PETSc.Vec) \
             -> PETSc.Vec:
         """For du/dt = f0(t, u, v), return f0"""
-        
+
         return v.copy(result=result)
 
 
@@ -88,7 +89,7 @@ class LinearEquispaced(Wave):
 
         # Update boundary condition
         self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
-                            * np.cos(self.w0 * t)
+            * np.cos(self.w0 * t)
 
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
@@ -109,4 +110,87 @@ class LinearEquispaced(Wave):
         return result
 
 
+class LinearGLL(Wave):
+    """
+    Solver for linear second order wave equation.
 
+    The model uses an GLL lattice and GLL quadrature to compute
+    the mass matrix. This results in a diagonal mass matrix.
+    The linear solver is then just a 1 / diagonal.
+    """
+    def __init__(self, mesh, meshtags, k, c0, freq0, p0, windowing=True,
+                 vectorised=False):
+        super().__init__(mesh, meshtags, "gll", k, c0, freq0, p0)
+        self.vectorised = vectorised
+        self.windowing = True
+        self.T = 1 / self.freq  # period
+        self.alpha = 4  # window length
+
+        # Quadrature parameters
+        qd = {"2": 3, "3": 4, "4": 6, "5": 8}
+        quad_params = {"quadrature_rule": "GLL",
+                       "quadrature_degree": qd[str(k)]}
+
+        # Define variational formulation
+        if vectorised:
+            self.u = Function(self.V)
+            self.u.x.array[:] = 1.0
+            self.a = inner(self.u, self.v) * dx(metadata=quad_params)
+            self.m = assemble_vector(self.a)
+            self.m.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                               mode=PETSc.ScatterMode.FORWARD)
+        else:
+            self.u = TrialFunction(self.V)
+            self.a = inner(self.u, self.v) * dx(metadata=quad_params)
+            self.M = assemble_matrix(self.a)
+            self.M.assemble()
+
+            # Linear solver
+            self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
+            self.solver.setType(PETSc.KSP.Type.PREONLY)
+            self.solver.getPC().setType(PETSc.PC.Type.JACOBI)
+            self.solver.setOperators(self.M)
+
+        self.L = self.c0**2*(- inner(grad(self.u_n), grad(self.v))
+                             * dx(metadata=quad_params)
+                             + inner(self.g, self.v)
+                             * self.ds(1, metadata=quad_params)
+                             - 1/self.c0*inner(self.v_n, self.v)
+                             * self.ds(2, metadata=quad_params))
+
+    def f1(self, t: float, u: PETSc.Vec, v: PETSc.Vec, result: PETSc.Vec) \
+            -> PETSc.Vec:
+        """For dv/dt = f1(t, u, v), return f1"""
+
+        if self.windowing:
+            if t < self.T * self.alpha:
+                window = 0.5 * (1 - np.cos(self.freq * np.pi * t / self.alpha))
+            else:
+                window = 1.0
+        else:
+            window = 1.0
+
+        # Update boundary condition
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
+            * np.cos(self.w0 * t)
+
+        # Update fields that depends on
+        u.copy(result=self.u_n.vector)
+        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                                    mode=PETSc.ScatterMode.FORWARD)
+        v.copy(result=self.v_n.vector)
+        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                                    mode=PETSc.ScatterMode.FORWARD)
+
+        # Assemble RHS
+        b = assemble_vector(self.L)
+        b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                      mode=PETSc.ScatterMode.REVERSE)
+
+        # Solve
+        if self.vectorised:
+            result.pointwiseDivide(b, self.m)
+        else:
+            self.solver.solve(b, result)
+
+        return result
