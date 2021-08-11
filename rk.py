@@ -6,20 +6,20 @@ from dolfinx.io import XDMFFile
 
 
 def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
-	"""
-	Solve 2nd order time dependent PDE using the Runge-Kutta method.
-	"""
+    """
+    Solve 2nd order time dependent PDE using the Runge-Kutta method.
+    """
 
-	t0, tf = tspan
+    t0, tf = tspan
 
-	# Create solution vectors at RK intermediate stages
+    # Create solution vectors at RK intermediate stages
     un, vn = u.vector.copy(), v.vector.copy()
 
     # Solution at start of time step
     u0, v0 = u.vector.copy(), v.vector.copy()
 
     # Get Runge-Kutta timestepping data
-    n_RK, a_runge, b_runge, c_runge = butcher(rk_order)
+    n_RK, a_runge, b_runge, c_runge = butcher(rk_type)
 
     # Create lists to hold intermediate vectors
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
@@ -30,13 +30,13 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
         file.write_mesh(u.function_space.mesh)
         file.write_function(u, t=t0)
 
-	t = t0
-	step = 0
-	nstep = np.rint((tf - t0) / dt) + 1
-	while t < tf:
-		dt = min(dt, tf-dt)
+    t = t0
+    step = 0
+    nstep = int(np.rint((tf - t0) / dt) + 1)
+    while t < tf:
+        dt = min(dt, tf-dt)
 
-		# Store solution at start of time step
+        # Store solution at start of time step
         u.vector.copy(result=u0)
         v.vector.copy(result=v0)
 
@@ -45,7 +45,7 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
             u0.copy(result=un)
             v0.copy(result=vn)
 
-			for j in range(i):
+            for j in range(i):
                 a = dt * a_runge[i, j]
                 un.axpy(a, ku[j])
                 vn.axpy(a, kv[j])
@@ -61,19 +61,19 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
             u.vector.axpy(dt * b_runge[i], ku[i])
             v.vector.axpy(dt * b_runge[i], kv[i])
 
-		# Update time
-		t += dt
-		step += 1
+        # Update time
+        t += dt
+        step += 1
 
-		if step % 100 == 0:
-			PETSc.Sys.syncPrint("Steps:{}/{}".format(step, nstep))
-			if filename is not None:
-				file.write_function(u, t=t)
-	
-	if filename is not None:
-		file.close()
+        if step % 100 == 0:
+            PETSc.Sys.syncPrint("Steps:{}/{}".format(step, nstep))
+            if filename is not None:
+                file.write_function(u, t=t)
+    
+    if filename is not None:
+        file.close()
 
-	return u, t, step
+    return u, t, step
 
 
 
@@ -97,22 +97,22 @@ def butcher(order):
         a_runge[1, 0] = 1/2
         a_runge[2, 0] = -1
         a_runge[2, 1] = 2
-	elif order == "Heun3":
-		# Heun's third-order method
-		n_RK = 3
-		b_runge = [1/4, 0, 3/4]
-		c_runge = [0, 1/3, 2/3]
-		a_runge = np.zeros((n_RK, n_RK), dtype=float)
-		a_runge[1, 0] = 1/3
-		a_runge[2, 1] = 2/3
-	elif order == "Ralston3":
-		# Ralston's third-order method
-		n_RK = 3
-		b_runge = [2/9, 1/3, 4/9]
-		c_runge = [0, 1/2, 3/4]
-		a_runge = np.zeros((n_RK, n_RK), dtype=float)
-		a_runge[1, 0] = 1/2
-		a_runge[2, 1] = 3/4
+    elif order == "Heun3":
+        # Heun's third-order method
+        n_RK = 3
+        b_runge = [1/4, 0, 3/4]
+        c_runge = [0, 1/3, 2/3]
+        a_runge = np.zeros((n_RK, n_RK), dtype=float)
+        a_runge[1, 0] = 1/3
+        a_runge[2, 1] = 2/3
+    elif order == "Ralston3":
+        # Ralston's third-order method
+        n_RK = 3
+        b_runge = [2/9, 1/3, 4/9]
+        c_runge = [0, 1/2, 3/4]
+        a_runge = np.zeros((n_RK, n_RK), dtype=float)
+        a_runge[1, 0] = 1/2
+        a_runge[2, 1] = 3/4
     elif order == 4:
         # "Classical" 4th-order Runge-Kutta method
         n_RK = 4
@@ -123,4 +123,4 @@ def butcher(order):
         a_runge[2, 1] = 1/2
         a_runge[3, 2] = 1
 
-	return n_RK, a_runge, b_runge, c_runge
+    return n_RK, a_runge, b_runge, c_runge
