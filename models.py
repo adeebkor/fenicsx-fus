@@ -13,7 +13,7 @@ class Wave:
     """
 
     def __init__(self, mesh, meshtags, fe, k, c0, freq0, p0):
-        FE = FiniteElement("Lagrange", mesh.cell_type(), k, variant=fe)
+        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant=fe)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.g = Function(self.V)
