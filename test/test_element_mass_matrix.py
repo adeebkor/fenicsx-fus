@@ -47,7 +47,8 @@ mesh = generate_mesh(2)
 
 # Create function space
 p = 3
-V = dolfinx.FunctionSpace(mesh, ("Lagrange", p))
+FE = ufl.FiniteElement("Lagrange", ufl.quadrilateral, p, variant="gll")
+V = dolfinx.FunctionSpace(mesh, FE)
 
 # Define variational form
 u = ufl.TrialFunction(V)
