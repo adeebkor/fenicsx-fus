@@ -21,7 +21,7 @@ class Wave:
         self.v_n = Function(self.V)
 
         # Tag boundary facets
-        self.ds = Measure('ds', subdomain_data=meshtag, domain=mesh)
+        self.ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
 
         # Physical parameters
         self.c0 = c0
