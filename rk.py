@@ -25,7 +25,7 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
     ku, kv = n_RK * [u0.copy()], n_RK * [v0.copy()]
 
     if filename is not None:
-        file = dolfinx.io.XDMFFile(
+        file = XDMFFile(
             MPI.COMM_WORLD, "{}.xdmf".format(filename), "w")
         file.write_mesh(u.function_space.mesh)
         file.write_function(u, t=t0)
@@ -69,14 +69,11 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
             PETSc.Sys.syncPrint("Steps:{}/{}".format(step, nstep))
             if filename is not None:
                 file.write_function(u, t=t)
-    
+
     if filename is not None:
         file.close()
 
     return u, t, step
-
-
-
 
 
 def butcher(order):
