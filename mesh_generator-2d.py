@@ -7,7 +7,6 @@ from dolfinx.mesh import create_mesh, create_meshtags
 from mpi4py import MPI
 import gmsh
 
-import gmsh
 import warnings
 warnings.filterwarnings("ignore")
 
