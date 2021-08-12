@@ -111,5 +111,6 @@ L2_exact = mesh.mpi_comm().allreduce(
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 print(L2_error)
 
+
 def test_L2_error():
     assert(L2_error < 1E-1)
