@@ -1,17 +1,12 @@
 import sys
-import json
-import time
 
 import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import IntervalMesh, RectangleMesh, FunctionSpace, Function
-from dolfinx.cpp.mesh import CellType
-from dolfinx.fem import assemble_scalar
+from dolfinx import IntervalMesh
 from dolfinx.mesh import locate_entities_boundary, MeshTags
-from ufl import inner, dx, grad
 
 from models import LossyEquispaced, LossyGLL
 from rk import solve_ibvp
@@ -98,7 +93,7 @@ dof_gll = eqn_gll.V.dofmap.index_map.size_global
 PETSc.Sys.syncPrint("Degree of freedoms (GLL): ", dof_gll)
 
 # Solve (GLL)
-u_gll, tf_gll, nstep_gll = solve_ibvp(eqn_gll.f0, eqn_gll.f1, *eqn_gll.init(), 
+u_gll, tf_gll, nstep_gll = solve_ibvp(eqn_gll.f0, eqn_gll.f1, *eqn_gll.init(),
                                       dt, tspan, rk_order)
 u_gll.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                          mode=PETSc.ScatterMode.FORWARD)
