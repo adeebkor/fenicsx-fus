@@ -10,19 +10,17 @@ from models import LinearGLL
 from rk import solve_ibvp
 
 # Material parameters
-c0 = 1500  # speed of sound (m/s)
-rho0 = 1000  # density of medium (kg / m^3)
-beta = 3.5  # coefficient of nonlinearity
+c0 = 1  # speed of sound (m/s)
+rho0 = 1  # density of medium (kg / m^3)
 
 # Source parameters
-f0 = 5E6  # source frequency (Hz)
+f0 = 10  # source frequency (Hz)
 w0 = 2 * np.pi * f0  # angular frequency (rad / s)
 u0 = 1  # velocity amplitude (m / s)
 p0 = rho0*c0*u0  # pressure amplitude (Pa)
 
 # Domain parameters
-xsh = rho0*c0**3/beta/p0/w0  # shock formation distance (m)
-L = 0.9 * xsh  # domain length (m)
+L = 1.0  # domain length (m)
 
 # Physical parameters
 lmbda = c0/f0  # wavelength (m)
@@ -32,7 +30,7 @@ k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 degree = 4  # degree of basis function
 
 # Mesh parameters
-epw = 8  # number of element per wavelength
+epw = 4  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -55,11 +53,11 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
-tend = L / c0 + 2 / f0  # simulation final time (s)
+tend = L / c0 + 16 / f0  # simulation final time (s)
 tspan = [tstart, tend]
 
 CFL = 0.9
-dt = CFL * h / (c0 * (2 * degree + 1))
+dt = CFL * h / (c0 * degree**2)
 
 print("Final time:", tend)
 
