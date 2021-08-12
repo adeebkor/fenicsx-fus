@@ -7,8 +7,8 @@ from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import Westervelt
-from runge_kutta_methods import solve2
+from models import WesterveltGLL
+from rk import solve_ibvp
 
 # Material parameters
 c0 = 1500  # speed of sound (m / s)
@@ -57,21 +57,19 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
+tspan = [tstart, tend]
 
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
-nstep = int(2 * tend / dt)
-
 print("Final time:", tend)
-print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 1E-10, beta, rho0)
+eqn = WesterveltGLL(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
 print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
-u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+u, tf, nstep = solve_ibvp(eqn.f0, eqn.f1, *eqn.init(), dt, tspan, "Heun3")
 print("tf:", tf)
 
 
@@ -99,7 +97,7 @@ class Analytical:
         return self.p0 * val
 
 
-V_e = FunctionSpace(mesh, ("Lagrange", degree+2))
+V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
 u_e = Function(V_e)
 u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
 
@@ -111,7 +109,6 @@ L2_exact = mesh.mpi_comm().allreduce(
     assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
 
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
-print("Relative L2 error of FEM solution:", L2_error)
 
 
 def test_L2_error():

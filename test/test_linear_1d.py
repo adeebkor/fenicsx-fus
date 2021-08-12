@@ -6,8 +6,8 @@ from dolfinx.fem import assemble_scalar
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from models import Linear
-from runge_kutta_methods import solve2
+from models import LinearGLL
+from rk import solve_ibvp
 
 # Material parameters
 c0 = 1500  # speed of sound (m/s)
@@ -56,21 +56,20 @@ mt = MeshTags(mesh, tdim-1, indices, values[pos])
 # Temporal parameters
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 2 / f0  # simulation final time (s)
+tspan = [tstart, tend]
 
 CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
-
-nstep = int(2 * tend / dt)
 
 print("Final time:", tend)
 print("Number of steps:", nstep)
 
 # Instantiate model
-eqn = Linear(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
 print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
 
 # Solve
-u, tf = solve2(eqn.f0, eqn.f1, *eqn.init(), dt, nstep, 4)
+u, tf, nstep = solve_ibvp(eqn.f0, eqn.f1, *eqn.init(), dt, tspan, 4)
 
 
 # Calculate L2 and H1 errors of FEM solution and best approximation
@@ -89,7 +88,7 @@ class Analytical:
         return val
 
 
-V_e = FunctionSpace(mesh, ("Lagrange", degree+2))
+V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
 u_e = Function(V_e)
 u_e.interpolate(Analytical(c0, f0, p0, tf))
 
