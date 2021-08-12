@@ -23,7 +23,7 @@ rk_order = "Heun3"
 # Material parameters
 c0 = 1  # speed of sound (m/s)
 rho0 = 1  # density of medium (kg / m^3)
-delta = 0.001  # diffusivity of sound
+delta = 0.001  # diffusivity of sound (m^2 / s)
 
 # Source parameters
 f0 = 10  # source frequency (Hz)
