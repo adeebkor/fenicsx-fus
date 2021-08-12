@@ -9,3 +9,4 @@ solution/
 
 compile_fenicsx.txt
 *.png
+linear_1d_scipy.py
