@@ -62,7 +62,6 @@ CFL = 0.9
 dt = CFL * h / (c0 * (2 * degree + 1))
 
 print("Final time:", tend)
-print("Number of steps:", nstep)
 
 # Instantiate model
 eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
