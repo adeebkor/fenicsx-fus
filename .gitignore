@@ -1,12 +1,12 @@
 __pycache__/
-data/.ipynb_checkpoints/
+data/
+examples/
+experiments/
 fenicsx/
-gc/
 mesh/
 plots/
 solution/
 
-data/*.pdf
-examples/*.pdf
-test/dolfinx_jit_parameters.json
 compile_fenicsx.txt
+*.png
+linear_1d_scipy.py
