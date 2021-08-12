@@ -225,7 +225,7 @@ class LossyEquispaced(Wave):
                                * self.ds(2))  \
             + self.delta*(- inner(grad(self.v_n), grad(self.v)) * dx
                           + inner(self.dg, self.v) * self.ds(1))
-        
+
         # Linear solver
         self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
@@ -255,7 +255,7 @@ class LossyEquispaced(Wave):
         self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
             * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
             * np.sin(self.w0 * t)
-        
+
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
         self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
@@ -322,9 +322,9 @@ class LossyGLL(Wave):
             self.solver.getPC().setType(PETSc.PC.Type.JACOBI)
             self.solver.setOperators(self.M)
 
-        self.L = self.c0**2 * (- inner(grad(self.u_n), grad(self.v)) \
+        self.L = self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
                                * dx(metadata=quad_params)
-                               + inner(self.g, self.v) \
+                               + inner(self.g, self.v)
                                * self.ds(1, metadata=quad_params)
                                - 1 / self.c0 * inner(self.v_n, self.v)
                                * self.ds(2, metadata=quad_params)) \
@@ -355,7 +355,7 @@ class LossyGLL(Wave):
         self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
             * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
             * np.sin(self.w0 * t)
-        
+
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
         self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
@@ -413,7 +413,7 @@ class WesterveltEquispaced(Wave):
                             + inner(self.dg, self.v) * self.ds(1)) \
             + 2 * self.beta / self.rho0 / self.c0**2 \
             * inner(self.v_n*self.v_n, self.v) * dx
-        
+
         # Linear solver
         self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
@@ -443,7 +443,7 @@ class WesterveltEquispaced(Wave):
         self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
             * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
             * np.sin(self.w0 * t)
-        
+
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
         self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
@@ -523,13 +523,13 @@ class WesterveltGLL(Wave):
 
         self.L = self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
                                * dx(metadata=quad_params)
-                               + inner(self.g, self.v) 
+                               + inner(self.g, self.v)
                                * self.ds(1, metadata=quad_params)
                                - 1 / self.c0*inner(self.v_n, self.v)
                                * self.ds(2, metadata=quad_params)) \
-            + self.delta * (- inner(grad(self.v_n), grad(self.v)) 
+            + self.delta * (- inner(grad(self.v_n), grad(self.v))
                             * dx(metadata=quad_params)
-                            + inner(self.dg, self.v) 
+                            + inner(self.dg, self.v)
                             * self.ds(1, metadata=quad_params)) \
             + 2 * self.beta / self.rho0 / self.c0**2 \
             * inner(self.v_n*self.v_n, self.v) * dx(metadata=quad_params)
@@ -556,7 +556,7 @@ class WesterveltGLL(Wave):
         self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
             * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
             * np.sin(self.w0 * t)
-        
+
         # Update fields that depends on
         u.copy(result=self.u_n.vector)
         self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
