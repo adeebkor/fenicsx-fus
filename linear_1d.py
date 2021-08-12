@@ -13,7 +13,6 @@ from rk import solve_ibvp
 from utils import get_eval_params
 
 # Settings
-linear_solver = "Diagonal"
 rk_order = "Heun3"
 
 # Material parameters
