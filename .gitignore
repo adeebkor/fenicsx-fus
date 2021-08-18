@@ -3,6 +3,7 @@ data/
 examples/
 experiments/
 fenicsx/
+gc/
 mesh/
 plots/
 solution/
