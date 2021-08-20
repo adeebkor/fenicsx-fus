@@ -165,7 +165,7 @@ u_eval_gll = u_gll.eval(x, cells).reshape(npts, npts, order='F')
 fig, ax = plt.subplots(figsize=(12, 12))
 ax.set_title("Equispaced")
 ax.imshow(u_eval_gll, aspect='equal', origin='lower',
-             extent=(0, L, 0, L), interpolation='bicubic', cmap='RdBu')
+          extent=(0, L, 0, L), interpolation='bicubic', cmap='RdBu')
 ax.set_title("GLL", fontsize=20)
 ax.tick_params(axis='both', labelsize=14)
 plt.savefig("linear_2d_p{}_epw{}.png".format(degree, epw), bbox_inches='tight')
