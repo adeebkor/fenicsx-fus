@@ -34,7 +34,7 @@ def solve_ibvp(f0, f1, u, v, dt, tspan, rk_type, filename=None):
     step = 0
     nstep = int(np.rint((tf - t0) / dt) + 1)
     while t < tf:
-        dt = min(dt, tf-dt)
+        dt = min(dt, tf-t)
 
         # Store solution at start of time step
         u.vector.copy(result=u0)
