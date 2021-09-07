@@ -48,9 +48,9 @@ marked_facets = marked_facets[:, gmsh_quadrangle4]
 local_entities, local_values = extract_local_entities(
     mesh, 2, marked_facets, facet_values)
 mesh.topology.create_connectivity(2, 0)
-mt = create_meshtags(mesh, 2, 
+mt = create_meshtags(mesh, 2,
                      cpp.graph.AdjacencyList_int32(local_entities),
-    np.int32(local_values))
+                     np.int32(local_values))
 mt.name = "hifu_surface"
 
 with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/mesh.xdmf", "a") as file:
