@@ -17,7 +17,7 @@ if MPI.COMM_WORLD.rank == 0:
 
     x = extract_gmsh_geometry(gmsh.model)
     gmsh_cell_id = MPI.COMM_WORLD.bcast(
-        gmsh.model.mesh.getElementType("hexahedron", 1), root=0    
+        gmsh.model.mesh.getElementType("hexahedron", 1), root=0
     )
     topologies = extract_gmsh_topology_and_markers(gmsh.model)
     cells = topologies[gmsh_cell_id]["topology"]
@@ -45,12 +45,16 @@ mesh.name = "hifu"
 gmsh_quadrangle4 = perm_gmsh(cpp.mesh.CellType.quadrilateral, 4)
 marked_facets = marked_facets[:, gmsh_quadrangle4]
 
-local_entities, local_values = extract_local_entities(mesh, 2, marked_facets, facet_values)
+local_entities, local_values = extract_local_entities(
+    mesh, 2, marked_facets, facet_values)
 mesh.topology.create_connectivity(2, 0)
-mt = create_meshtags(mesh, 2, cpp.graph.AdjacencyList_int32(local_entities), np.int32(local_values))
+mt = create_meshtags(mesh, 2, 
+                     cpp.graph.AdjacencyList_int32(local_entities),
+    np.int32(local_values))
 mt.name = "hifu_surface"
 
 with XDMFFile(MPI.COMM_WORLD, "mesh/xdmf/mesh.xdmf", "a") as file:
     file.write_mesh(mesh)
     mesh.topology.create_connectivity(2, 3)
-    file.write_meshtags(mt, geometry_xpath="/Xdmf/Domain/Grid[@Name='hifu']/Geometry")
+    file.write_meshtags(
+        mt, geometry_xpath="/Xdmf/Domain/Grid[@Name='hifu']/Geometry")
