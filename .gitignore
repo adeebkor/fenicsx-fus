@@ -1,5 +1,6 @@
 __pycache__/
 data/
+eval_data/
 examples/
 experiments/
 fenicsx/
