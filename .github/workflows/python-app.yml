@@ -69,7 +69,7 @@ jobs:
 
     - name: Flake8 checks
       run: |
-        python3 -m flake8 test/*.py
+        python3 -m flake8 python/test/*.py
         python3 -m flake8 python/*.py
     
     - name: Run tests
