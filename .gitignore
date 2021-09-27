@@ -1,4 +1,5 @@
 __pycache__/
+.vscode/
 data/
 eval_data/
 examples/
@@ -10,5 +11,3 @@ plots/
 solution/
 
 compile_fenicsx.txt
-*.png
-linear_1d_scipy.py
