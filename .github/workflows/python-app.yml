@@ -20,8 +20,8 @@ jobs:
     #   - uses: actions/checkout@v2
     container: dolfinx/dev-env
     env:
-      CC: clang-12
-      CXX: clang++-12
+      CC: clang
+      CXX: clang++
       PETSC_ARCH: linux-gnu-real-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
