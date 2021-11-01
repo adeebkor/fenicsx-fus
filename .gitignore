@@ -11,3 +11,6 @@ plots/
 solution/
 
 compile_fenicsx.txt
+*.png
+*.xdmf
+*.h5
