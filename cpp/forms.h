@@ -19,34 +19,33 @@
 
 #pragma once
 
-typedef double ufc_scalar_t;
 #include <ufc.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern ufc_finite_element element_f5ef358ccd95b77d22896c7683f90fc4e72cc7b3;
+extern ufc_finite_element element_0e38e3c5cc256e0fdffd1c92e71f8c34b307d320;
 
-extern ufc_finite_element element_187bcdff29370c654e431a7ecd92308d2dee849c;
+extern ufc_finite_element element_a6e3e0cd38b5fe106365a8578b981e54950d9f2b;
 
-extern ufc_finite_element element_fd6a39ff124781dbabdc3a3e27acaffb204bf246;
+extern ufc_finite_element element_9d6ce2fe3901e74605eea98aa23296f9d9c28b32;
 
-extern ufc_dofmap dofmap_f5ef358ccd95b77d22896c7683f90fc4e72cc7b3;
+extern ufc_dofmap dofmap_0e38e3c5cc256e0fdffd1c92e71f8c34b307d320;
 
-extern ufc_dofmap dofmap_187bcdff29370c654e431a7ecd92308d2dee849c;
+extern ufc_dofmap dofmap_a6e3e0cd38b5fe106365a8578b981e54950d9f2b;
 
-extern ufc_dofmap dofmap_fd6a39ff124781dbabdc3a3e27acaffb204bf246;
+extern ufc_dofmap dofmap_9d6ce2fe3901e74605eea98aa23296f9d9c28b32;
 
-extern ufc_integral integral_bca9f6a17d6de0ff0891d44d00c91872886cd5d0;
+extern ufc_integral integral_2261fd1466ac8086ef8e820f1befa1619258203a;
 
-extern ufc_integral integral_ad05401d3a720442671f50cf4be873dd28528a55;
+extern ufc_integral integral_4ab04c6f5ad1a00004b7a9f14fb9cb75f3ac48f5;
 
-extern ufc_integral integral_27dfd05e838fbeaddafe5042ca6da04578ba8410;
+extern ufc_integral integral_d22f65149ee144387d2df0a17e8b8526c81e2a84;
 
-extern ufc_integral integral_0f63128090804a838575815ea7ade6038d1cced6;
+extern ufc_integral integral_c21d3faeabcdb54df05595399b4f226345160613;
 
-extern ufc_form form_5faa0c8d1b7db5905d96695738090f52276ffba7;
+extern ufc_form form_b4c9e49198c07576c957cd52ed6d3c87661ddee2;
 
 // Helper used to create form using name which was given to the
 // form in the UFL file.
@@ -59,7 +58,7 @@ extern ufc_form* form_forms_a;
 //
 ufc_function_space* functionspace_form_forms_a(const char* function_name);
 
-extern ufc_form form_cde89256424f4ce7eca89c6c39559e1c44d1d1e6;
+extern ufc_form form_51ecc1ee027f8b1430ff39f81f836d90311a5b0f;
 
 // Helper used to create form using name which was given to the
 // form in the UFL file.
