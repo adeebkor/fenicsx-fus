@@ -8,9 +8,9 @@ using namespace dolfinx;
 
 namespace kernels {
 // Copy data from a la::Vector in to a la::Vector out, including ghost entries.
-void copy(std::shared_ptr<const la::Vector<double>> in, std::shared_ptr<la::Vector<double>> out) {
-  xtl::span<const double> _in = in->array();
-  xtl::span<double> _out = out->mutable_array();
+void copy(const la::Vector<double>& in, la::Vector<double>& out) {
+  xtl::span<const double> _in = in.array();
+  xtl::span<double> _out = out.mutable_array();
   std::copy(_in.cbegin(), _in.cend(), _out.begin());
 }
 
@@ -106,7 +106,7 @@ public:
   /// TODO: ADD documentation
   void f0(double& t, std::shared_ptr<la::Vector<double>> u_f0,
           std::shared_ptr<la::Vector<double>> v_f0, std::shared_ptr<la::Vector<double>> result_f0) {
-    kernels::copy(v_f0, result_f0);
+    kernels::copy(*v_f0, *result_f0);
   }
 
   /// TODO: ADD documentation
@@ -125,10 +125,10 @@ public:
     std::fill(g_vec.begin(), g_vec.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
 
     u_f1->scatter_fwd();
-    kernels::copy(u_f1, u_n->x());
+    kernels::copy(*u_f1, *u_n->x());
 
     v_f1->scatter_fwd();
-    kernels::copy(v_f1, v_n->x());
+    kernels::copy(*v_f1, *v_n->x());
 
     // TODO: Compute coefficients
 
@@ -185,8 +185,8 @@ public:
     ku = std::make_shared<la::Vector<double>>(index_map, bs);
     kv = std::make_shared<la::Vector<double>>(index_map, bs);
 
-    kernels::copy(u_n->x(), ku);
-    kernels::copy(v_n->x(), kv);
+    kernels::copy(*u_n->x(), *ku);
+    kernels::copy(*v_n->x(), *kv);
 
     // Runge-Kutta timestepping data
     int n_RK = 4;
@@ -203,13 +203,13 @@ public:
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      kernels::copy(u_n->x(), u0);
-      kernels::copy(v_n->x(), v0);
+      kernels::copy(*u_n->x(), *u0);
+      kernels::copy(*v_n->x(), *v0);
 
       // Runge-Kutta step
       for (int i = 0; i < n_RK; i++) {
-        kernels::copy(u0, un);
-        kernels::copy(v0, vn);
+        kernels::copy(*u0, *un);
+        kernels::copy(*v0, *vn);
 
         alp = dt * a_runge(i);
         kernels::axpy(*un, alp, *ku, *un);
