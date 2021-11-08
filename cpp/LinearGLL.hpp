@@ -1,11 +1,32 @@
 #include "forms.h"
 
 #include <dolfinx.h>
-// #include <dolfinx/fem/petsc.h>
 #include <dolfinx/la/Vector.h>
 #include <memory>
 
 using namespace dolfinx;
+
+namespace kernels {
+// Copy data from a la::Vector in to a la::Vector out, including ghost entries.
+void copy(std::shared_ptr<const la::Vector<double>> in, std::shared_ptr<la::Vector<double>> out) {
+  xtl::span<const double> _in = in->array();
+  xtl::span<double> _out = out->mutable_array();
+  std::copy(_in.cbegin(), _in.cend(), _out.begin());
+}
+
+/// Compute vector r = alpha*x + y
+/// @param r Result
+/// @param alpha
+/// @param x
+/// @param y
+void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
+          const la::Vector<double>& y) {
+  std::transform(x.array().cbegin(), x.array().cbegin() + x.map()->size_local(), y.array().cbegin(),
+                 r.mutable_array().begin(),
+                 [&alpha](const double& vx, const double& vy) { return vx * alpha + vy; });
+}
+
+} // namespace kernels
 
 class LinearGLL {
 protected:
@@ -58,8 +79,8 @@ public:
     a = std::make_shared<fem::Form<double>>(
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
-    // TODO: Add comments about this operation. Is this the Mass matrix operator?
-    m = std::make_shared<la::Vector<double>>(*index_map, bs);
+    // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
+    m = std::make_shared<la::Vector<double>>(index_map, bs);
     xtl::span<double> m_data = m->mutable_array();
     std::fill(m_data.begin(), m_data.end(), 0);
     fem::assemble_vector(m_data, *a);
@@ -70,7 +91,7 @@ public:
         {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
     // Allocate memory for the RHS
-    b = std::make_shared<la::Vector<double>>(*index_map, bs);
+    b = std::make_shared<la::Vector<double>>(index_map, bs);
   }
 
   /// TODO: Add documentation
@@ -85,15 +106,12 @@ public:
   /// TODO: ADD documentation
   void f0(double& t, std::shared_ptr<la::Vector<double>> u_f0,
           std::shared_ptr<la::Vector<double>> v_f0, std::shared_ptr<la::Vector<double>> result_f0) {
-
-    xtl::span<const double> in = v_f0->array();
-    xtl::span<double> out = result_f0->mutable_array();
-    std::copy(in.cbegin(), in.cend(), out.begin());
+    kernels::copy(v_f0, result_f0);
   }
 
   /// TODO: ADD documentation
-  void f1(double& t, std::shared_ptr<la::PETScVector> u_f1, std::shared_ptr<la::PETScVector> v_f1,
-          std::shared_ptr<la::PETScVector> result_f1) {
+  void f1(double& t, std::shared_ptr<la::Vector<double>> u_f1,
+          std::shared_ptr<la::Vector<double>> v_f1, std::shared_ptr<la::Vector<double>> result_f1) {
 
     // Apply windowing
     if (t < T_ * alpha_) {
@@ -103,47 +121,46 @@ public:
     }
 
     // Update boundary condition
-    g_vec = g->x()->mutable_array();
+    xtl::span<double> g_vec = g->x()->mutable_array();
     std::fill(g_vec.begin(), g_vec.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
 
-    // Update fields
-    VecCopy(u_f1->vec(), u_n->vector());
-    // u_n->x()->scatter_fwd();
-    VecGhostUpdateBegin(u_n->vector(), INSERT_VALUES, SCATTER_FORWARD);
-    VecGhostUpdateEnd(u_n->vector(), INSERT_VALUES, SCATTER_FORWARD);
+    u_f1->scatter_fwd();
+    kernels::copy(u_f1, u_n->x());
 
-    VecCopy(v_f1->vec(), v_n->vector());
-    // v_n->x()->scatter_fwd();
-    VecGhostUpdateBegin(v_n->vector(), INSERT_VALUES, SCATTER_FORWARD);
-    VecGhostUpdateEnd(v_n->vector(), INSERT_VALUES, SCATTER_FORWARD);
+    v_f1->scatter_fwd();
+    kernels::copy(v_f1, v_n->x());
 
-    // const auto L_coeffs = pack_coefficients(*L);
-    // const auto L_consts = pack_constants(*L);
+    // TODO: Compute coefficients
 
     // Assemble RHS
-    VecSet(b->vec(), 0.0);
-    fem::assemble_vector_petsc(b->vec(), *L); //, L_consts, L_coeffs);
-    // VecGhostUpdateBegin(b->vec(), ADD_VALUES, SCATTER_REVERSE);
-    // VecGhostUpdateEnd(b->vec(), ADD_VALUES, SCATTER_REVERSE);
+    tcb::span<double> b_ = b->mutable_array(); // Get underlying data
+    std::fill(b_.begin(), b_.end(), 0);
+    fem::assemble_vector(b_, *L);
+    b->scatter_fwd();
 
-    PetscInt n = 1;
-    const PetscInt ix[1] = {20};
-    PetscScalar y[1], z[1], p[1], q[1];
-    VecGetValues(b->vec(), n, ix, y);
-    VecGetValues(m->vec(), n, ix, z);
-    VecGetValues(u_f1->vec(), n, ix, p);
-    VecGetValues(v_f1->vec(), n, ix, q);
     std::cout << "g[10] = " << g->x()->mutable_array()[20] << std::endl;
-    std::cout << "u[10] = " << p[0] << std::endl;
+    std::cout << "u[10] = " << u_f1->array()[20] << std::endl;
     std::cout << "u_n[10] = " << u_n->x()->mutable_array()[20] << std::endl;
-    std::cout << "v[10] = " << q[0] << std::endl;
+    std::cout << "v[10] = " << v_f1->array()[20] << std::endl;
     std::cout << "v_n[10] = " << v_n->x()->mutable_array()[20] << std::endl;
-    std::cout << "m[10] = " << z[0] << std::endl;
-    std::cout << "b[10] = " << y[0] << std::endl;
+    std::cout << "m[10] = " << m->array()[20] << std::endl;
+    std::cout << "b[10] = " << b->array()[20] << std::endl;
     std::getchar();
 
     // Solve
-    VecPointwiseDivide(result_f1->vec(), b->vec(), m->vec());
+    // TODO: Divide is more expensive than multiply.
+    // We should store the result of 1/m in a vector and apply and element wise vector
+    // multiplication, since m doesn't change for linear wave propagation.
+    {
+      xtl::span<double> out = result_f1->mutable_array();
+      xtl::span<const double> b_ = b->array();
+      xtl::span<const double> m_ = m->array();
+
+      // Element wise division
+      // out[i] = b[i]/m[i]
+      std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
+                     [](const double& bi, const double& mi) { return bi / mi; });
+    }
   }
 
   void solve_ibvp(double& startTime, double& finalTime, double& timeStep) {
@@ -153,26 +170,23 @@ public:
     int step = 0;
     int nstep = (finalTime - startTime) / timeStep + 1;
 
+    std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
+    int bs = V->dofmap()->index_map_bs();
+
     // Placeholder vectors at time step n
-    un = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
-    vn = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
+    un = std::make_shared<la::Vector<double>>(index_map, bs);
+    vn = std::make_shared<la::Vector<double>>(index_map, bs);
 
     // Placeholder vectors at start of time step
-    u0 = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
-    v0 = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
+    u0 = std::make_shared<la::Vector<double>>(index_map, bs);
+    v0 = std::make_shared<la::Vector<double>>(index_map, bs);
 
     // Placeholder at k intermediate time step
-    ku = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
-    kv = std::make_shared<la::PETScVector>(*L->function_spaces()[0]->dofmap()->index_map,
-                                           L->function_spaces()[0]->dofmap()->index_map_bs());
+    ku = std::make_shared<la::Vector<double>>(index_map, bs);
+    kv = std::make_shared<la::Vector<double>>(index_map, bs);
 
-    VecCopy(u_n->vector(), ku->vec());
-    VecCopy(v_n->vector(), kv->vec());
+    kernels::copy(u_n->x(), ku);
+    kernels::copy(v_n->x(), kv);
 
     // Runge-Kutta timestepping data
     int n_RK = 4;
@@ -184,52 +198,40 @@ public:
     double alp;
     double tn;
 
-    PetscInt n = 1;
-    const PetscInt ix[1] = {10};
-    PetscScalar y[1];
-    PetscScalar z[1];
-    PetscScalar x[1];
-
+    int n = 1;
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      VecCopy(u_n->vector(), u0->vec());
-      VecCopy(v_n->vector(), v0->vec());
+      kernels::copy(u_n->x(), u0);
+      kernels::copy(v_n->x(), v0);
 
       // Runge-Kutta step
       for (int i = 0; i < n_RK; i++) {
-
-        VecCopy(u0->vec(), un->vec());
-        VecCopy(v0->vec(), vn->vec());
+        kernels::copy(u0, un);
+        kernels::copy(v0, vn);
 
         alp = dt * a_runge(i);
-        VecAXPY(un->vec(), alp, ku->vec());
-        VecAXPY(vn->vec(), alp, kv->vec());
+        kernels::axpy(*un, alp, *ku, *un);
+        kernels::axpy(*vn, alp, *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;
 
         // Compute RHS vector
-        kv->a f0(tn, un, vn, ku); // ku = vn; move pointer?
+        f0(tn, un, vn, ku);
         f1(tn, un, vn, kv);
-        VecGetValues(vn->vec(), n, ix, x);
-        VecGetValues(ku->vec(), n, ix, y);
-        VecGetValues(kv->vec(), n, ix, z);
+
         std::cout << "RK step: " << i << std::endl;
 
-        // Update solution
-        VecAXPY(u_n->vector(), dt * b_runge(i), ku->vec());
-        VecAXPY(v_n->vector(), dt * b_runge(i), kv->vec());
+        // // Update solution
+        kernels::axpy(*u_n->x(), dt * b_runge(i), *ku, *u_n->x());
+        kernels::axpy(*v_n->x(), dt * b_runge(i), *kv, *v_n->x());
       }
 
       // Update time
       t += dt;
       step += 1;
-
-      if (step % 100 == 0) {
-        PetscSynchronizedPrintf(MPI_COMM_WORLD, "%f %D/%D \n", t, step, nstep);
-      }
     }
     std::cout << t << std::endl;
     std::cout.precision(15); // Set print precision
