@@ -234,12 +234,12 @@ class LinearGLL
                     tn = t + c_runge(i)*dt;
 
                     // Compute RHS vector
+                    std::cout << "RK step: " << i << std::endl;
                     f0(tn, un, vn, ku); // ku = vn; move pointer?
                     f1(tn, un, vn, kv);
                     VecGetValues(vn->vec(), n, ix, x);
                     VecGetValues(ku->vec(), n, ix, y);
                     VecGetValues(kv->vec(), n, ix, z);
-                    std::cout << "RK step: " << i << std::endl;
                     // std::cout << "ku[10] = " << y[0] << std::endl;
                     // std::cout << "kv[10] = " << z[0] << std::endl;
 
