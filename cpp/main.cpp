@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     double CFL = 0.8;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = timeStepSize + domainLength / speedOfSound + 10.0 / sourceFrequency;
+    double finalTime = domainLength / speedOfSound + 10.0 / sourceFrequency;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);

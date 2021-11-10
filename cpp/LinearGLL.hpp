@@ -3,6 +3,7 @@
 #include <dolfinx.h>
 #include <dolfinx/la/Vector.h>
 #include <memory>
+#include <fstream>
 
 using namespace dolfinx;
 
@@ -42,7 +43,7 @@ protected:
   std::shared_ptr<fem::Constant<double>> c0;
   std::shared_ptr<fem::Form<double>> a, L;
   std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
-  std::shared_ptr<la::Vector<double>> m, b, un, vn, u0, v0, ku, kv;
+  std::shared_ptr<la::Vector<double>> m, b;
 
 public:
   std::shared_ptr<fem::FunctionSpace> V;
@@ -104,15 +105,15 @@ public:
   }
 
   /// TODO: ADD documentation
-  void f0(double& t, std::shared_ptr<la::Vector<double>> u_f0,
-          std::shared_ptr<la::Vector<double>> v_f0, std::shared_ptr<la::Vector<double>> result_f0) {
-    kernels::copy(*v_f0, *result_f0);
+  void f0(double& t, std::shared_ptr<la::Vector<double>> u,
+          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
+    kernels::copy(*v, *result);
   }
 
   /// TODO: ADD documentation
-  void f1(double& t, std::shared_ptr<la::Vector<double>> u_f1,
-          std::shared_ptr<la::Vector<double>> v_f1, std::shared_ptr<la::Vector<double>> result_f1) {
-
+  void f1(double& t, std::shared_ptr<la::Vector<double>> u,
+          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
+    
     // Apply windowing
     if (t < T_ * alpha_) {
       window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
@@ -124,11 +125,11 @@ public:
     xtl::span<double> g_vec = g->x()->mutable_array();
     std::fill(g_vec.begin(), g_vec.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
 
-    u_f1->scatter_fwd();
-    kernels::copy(*u_f1, *u_n->x());
+    u->scatter_fwd();
+    kernels::copy(*u, *u_n->x());
 
-    v_f1->scatter_fwd();
-    kernels::copy(*v_f1, *v_n->x());
+    v->scatter_fwd();
+    kernels::copy(*v, *v_n->x());
 
     // TODO: Compute coefficients
 
@@ -137,22 +138,13 @@ public:
     std::fill(b_.begin(), b_.end(), 0);
     fem::assemble_vector(b_, *L);
     b->scatter_fwd();
-
-    std::cout << "g[10] = " << g->x()->mutable_array()[20] << std::endl;
-    std::cout << "u[10] = " << u_f1->array()[20] << std::endl;
-    std::cout << "u_n[10] = " << u_n->x()->mutable_array()[20] << std::endl;
-    std::cout << "v[10] = " << v_f1->array()[20] << std::endl;
-    std::cout << "v_n[10] = " << v_n->x()->mutable_array()[20] << std::endl;
-    std::cout << "m[10] = " << m->array()[20] << std::endl;
-    std::cout << "b[10] = " << b->array()[20] << std::endl;
-    std::getchar();
-
+    
     // Solve
     // TODO: Divide is more expensive than multiply.
     // We should store the result of 1/m in a vector and apply and element wise vector
     // multiplication, since m doesn't change for linear wave propagation.
     {
-      xtl::span<double> out = result_f1->mutable_array();
+      xtl::span<double> out = result->mutable_array();
       xtl::span<const double> b_ = b->array();
       xtl::span<const double> m_ = m->array();
 
@@ -170,10 +162,19 @@ public:
     int step = 0;
     int nstep = (finalTime - startTime) / timeStep + 1;
 
+    std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
+
     std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
     int bs = V->dofmap()->index_map_bs();
 
     // Placeholder vectors at time step n
+    u_ = std::make_shared<la::Vector<double>>(index_map, bs);
+    v_ = std::make_shared<la::Vector<double>>(index_map, bs);
+    
+    kernels::copy(*u_n->x(), *u_);
+    kernels::copy(*v_n->x(), *v_);
+
+    // Placeholder vectors at intermediate time step n
     un = std::make_shared<la::Vector<double>>(index_map, bs);
     vn = std::make_shared<la::Vector<double>>(index_map, bs);
 
@@ -185,8 +186,8 @@ public:
     ku = std::make_shared<la::Vector<double>>(index_map, bs);
     kv = std::make_shared<la::Vector<double>>(index_map, bs);
 
-    kernels::copy(*u_n->x(), *ku);
-    kernels::copy(*v_n->x(), *kv);
+    kernels::copy(*u_, *ku);
+    kernels::copy(*v_, *kv);
 
     // Runge-Kutta timestepping data
     int n_RK = 4;
@@ -203,14 +204,14 @@ public:
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      kernels::copy(*u_n->x(), *u0);
-      kernels::copy(*v_n->x(), *v0);
+      kernels::copy(*u_, *u0);
+      kernels::copy(*v_, *v0);
 
       // Runge-Kutta step
       for (int i = 0; i < n_RK; i++) {
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
-
+      
         alp = dt * a_runge(i);
         kernels::axpy(*un, alp, *ku, *un);
         kernels::axpy(*vn, alp, *kv, *vn);
@@ -222,19 +223,22 @@ public:
         f0(tn, un, vn, ku);
         f1(tn, un, vn, kv);
 
-        std::cout << "RK step: " << i << std::endl;
-
-        // // Update solution
-        kernels::axpy(*u_n->x(), dt * b_runge(i), *ku, *u_n->x());
-        kernels::axpy(*v_n->x(), dt * b_runge(i), *kv, *v_n->x());
+        // Update solution
+        kernels::axpy(*u_, dt * b_runge(i), *ku, *u_);
+        kernels::axpy(*v_, dt * b_runge(i), *kv, *v_);
       }
 
       // Update time
       t += dt;
       step += 1;
+
+      if (step % 100 == 0){
+        std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+      }
     }
-    std::cout << t << std::endl;
-    std::cout.precision(15); // Set print precision
+    kernels::copy(*u_, *u_n->x());
+    kernels::copy(*v_, *v_n->x());
+    std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
     dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
     file.write({*u_n}, 0.0);
   }
