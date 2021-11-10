@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../rectangle_dolfinx.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/rectangle_dolfinx.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "rectangle"));
     mesh->topology().create_connectivity(1, 2);
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
 
     // RK solve
     eqn.init();
-    eqn.solve_ibvp(startTime, finalTime, timeStepSize);
+    eqn.rk4(startTime, finalTime, timeStepSize);
   }
   common::subsystem::finalize_mpi();
   return 0;

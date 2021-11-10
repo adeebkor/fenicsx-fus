@@ -51,7 +51,8 @@ values = np.hstack((np.full(facets0.shape, 1, np.intc),
 mt = MeshTags(mesh, tdim-1, indices, values[pos])
 mt.name = "rectangle_edge"
 
-with XDMFFile(MPI.COMM_WORLD, "rectangle_dolfinx.xdmf", "w") as xdmf:
+with XDMFFile(
+    MPI.COMM_WORLD, "Mesh/rectangle_dolfinx.xdmf", "w") as xdmf:
     xdmf.write_mesh(mesh)
     mesh.topology.create_connectivity(1, 2)
     xdmf.write_meshtags(mt)
