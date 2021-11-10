@@ -14,3 +14,5 @@ compile_fenicsx.txt
 *.png
 *.xdmf
 *.h5
+
+*build/
