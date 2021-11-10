@@ -3,7 +3,6 @@
 #include <dolfinx.h>
 #include <dolfinx/la/Vector.h>
 #include <memory>
-#include <fstream>
 
 using namespace dolfinx;
 
