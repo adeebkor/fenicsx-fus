@@ -1,5 +1,6 @@
 __pycache__/
 .vscode/
+cpp/LinearGLL-PETScVec/
 data/
 eval_data/
 examples/
@@ -14,5 +15,8 @@ compile_fenicsx.txt
 *.png
 *.xdmf
 *.h5
+*.pvtu
+*.vtu
+*.pvd
 
 *build/
