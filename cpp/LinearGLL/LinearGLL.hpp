@@ -50,6 +50,10 @@ protected:
   xtl::span<const double> m_, b_;
   tcb::span<double> _m, _b;
 
+  std::shared_ptr<const common::IndexMap> index_map;
+  int bs;
+
+
 public:
   std::shared_ptr<fem::FunctionSpace> V;
 
@@ -62,8 +66,8 @@ public:
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
 
-    std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
-    int bs = V->dofmap()->index_map_bs();
+    index_map = V->dofmap()->index_map;
+    bs = V->dofmap()->index_map_bs();
 
     c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
     u = std::make_shared<fem::Function<double>>(V);
@@ -95,6 +99,7 @@ public:
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0);
     fem::assemble_vector(_m, *a);
+    m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -155,7 +160,7 @@ public:
     std::fill(_b.begin(), _b.end(), 0.0);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
-    
+
     // Solve
     // TODO: Divide is more expensive than multiply.
     // We should store the result of 1/m in a vector and apply and element wise vector
@@ -172,6 +177,10 @@ public:
     }
   }
 
+  /// Runge-Kutta 4th order solver
+  /// @param startTime initial time of the solver
+  /// @param finalTime final time of the solver
+  /// @param timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
 
     double t = startTime;
@@ -181,9 +190,6 @@ public:
     int nstep = (finalTime - startTime) / timeStep + 1;
 
     std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
-
-    std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
-    int bs = V->dofmap()->index_map_bs();
 
     // Placeholder vectors at time step n
     u_ = std::make_shared<la::Vector<double>>(index_map, bs);
@@ -214,7 +220,6 @@ public:
     xt::xarray<double> c_runge{0.0, 0.5, 0.5, 1.0};
 
     // RK variables
-    double alp;
     double tn;
 
     while (t < tf) {
@@ -229,9 +234,8 @@ public:
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
       
-        alp = dt * a_runge(i);
-        kernels::axpy(*un, alp, *ku, *un);
-        kernels::axpy(*vn, alp, *kv, *vn);
+        kernels::axpy(*un, dt*a_runge(i), *ku, *un);
+        kernels::axpy(*vn, dt*a_runge(i), *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;

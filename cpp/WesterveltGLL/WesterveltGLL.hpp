@@ -174,7 +174,7 @@ public:
     // Assemble LHS
     std::fill(_m.begin(), _m.end(), 0.0);
     fem::assemble_vector(_m, *a);
-    m->scatter_fwd();
+    m->scatter_rev(common::IndexMap::Mode::add);
 
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
