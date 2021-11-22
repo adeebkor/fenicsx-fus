@@ -63,9 +63,8 @@ public:
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    // V = std::make_shared<fem::FunctionSpace>(
-    //     fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
-    V = fem::create_functionspace(functionspace_form_forms_a, "u", Mesh);
+    V = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
 
     std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
     int bs = V->dofmap()->index_map_bs();
@@ -238,8 +237,11 @@ public:
     xt::xarray<double> c_runge{0.0, 0.5, 0.5, 1.0};
 
     // RK variables
-    double alp;
     double tn;
+
+    // Write to VTX
+    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    file.write(t);
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -253,9 +255,8 @@ public:
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
       
-        alp = dt * a_runge(i);
-        kernels::axpy(*un, alp, *ku, *un);
-        kernels::axpy(*vn, alp, *kv, *vn);
+        kernels::axpy(*un, dt * a_runge(i), *ku, *un);
+        kernels::axpy(*vn, dt * a_runge(i), *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;
@@ -273,8 +274,12 @@ public:
       t += dt;
       step += 1;
 
-      if ((step % 100 == 0) & (rank == 0)){
-        std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+      if (step % 50 == 0){
+        kernels::copy(*u_, *u_n->x());
+        file.write(t);
+        if (rank == 0){
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+        }
       }
     }
 
@@ -288,8 +293,6 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    // Write to VTK
-    dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
-    file.write({*u_n}, 0.0);
+    file.write(t);
   }
 };

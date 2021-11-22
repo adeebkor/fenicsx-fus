@@ -3,7 +3,6 @@
 #include <cmath>
 #include <dolfinx.h>
 #include <dolfinx/fem/Constant.h>
-#include <dolfinx/io/VTKFile.h>
 #include <dolfinx/io/XDMFFile.h>
 #include <iostream>
 
@@ -44,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/hifu_mesh_3d.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/hifu_mesh_3d.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "hifu"));
     mesh->topology().create_connectivity(1, 2);
     auto mt = std::make_shared<mesh::MeshTags<std::int32_t>>(

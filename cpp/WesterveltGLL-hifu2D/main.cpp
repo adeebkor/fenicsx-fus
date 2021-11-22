@@ -39,11 +39,11 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 4;
+    int degreeOfBasis = 7;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/hifu_mesh_2d.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/hifu_mesh_2d.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "hifu"));
     mesh->topology().create_connectivity(1, 2);

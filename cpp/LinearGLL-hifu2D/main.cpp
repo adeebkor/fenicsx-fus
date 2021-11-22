@@ -4,7 +4,6 @@
 #include <dolfinx/common/defines.h>
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx.h>
-#include <dolfinx/io/VTKFile.h>
 #include <dolfinx/io/XDMFFile.h>
 #include <iostream>
 
@@ -44,20 +43,12 @@ int main(int argc, char* argv[]) {
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/hifu_mesh_2d.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/hifu_mesh_2d.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "hifu"));
     mesh->topology().create_connectivity(0, 1);
     auto mt = std::make_shared<mesh::MeshTags<std::int32_t>>(
         xdmf.read_meshtags(mesh, "hifu_surface"));
-
-    // std::cout << dolfinx::git_commit_hash() << std::endl;
-    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "mesh.pvd", mesh);
-    file.write(0.0);
-    std::cout << "Has SLEPc: " << dolfinx::has_slepc() << std::endl;
-    std::cout << "Has ADIOS2: " << dolfinx::has_adios2() << std::endl;
-    std::cout << true << std::endl;
-    std::getchar();
 
     // Get smallest mesh size
     int tdim = mesh->topology().dim();

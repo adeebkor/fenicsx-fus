@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 4;
+    int degreeOfBasis = 6;
 
     // Mesh parameters
     int elementPerWavelength = 4;
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/rectangle_dolfinx.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/rectangle_dolfinx.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "rectangle"));
     mesh->topology().create_connectivity(1, 2);

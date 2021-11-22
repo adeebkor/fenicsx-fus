@@ -1,7 +1,6 @@
 #include "forms.h"
 
 #include <dolfinx.h>
-#include <dolfinx/common/Timer.h>
 #include <dolfinx/common/loguru.hpp>
 #include <dolfinx/la/Vector.h>
 #include <memory>
@@ -96,15 +95,11 @@ public:
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
     // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
-    auto t0 = common::Timer("Assemble m");
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0);
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
-    t0.stop();
-    std::cout << t0.elapsed()[0] << std::endl;
-    std::getchar();
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(fem::create_form<double>(

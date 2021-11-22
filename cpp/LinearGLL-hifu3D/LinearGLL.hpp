@@ -2,8 +2,6 @@
 
 #include <dolfinx.h>
 #include <dolfinx/common/loguru.hpp>
-#include <dolfinx/common/Timer.h>
-#include <dolfinx/io/VTKFile.h>
 #include <dolfinx/la/Vector.h>
 #include <memory>
 
@@ -99,15 +97,11 @@ public:
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
     // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
-    auto t0 = common::Timer("Assemble m");
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0);
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
-    t0.stop();
-    std::cout << t0.elapsed()[0] << std::endl;
-    std::getchar();
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -231,9 +225,9 @@ public:
     // RK variables
     double tn;
 
-    // Write to VTK
-    dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
-    file.write({*u_n}, t);
+    // Write to VTX
+    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    file.write(t);
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -268,7 +262,7 @@ public:
 
       if (step % 50 == 0){
         kernels::copy(*u_, *u_n->x());
-        file.write({*u_n}, t);
+        file.write(t);
         if (rank == 0){
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
@@ -285,7 +279,7 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    file.write({*u_n}, t);
+    file.write(t);
     file.close();
   }
 };
