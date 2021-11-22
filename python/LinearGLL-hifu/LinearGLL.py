@@ -195,9 +195,9 @@ class LinearGLL:
             t += dt
             step += 1
 
-            if step % 100 == 0:
+            if step % 1 == 0:
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
-                    t, step, nstep))
+                    t[0], step, nstep))
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                        mode=PETSc.ScatterMode.FORWARD)
@@ -210,6 +210,6 @@ class LinearGLL:
             vtk.write_mesh(self.mesh, 0)
             vtk.write_function(self.u_n, 0)
 
-        with XDMFFile(MPI.COMM_WORLD, "u_xdmf.xdmf", "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.u_n)
+        # with XDMFFile(MPI.COMM_WORLD, "u_xdmf.xdmf", "w") as xdmf:
+        #     xdmf.write_mesh(self.mesh)
+        #     xdmf.write_function(self.u_n)

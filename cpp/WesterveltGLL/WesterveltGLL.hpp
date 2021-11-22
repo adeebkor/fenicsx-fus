@@ -63,8 +63,9 @@ public:
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    V = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
+    // V = std::make_shared<fem::FunctionSpace>(
+    //     fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
+    V = fem::create_functionspace(functionspace_form_forms_a, "u", Mesh);
 
     std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
     int bs = V->dofmap()->index_map_bs();

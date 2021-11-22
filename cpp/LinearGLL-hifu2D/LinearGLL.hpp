@@ -1,6 +1,8 @@
 #include "forms.h"
 
 #include <dolfinx.h>
+#include <dolfinx/common/Timer.h>
+#include <dolfinx/common/loguru.hpp>
 #include <dolfinx/la/Vector.h>
 #include <memory>
 
@@ -53,7 +55,6 @@ protected:
   std::shared_ptr<const common::IndexMap> index_map;
   int bs;
 
-
 public:
   std::shared_ptr<fem::FunctionSpace> V;
 
@@ -63,9 +64,8 @@ public:
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    // V = std::make_shared<fem::FunctionSpace>(
-        // fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
-    V = fem::create_functionspace(functionspace_form_forms_a, "u", Mesh);
+    V = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -96,11 +96,15 @@ public:
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
     // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
+    auto t0 = common::Timer("Assemble m");
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0);
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
+    t0.stop();
+    std::cout << t0.elapsed()[0] << std::endl;
+    std::getchar();
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -183,6 +187,7 @@ public:
   /// @param finalTime final time of the solver
   /// @param timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
+    loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
 
     double t = startTime;
     double tf = finalTime;
@@ -223,6 +228,10 @@ public:
     // RK variables
     double tn;
 
+    // Write to VTX
+    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    // file.write(t);
+
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
@@ -254,8 +263,12 @@ public:
       t += dt;
       step += 1;
 
-      if ((step % 100 == 0) & (rank == 0)){
-        std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+      if (step % 50 == 0){
+        kernels::copy(*u_, *u_n->x());
+        // file.write(t);
+        if (rank == 0){
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+        }
       }
     }
 
@@ -269,8 +282,6 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    // Write to VTK
-    dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
-    file.write({*u_n}, 0.0);
+    // file.write(t);
   }
 };

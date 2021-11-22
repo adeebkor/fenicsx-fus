@@ -8,16 +8,16 @@ from dolfinx.io import XDMFFile
 from LinearGLL import LinearGLL
 
 # Material parameters
-c0 = 1  # speed of sound (m/s)
-rho0 = 1  # density of medium (kg / m^3)
-beta = 0.01  # coefficient of nonlinearity
-delta = 0.001  # diffusivity of sound
+c0 = 1486  # speed of sound (m/s)
+rho0 = 998  # density of medium (kg / m^3)
+beta = 3.5  # coefficient of nonlinearity
+delta = 4.33e-6  # diffusivity of sound
 
 # Source parameters
-f0 = 100  # source frequency (Hz)
+f0 = 1e6  # source frequency (Hz)
 w0 = 2 * np.pi * f0  # angular frequency (rad / s)
 u0 = 1  # velocity amplitude (m / s)
-p0 = rho0*c0*u0  # pressure amplitude (Pa)
+p0 = 0.025e6  # pressure amplitude (Pa)
 
 # Domain parameters
 xsh = rho0*c0**3/beta/p0/w0  # shock formation distance (m)
@@ -46,10 +46,10 @@ MPI.COMM_WORLD.Reduce(hmin, h, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(h, root=0)
 
 # Temporal parameters
-CFL = 0.8
+CFL = 0.45
 dt = CFL * h / c0 / degree**2
 t0 = 0.0
-tf = L/c0 + 10.0/f0
+tf = 30*dt # L/c0 + 10.0/f0
 
 # Model
 eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)

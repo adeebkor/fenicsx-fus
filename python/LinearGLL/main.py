@@ -27,7 +27,7 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 4
+degree = 6
 
 # Mesh parameters
 epw = 4  # number of element per wavelength

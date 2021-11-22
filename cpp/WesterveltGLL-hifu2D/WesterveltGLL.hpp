@@ -1,6 +1,7 @@
 #include "forms.h"
 
 #include <dolfinx.h>
+#include <dolfinx/common/loguru.hpp>
 #include <dolfinx/la/Vector.h>
 #include <memory>
 
@@ -8,7 +9,7 @@ using namespace dolfinx;
 
 namespace kernels {
 // Copy data from a la::Vector in to a la::Vector out, including ghost entries.
-void copy(const la::Vector<double>& in, la::Vector<double>& out) {
+void copy(const la::Vector<double>& in, la::Vector<double>& out){
   xtl::span<const double> _in = in.array();
   xtl::span<double> _out = out.mutable_array();
   std::copy(_in.cbegin(), _in.cend(), _out.begin());
@@ -28,7 +29,7 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 } // namespace kernels
 
-class LinearGLL {
+class WesterveltGLL {
 private:
   int rank;      // MPI rank
 protected:
@@ -37,47 +38,55 @@ protected:
   double freq0_; // source frequency (Hz)
   double p0_;    // pressure amplitude (Pa)
   double w0_;    // angular frequency (rad/s)
+  double delta_; // diffusivity of sound
+  double beta_;  // coefficient of nonlinearity
+  double rho0_;  // density of medium (kg/m^3)
   double T_;     // period (s)
   double alpha_;
-  double window_;
+  double window_, dwindow_;
 
-  std::shared_ptr<fem::Constant<double>> c0;
+  std::shared_ptr<fem::Constant<double>> c0, delta, beta, rho0;
   std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Function<double>> u, v, g, dg, u_n, v_n;
   std::shared_ptr<la::Vector<double>> m, b;
 
-  xtl::span<double> _g, out;
+  xtl::span<double> _g, _dg, out;
   xtl::span<const double> m_, b_;
   tcb::span<double> _m, _b;
 
   std::shared_ptr<const common::IndexMap> index_map;
   int bs;
 
-
 public:
   std::shared_ptr<fem::FunctionSpace> V;
 
-  LinearGLL(std::shared_ptr<mesh::Mesh> Mesh,
-            std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
-            double& speedOfSound, double& sourceFrequency, double& pressureAmplitude) {
+  WesterveltGLL(std::shared_ptr<mesh::Mesh> Mesh,
+                std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
+                double& speedOfSound, double& sourceFrequency, double& pressureAmplitude,
+                double& diffusivityOfSound, double& coeffOfNonlinearity, double& densityOfMedium) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    // V = std::make_shared<fem::FunctionSpace>(
-        // fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
-    V = fem::create_functionspace(functionspace_form_forms_a, "u", Mesh);
+    V = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
 
     c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
+    delta = std::make_shared<fem::Constant<double>>(diffusivityOfSound);
+    beta = std::make_shared<fem::Constant<double>>(coeffOfNonlinearity);
+    rho0 = std::make_shared<fem::Constant<double>>(densityOfMedium);
+
     u = std::make_shared<fem::Function<double>>(V);
     v = std::make_shared<fem::Function<double>>(V);
     g = std::make_shared<fem::Function<double>>(V);
+    dg = std::make_shared<fem::Function<double>>(V);
     u_n = std::make_shared<fem::Function<double>>(V);
     v_n = std::make_shared<fem::Function<double>>(V);
 
     _g = g->x()->mutable_array();
+    _dg = dg->x()->mutable_array();
 
     // Physical parameters
     k_ = degreeOfBasis;
@@ -85,7 +94,10 @@ public:
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
     w0_ = 2.0 * M_PI * freq0_;
-    T_ = 1.0 / freq0_;
+    delta_ = diffusivityOfSound;
+    beta_ = coeffOfNonlinearity;
+    rho0_ = densityOfMedium;
+    T_ = 1 / freq0_;
     alpha_ = 4.0;
 
     // Create LHS form
@@ -93,26 +105,28 @@ public:
     std::fill(_u.begin(), _u.end(), 1.0);
 
     a = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
+        fem::create_form<double>(*form_forms_a, {V},
+                                 {{"u", u}, {"u_n", u_n}},
+                                 {{"c0", c0}, {"rho0", rho0}, {"beta", beta}, {"delta", delta}},
+                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
-    // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
+    // Allocate memory for the LHS
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
-    std::fill(_m.begin(), _m.end(), 0);
-    fem::assemble_vector(_m, *a);
-    m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
-    L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
-        *form_forms_L, {V}, {{"u_n", u_n}, {"g", g}, {"v_n", v_n}}, {{"c0", c0}},
-        {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
+    L = std::make_shared<fem::Form<double>>(
+        fem::create_form<double>(*form_forms_L, {V}, 
+                                 {{"u_n", u_n}, {"g", g}, {"v_n", v_n}, {"dg", dg}},
+                                 {{"c0", c0}, {"rho0", rho0}, {"beta", beta}, {"delta", delta}},
+                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
     // Allocate memory for the RHS
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
   }
 
-  // Set the initial values of u and v, i.e. u_0 and v_0
+  /// Set the initial values of u and v, i.e. u_0 and v_0
   void init() {
     tcb::span<double> u_0 = u_n->x()->mutable_array();
     tcb::span<double> v_0 = v_n->x()->mutable_array();
@@ -122,10 +136,10 @@ public:
   }
 
   /// Evaluate du/dt = f0(t, u, v)
-  /// @param t Current time
+  /// @param t Current time, i.e. tn
   /// @param u Current u, i.e. un
   /// @param v Current v, i.e. vn
-  /// @param result Result
+  /// @param result Result, i.e. dun/dtn
   void f0(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
@@ -138,16 +152,20 @@ public:
   /// @param result Result, i.e. dvn/dtn
   void f1(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
-    
+  
     // Apply windowing
     if (t < T_ * alpha_) {
-      window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
+        window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
+        dwindow_ = 0.5 * M_PI * freq0_ / alpha_ * sin(freq0_ * M_PI * t / alpha_);
     } else {
-      window_ = 1.0;
+        window_ = 1.0;
+        dwindow_ = 0.0;
     }
 
     // Update boundary condition
     std::fill(_g.begin(), _g.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
+    std::fill(_dg.begin(), _dg.end(), dwindow_ * p0_ * w0_ / c0_ * cos(w0_ * t)
+                                      - window_ * p0_ * w0_ * w0_ / c0_ * sin(w0_ * t));
 
     u->scatter_fwd();
     kernels::copy(*u, *u_n->x());
@@ -157,15 +175,17 @@ public:
 
     // TODO: Compute coefficients
 
+    // Assemble LHS
+    std::fill(_m.begin(), _m.end(), 0.0);
+    fem::assemble_vector(_m, *a);
+    m->scatter_rev(common::IndexMap::Mode::add);
+
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
 
     // Solve
-    // TODO: Divide is more expensive than multiply.
-    // We should store the result of 1/m in a vector and apply and element wise vector
-    // multiplication, since m doesn't change for linear wave propagation.
     {
       out = result->mutable_array();
       b_ = b->array();
@@ -174,15 +194,13 @@ public:
       // Element wise division
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
-                     [](const double& bi, const double& mi) { return bi / mi; });
+                     [](const double& bi, const double& mi) { return bi/mi; });
+
     }
   }
 
-  /// Runge-Kutta 4th order solver
-  /// @param startTime initial time of the solver
-  /// @param finalTime final time of the solver
-  /// @param timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
+    loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
 
     double t = startTime;
     double tf = finalTime;
@@ -223,6 +241,10 @@ public:
     // RK variables
     double tn;
 
+    // Write to VTK
+    dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
+    file.write({*u_n}, t);
+
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
@@ -254,8 +276,12 @@ public:
       t += dt;
       step += 1;
 
-      if ((step % 100 == 0) & (rank == 0)){
-        std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+      if (step % 50 == 0){
+        kernels::copy(*u_, *u_n->x());
+        file.write({*u_n}, t);
+        if (rank == 0){
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+        }
       }
     }
 
@@ -269,8 +295,7 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    // Write to VTK
-    dolfinx::io::VTKFile file(MPI_COMM_WORLD, "u.pvd", "w");
     file.write({*u_n}, 0.0);
+    file.close();
   }
 };

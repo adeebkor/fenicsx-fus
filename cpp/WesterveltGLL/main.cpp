@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     double speedOfSound = 1.0;    // (m/s)
     double densityOfMedium = 1.0; // (kg/m^3)
     double coeffOfNonlinearity = 0.01;
-    double diffusivityOfSound = 0.001;
+    double diffusivityOfSound = 0.0000000001;
 
     // Source parameters
     double sourceFrequency = 10.0;                                                 // (Hz)

@@ -1,0 +1,19 @@
+Python
+real    1m4.873s
+user    0m0.027s
+sys     0m0.033s
+
+C++ -O3
+real    0m47.986s
+user    0m0.032s
+sys     0m0.024s
+
+C++ -Ofast
+real    0m26.512s
+user    0m0.030s
+sys     0m0.033s
+
+C++ -Ofast avx512
+real    0m18.563s
+user    0m0.031s
+sys     0m0.026s
