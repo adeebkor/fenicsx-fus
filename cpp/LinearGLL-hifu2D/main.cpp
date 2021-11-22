@@ -2,8 +2,9 @@
 
 #include <cmath>
 #include <dolfinx/common/defines.h>
-#include <dolfinx.h>
 #include <dolfinx/fem/Constant.h>
+#include <dolfinx.h>
+#include <dolfinx/io/VTKFile.h>
 #include <dolfinx/io/XDMFFile.h>
 #include <iostream>
 

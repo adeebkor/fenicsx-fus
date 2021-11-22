@@ -229,8 +229,8 @@ public:
     double tn;
 
     // Write to VTX
-    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
-    // file.write(t);
+    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    file.write(t);
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -265,7 +265,7 @@ public:
 
       if (step % 50 == 0){
         kernels::copy(*u_, *u_n->x());
-        // file.write(t);
+        file.write(t);
         if (rank == 0){
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
@@ -282,6 +282,6 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    // file.write(t);
+    file.write(t);
   }
 };

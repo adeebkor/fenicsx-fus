@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     io::XDMFFile xdmf(MPI_COMM_WORLD, "../../Mesh/hifu_mesh_2d.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "hifu"));
-    mesh->topology().create_connectivity(0, 1);
+    mesh->topology().create_connectivity(1, 2);
     auto mt = std::make_shared<mesh::MeshTags<std::int32_t>>(
         xdmf.read_meshtags(mesh, "hifu_surface"));
 
