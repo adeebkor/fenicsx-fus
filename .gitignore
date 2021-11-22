@@ -1,20 +1,10 @@
-__pycache__/
 .vscode/
-cpp/LinearGLL-PETScVec/
-data/
-eval_data/
-examples/
-experiments/
 fenicsx/
-gc/
-mesh/
-plots/
-solution/
+*__pycache__/
 
-compile_fenicsx.txt
+mesh/*.py
+mesh/*.geo
 *.png
-*.xdmf
-*.h5
 *.pvtu
 *.vtu
 *.pvd

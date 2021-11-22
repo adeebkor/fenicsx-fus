@@ -2,11 +2,10 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import FunctionSpace, Function, cpp
+from dolfinx import FunctionSpace, Function
 from dolfinx.fem import assemble_vector
 from dolfinx.io import VTKFile, XDMFFile
-from ufl import (FiniteElement, TrialFunction, TestFunction, Measure, inner,
-                 grad, dx)
+from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
 class LinearGLL:

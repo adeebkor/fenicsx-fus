@@ -28,16 +28,16 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 7
+degree = 5
 
 # Mesh parameters
-epw = 1 # number of element per wavelength
+epw = 1  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
 
 # Read mesh and meshtags
-with XDMFFile(MPI.COMM_WORLD, "../Mesh/hifu_mesh_2d.xdmf", "r") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "../../mesh/hifu_mesh_2d.xdmf", "r") as xdmf:
     mesh = xdmf.read_mesh(name="hifu")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
