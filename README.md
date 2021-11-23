@@ -23,6 +23,7 @@ is required to fully resolve the wave pattern. For example, for a p4 element,
 through numerical experimentation, the number of element per wavelength
 required is 4. In this case, for a simulation domain of 20cm by 20cm by 20cm
 with fundamental wavelength of 1.48mm, the number of elements required is
-approximately $160 \times 10^{6}$. 
+approximately $160 \times 10^{6}$. This translates to approximately $10^{10}$
+degrees of freedom.
 
 ## Back of the envelope cost calculation
