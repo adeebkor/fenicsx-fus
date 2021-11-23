@@ -35,3 +35,9 @@ periodic source field.
 
 # Performance estimate
 
+An accurate representation of HIFU operating condition is typically model 
+using the Westervelt equation with the associated boundary and initial 
+conditions. A variational formulation of these set of equations generate
+several computational kernels as follow
+
+![alt text](westervelt_forms.png)
