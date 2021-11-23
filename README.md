@@ -26,4 +26,12 @@ with fundamental wavelength of 1.48mm, the number of elements required is
 approximately $160 \times 10^{6}$. This translates to approximately $10^{10}$
 degrees of freedom.
 
-## Back of the envelope cost calculation
+Advantages of our approach:
+* The handling of complex shape and region is trivial, e.g. different density
+region such as fluids and liver.
+* Utilisation of high degree basis reduces dispersion error.
+* Flexibility of using different source fields. We are not restricted to
+periodic source field.
+
+# Performance estimate
+
