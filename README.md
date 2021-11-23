@@ -43,3 +43,25 @@ several computational kernels as follow
 <p align="center">
     <img src=westervelt_forms.png/>
 </p>
+
+An estimate of the performance on CSD3 Cascade Lake on a single processor 
+is given as follows (larger is better):
+
+| Kernels | DOF / second |
+| ------- | ------------ |
+| M1      | 7 x 10^{6}   |
+| M2      | 7 x 10^{7}   |
+| M3      | 5 x 10^{6}   |
+| L1      | 4 x 10^{6}   |
+| L2      | 8 x 10^{7}   |
+| L3      | 7 x 10^{7}   |
+| L4      | 4 x 10^{6}   |
+| L5      | 8 x 10^{7}   |
+| L6      | 7 x 10^{6}   |
+| Solve   | 4 x 10^{8}   |
+
+The table above is plotted below:
+
+<p align="center">
+    <img src=cclake_dof_per_second.png/>
+</p>

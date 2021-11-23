@@ -12,3 +12,5 @@ mesh/*.geo
 *build/
 
 !westervelt_forms.png
+!cclake_dof_per_second.png
+!skylake_dof_per_second.png
