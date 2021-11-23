@@ -33,7 +33,7 @@ region such as fluids and liver.
 * Flexibility of using different source fields. We are not restricted to
 periodic source field.
 
-# Performance estimate
+## Performance estimate
 
 An accurate representation of HIFU operating condition is typically model 
 using the Westervelt equation with the associated boundary and initial 
