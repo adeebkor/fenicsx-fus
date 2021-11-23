@@ -4,7 +4,7 @@ from petsc4py import PETSc
 
 from dolfinx import FunctionSpace, Function
 from dolfinx.fem import assemble_vector
-from dolfinx.io import VTKFile, XDMFFile
+from dolfinx.io import VTKFile
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
@@ -208,7 +208,3 @@ class LinearGLL:
         with VTKFile(MPI.COMM_WORLD, "u_vtk.pvd", "w") as vtk:
             vtk.write_mesh(self.mesh, 0)
             vtk.write_function(self.u_n, 0)
-
-        with XDMFFile(MPI.COMM_WORLD, "u_xdmf.xdmf", "w") as xdmf:
-            xdmf.write_mesh(self.mesh)
-            xdmf.write_function(self.u_n)
