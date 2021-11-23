@@ -10,3 +10,5 @@ mesh/*.geo
 *.pvd
 
 *build/
+
+!westervelt_forms.png
