@@ -63,5 +63,5 @@ is given as follows (larger is better):
 The table above is plotted below:
 
 <p align="center">
-    <img src=cclake_dof_per_second.png/>
+    <img src=cclake_dof_per_second.png width="300" height="300"/>
 </p>
