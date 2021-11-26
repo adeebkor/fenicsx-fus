@@ -16,8 +16,10 @@ if (NOT TARGET dolfinx)
   find_package(DOLFINX REQUIRED)
 endif()
 
+include_directories("../common" ".")
+
 # Executable
-add_executable(${PROJECT_NAME} precompute_jacobian.hpp forms.c main.cpp)
+add_executable(${PROJECT_NAME} forms.c main.cpp)
 
 # Target libraries
 target_link_libraries(${PROJECT_NAME} dolfinx)
