@@ -16,6 +16,8 @@ if (NOT TARGET dolfinx)
   find_package(DOLFINX REQUIRED)
 endif()
 
+include_directories("../common" ".")
+
 # Executable
 add_executable(${PROJECT_NAME} forms.c main.cpp)
 
