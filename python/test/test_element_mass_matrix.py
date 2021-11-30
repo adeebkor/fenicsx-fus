@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 
-import dolfinx
+import dolfinx.generation
 import dolfinx.cpp
 import dolfinx.fem
 import ufl
@@ -14,14 +14,14 @@ def generate_mesh(dimension):
 
     if dimension == 1:
         # Interval mesh
-        mesh = dolfinx.IntervalMesh(
+        mesh = dolfinx.generation.IntervalMesh(
             MPI.COMM_WORLD,
             1,
             [-1, 1]
         )
     elif dimension == 2:
         # Quad mesh
-        mesh = dolfinx.RectangleMesh(
+        mesh = dolfinx.generation.RectangleMesh(
             MPI.COMM_WORLD,
             [np.array([-1., -1., 0.]), np.array([1., 1., 0.])],
             [1, 1],
@@ -29,7 +29,7 @@ def generate_mesh(dimension):
         )
     elif dimension == 3:
         # Hex mesh
-        mesh = dolfinx.BoxMesh(
+        mesh = dolfinx.generation.BoxMesh(
             MPI.COMM_WORLD,
             [np.array([-1., -1., -1.]), np.array([1., 1., 1.])],
             [1, 1, 1],
@@ -48,7 +48,7 @@ mesh = generate_mesh(2)
 # Create function space
 p = 3
 FE = ufl.FiniteElement("Lagrange", ufl.quadrilateral, p, variant="gll")
-V = dolfinx.FunctionSpace(mesh, FE)
+V = dolfinx.fem.FunctionSpace(mesh, FE)
 
 # Define variational form
 u = ufl.TrialFunction(V)
