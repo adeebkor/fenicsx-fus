@@ -66,7 +66,7 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
     xt::xtensor<double, 2> J_cell = xt::zeros<double>({tdim, gdim});
     xt::xtensor<double, 2> coords = xt::zeros<double>({num_nodes, gdim});
     xt::xtensor<double, 2> dphi_q = xt::zeros<double>({tdim, num_nodes});
-    xt::xtensor<double, 2> detJ({ncells,nq});
+    xt::xtensor<double, 2> detJ({ncells, nq});
     
     tcb::span<const int> x_dofs;
     // Compute Jacobian matrix
@@ -79,13 +79,14 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 
         for (std::size_t q = 0; q < nq; q++){
             dphi_q = xt::view(dphi, xt::all(), q, xt::all());
-            J_cell = xt::view(J, c, q, xt::all(), xt::all());
+            J_cell.fill(0.0);
 
             // Get Jacobian matrix
             dot(coords, dphi_q, J_cell, true);
+            xt::view(J, c, q, xt::all(), xt::all()) = J_cell;
 
             // Compute determinant
-            detJ(c, q) = std::fabs(math::det(J_cell));
+            detJ(c, q) = std::fabs(math::det(J_cell)) * weights[q];
         }
     }
 
@@ -93,19 +94,20 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 }
 
 // Get permutation vector
-xt::xtensor<int, 1> permutation_vector(int p, int q){
+std::pair<xt::xtensor<int, 1>, xt::xtensor<double, 4>>
+tabulate_basis_and_permutation(int p=6, int q=10){
     // Tabulate quadrature points and weights
     auto family = basix::element::family::P;
-    auto cell = basix::cell::type::quadrilateral;
-    auto quadrature = basix::quadrature::type::gll;
-    auto [points, weights] = basix::quadrature::make_quadrature(quadrature, cell, q);
+    auto cell_type = basix::cell::type::quadrilateral;
+    auto quad_scheme = basix::quadrature::type::gll;
+    auto [points, weights] = basix::quadrature::make_quadrature(quad_scheme, cell_type, q);
     auto variant = basix::element::lagrange_variant::gll_warped;
-    auto element = basix::create_element(family, cell, p, variant);
-    xt::xtensor<double, 4> basis = element.tabulate(0, points);
-    xt::xtensor<double, 2> pmatrix = xt::view(basis, 0, xt::all(), xt::all(), 0);
+    auto element = basix::create_element(family, cell_type, p, variant);
+    xt::xtensor<double, 4> basis = element.tabulate(1, points);
 
-    auto idx2d = xt::from_indices(xt::argwhere(xt::isclose(pmatrix, 1.0)));
+    xt::xtensor<double, 2> basis0 = xt::view(basis, 0, xt::all(), xt::all(), 0);
+    auto idx2d = xt::from_indices(xt::argwhere(xt::isclose(basis0, 1.0)));
     auto idx = xt::view(idx2d, xt::all(), 1);
 
-    return idx;
+    return {idx, basis};
 }

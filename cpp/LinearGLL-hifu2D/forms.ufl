@@ -1,4 +1,4 @@
-element = FiniteElement("Lagrange", quadrilateral, 7, variant="gll")
+element = FiniteElement("Lagrange", quadrilateral, 6, variant="gll")
 
 coord_element = VectorElement("Lagrange", quadrilateral, 1)
 mesh = Mesh(coord_element)
@@ -12,10 +12,10 @@ v_n = Coefficient(V)
 g = Coefficient(V)
 v = TestFunction(V)
 
-md = {"quadrature_rule": "GLL", "quadrature_degree": 12}
+md = {"quadrature_rule": "GLL", "quadrature_degree": 10}
 
 a = inner(u, v) * dx(metadata=md)
-
+ 
 L = c0**2 * (- inner(grad(u_n), grad(v))
              * dx(metadata=md)
              + inner(g, v)

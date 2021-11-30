@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 7;
+    int degreeOfBasis = 6;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
