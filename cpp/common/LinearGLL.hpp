@@ -100,6 +100,11 @@ public:
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
 
+    for (int i = 0; i < 10; ++i){
+      std::cout << m->mutable_array()[i] << std::endl;
+    }
+    std::getchar();
+
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
         *form_forms_L, {V}, {{"u_n", u_n}, {"g", g}, {"v_n", v_n}}, {{"c0", c0}},

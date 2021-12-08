@@ -8,6 +8,8 @@ mesh/*.geo
 *.pvtu
 *.vtu
 *.pvd
+*.c
+*.h
 
 *build/
 

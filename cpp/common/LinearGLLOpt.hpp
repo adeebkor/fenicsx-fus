@@ -103,7 +103,10 @@ class LinearGLLOpt {
       std::fill(_m.begin(), _m.end(), 0.0);
       mass_op->operator()(*u->x(), *m);
 
-      
+      for (int i = 0; i < 10; ++i){
+        std::cout << m->mutable_array()[i] << std::endl;
+      }
+      std::getchar();
 
       // Create RHS form
       L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -122,7 +125,7 @@ class LinearGLLOpt {
 
   }
 
-  // Set the inital values of u and v, i.e. u_0 and v_0
+  // Set the initial values of u and v, i.e. u_0 and v_0
   void init(){
     tcb::span<double> u_0 = u_n->x()->mutable_array();
     tcb::span<double> v_0 = v_n->x()->mutable_array();

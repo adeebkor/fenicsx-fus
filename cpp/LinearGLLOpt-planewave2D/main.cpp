@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 4;
+    int degreeOfBasis = 5;
 
     // Mesh parameters
     int elementPerWavelength = 4;

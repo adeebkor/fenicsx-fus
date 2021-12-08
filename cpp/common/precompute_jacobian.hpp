@@ -95,7 +95,7 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 
 // Get permutation vector
 std::pair<xt::xtensor<int, 1>, xt::xtensor<double, 4>>
-tabulate_basis_and_permutation(int p=6, int q=10){
+tabulate_basis_and_permutation(int p=5, int q=8){
     // Tabulate quadrature points and weights
     auto family = basix::element::family::P;
     auto cell_type = basix::cell::type::quadrilateral;
