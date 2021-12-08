@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 
-import dolfinx
+import dolfinx.generation
 import dolfinx.cpp
 import dolfinx.fem
 import ufl
@@ -14,14 +14,14 @@ def generate_mesh(dimension):
 
     if dimension == 1:
         # Interval mesh
-        mesh = dolfinx.IntervalMesh(
+        mesh = dolfinx.generation.IntervalMesh(
             MPI.COMM_WORLD,
             1,
             [-1, 1]
         )
     elif dimension == 2:
         # Quad mesh
-        mesh = dolfinx.RectangleMesh(
+        mesh = dolfinx.generation.RectangleMesh(
             MPI.COMM_WORLD,
             [np.array([-1., -1., 0.]), np.array([1., 1., 0.])],
             [1, 1],
@@ -29,7 +29,7 @@ def generate_mesh(dimension):
         )
     elif dimension == 3:
         # Hex mesh
-        mesh = dolfinx.BoxMesh(
+        mesh = dolfinx.generation.BoxMesh(
             MPI.COMM_WORLD,
             [np.array([-1., -1., -1.]), np.array([1., 1., 1.])],
             [1, 1, 1],
@@ -46,20 +46,31 @@ def generate_mesh(dimension):
 mesh = generate_mesh(2)
 
 # Create function space
-p = 3
+p = 5
 FE = ufl.FiniteElement("Lagrange", ufl.quadrilateral, p, variant="gll")
-V = dolfinx.FunctionSpace(mesh, FE)
+V = dolfinx.fem.FunctionSpace(mesh, FE)
+ndof = V.dofmap.index_map.size_global
+
+# Set quadrature degree
+qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
+      "9": 16, "10": 18}
+md = {"quadrature_rule": "GLL",
+      "quadrature_degree": qd[str(p)]}
 
 # Define variational form
 u = ufl.TrialFunction(V)
 v = ufl.TestFunction(V)
 
-a = u*v*ufl.dx(metadata={"quadrature_rule": "GLL", "quadrature_degree": p+1})
+a = u*v*ufl.dx(metadata=md)
 
 # Build element mass matrix
 A = dolfinx.fem.assemble_matrix(a)
 A.assemble()
 
-# Print element mass matrix
-print("Me = ")
-print(A[:, :])
+# Get nonzero indices
+idx = np.nonzero(A[:, :])
+
+
+def test_diagonal():
+    assert(np.allclose(idx[0], np.arange(ndof)) and
+           np.allclose(idx[1], np.arange(ndof)))

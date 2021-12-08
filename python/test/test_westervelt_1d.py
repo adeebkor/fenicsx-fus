@@ -3,8 +3,9 @@ from scipy.special import jv
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import IntervalMesh, FunctionSpace, Function
-from dolfinx.fem import assemble_scalar, assemble_vector
+from dolfinx.generation import IntervalMesh
+from dolfinx.fem import (assemble_scalar, assemble_vector, FunctionSpace,
+                         Function)
 from dolfinx.mesh import locate_entities_boundary, MeshTags
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
@@ -322,9 +323,9 @@ u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tend))
 
 # L2 error
 diff = eqn.u_n - u_e
-L2_diff = mesh.mpi_comm().allreduce(
+L2_diff = mesh.comm.allreduce(
     assemble_scalar(inner(diff, diff) * dx), op=MPI.SUM)
-L2_exact = mesh.mpi_comm().allreduce(
+L2_exact = mesh.comm.allreduce(
     assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
 
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
