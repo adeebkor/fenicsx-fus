@@ -1,9 +1,9 @@
 import numpy as np
 from mpi4py import MPI
 
-import dolfinx.generation
 import dolfinx.cpp
 import dolfinx.fem
+import dolfinx.mesh
 import ufl
 
 
@@ -14,14 +14,14 @@ def generate_mesh(dimension):
 
     if dimension == 1:
         # Interval mesh
-        mesh = dolfinx.generation.IntervalMesh(
+        mesh = dolfinx.mesh.create_interval(
             MPI.COMM_WORLD,
             1,
             [-1, 1]
         )
     elif dimension == 2:
         # Quad mesh
-        mesh = dolfinx.generation.RectangleMesh(
+        mesh = dolfinx.mesh.create_rectangle(
             MPI.COMM_WORLD,
             [np.array([-1., -1., 0.]), np.array([1., 1., 0.])],
             [1, 1],
@@ -29,7 +29,7 @@ def generate_mesh(dimension):
         )
     elif dimension == 3:
         # Hex mesh
-        mesh = dolfinx.generation.BoxMesh(
+        mesh = dolfinx.mesh.create_box(
             MPI.COMM_WORLD,
             [np.array([-1., -1., -1.]), np.array([1., 1., 1.])],
             [1, 1, 1],

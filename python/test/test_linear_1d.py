@@ -2,10 +2,9 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.generation import IntervalMesh
 from dolfinx.fem import (assemble_scalar, assemble_vector, FunctionSpace,
                          Function)
-from dolfinx.mesh import locate_entities_boundary, MeshTags
+from dolfinx.mesh import locate_entities_boundary, MeshTags, create_interval
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
@@ -234,7 +233,7 @@ nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
 
 # Generate mesh
-mesh = IntervalMesh(MPI.COMM_WORLD, nx, [0, L])
+mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
 
 # Tag boundaries
 tdim = mesh.topology.dim
