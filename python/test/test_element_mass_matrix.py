@@ -19,14 +19,16 @@ def generate_mesh(dimension):
             1,
             [-1, 1]
         )
+        cell_type = ufl.interval
     elif dimension == 2:
         # Quad mesh
         mesh = dolfinx.mesh.create_rectangle(
             MPI.COMM_WORLD,
-            [np.array([-1., -1., 0.]), np.array([1., 1., 0.])],
+            [np.array([-1., -1.]), np.array([1., 1.])],
             [1, 1],
             cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
         )
+        cell_type = ufl.quadrilateral
     elif dimension == 3:
         # Hex mesh
         mesh = dolfinx.mesh.create_box(
@@ -35,19 +37,20 @@ def generate_mesh(dimension):
             [1, 1, 1],
             cell_type=dolfinx.cpp.mesh.CellType.hexahedron
         )
+        cell_type = ufl.hexahedron
     else:
         raise Exception("Dimension {} is not a valid \
                         dimension!".format(dimension))
 
-    return mesh
+    return mesh, cell_type
 
 
 # Choose mesh
-mesh = generate_mesh(2)
+mesh, cell_type = generate_mesh(3)
 
 # Create function space
 p = 5
-FE = ufl.FiniteElement("Lagrange", ufl.quadrilateral, p, variant="gll")
+FE = ufl.FiniteElement("Lagrange", cell_type, p, variant="gll")
 V = dolfinx.fem.FunctionSpace(mesh, FE)
 ndof = V.dofmap.index_map.size_global
 
