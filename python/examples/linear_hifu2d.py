@@ -3,9 +3,9 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 from dolfinx import cpp
-from dolfinx.io import XDMFFile
+from dolfinx.io import XDMFFile, VTKFile
 
-from LinearGLL import LinearGLL
+from common.linear import GLL
 
 # Material parameters
 c0 = 1486  # speed of sound (m/s)
@@ -37,7 +37,9 @@ nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
 
 # Read mesh and meshtags
-with XDMFFile(MPI.COMM_WORLD, "../../mesh/hifu_mesh_2d.xdmf", "r") as xdmf:
+mesh_fname = "hifu_mesh_2d"
+with XDMFFile(
+        MPI.COMM_WORLD, "../mesh/{}.xdmf".format(mesh_fname), "r") as xdmf:
     mesh = xdmf.read_mesh(name="hifu")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
@@ -53,15 +55,20 @@ MPI.COMM_WORLD.Bcast(h, root=0)
 
 # Temporal parameters
 CFL = 0.8
-dt = CFL * h / c0 / degree**2
+dt = CFL * h[0] / c0 / degree**2
 t0 = 0.0
 tf = L/c0 + 4.0/f0
 
 # Model
-eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
+eqn = GLL(mesh, mt, degree, c0, f0, p0)
 
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
 eqn.init()
 eqn.rk4(t0, tf, dt)
+
+# Write solution to file
+with VTKFile(MPI.COMM_WORLD, "examples/u.pvd", "w") as vtk:
+    vtk.write_mesh(eqn.mesh, 0)
+    vtk.write_function(eqn.u_n, 0)

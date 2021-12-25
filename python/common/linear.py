@@ -1,14 +1,11 @@
 import numpy as np
-from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx import FunctionSpace, Function
-from dolfinx.fem import assemble_vector
-from dolfinx.io import VTKFile
+from dolfinx.fem import FunctionSpace, Function, assemble_vector
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
-class LinearGLL:
+class GLL:
     """
     Solver for linear second order wave equation.
 
@@ -204,7 +201,3 @@ class LinearGLL:
                        mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
-
-        with VTKFile(MPI.COMM_WORLD, "u_vtk.pvd", "w") as vtk:
-            vtk.write_mesh(self.mesh, 0)
-            vtk.write_function(self.u_n, 0)

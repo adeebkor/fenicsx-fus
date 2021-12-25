@@ -1,10 +1,17 @@
+#
+# .. _linear_planewave2d:
+#
+# Linear solver for the 2D planewave problem
+# ==========================================
+# Copyright (C) 2021 Adeeb Arif Kor
+
 import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.io import XDMFFile
+from dolfinx.io import XDMFFile, VTKFile
 
-from WesterveltGLL import WesterveltGLL
+from common.linear import GLL
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -27,7 +34,7 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 4
+degree = 6
 
 # Mesh parameters
 epw = 4  # number of element per wavelength
@@ -42,17 +49,23 @@ t0 = 0.0
 tf = L/c0 + 10.0/f0
 
 # Read mesh and meshtags
+mesh_fname = "rectangle_dolfinx"
 with XDMFFile(MPI.COMM_WORLD,
-              "../../mesh/rectangle_dolfinx.xdmf", "r") as xdmf:
+              "../mesh/{}.xdmf".format(mesh_fname), "r") as xdmf:
     mesh = xdmf.read_mesh(name="rectangle")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
     mt = xdmf.read_meshtags(mesh, "rectangle_edge")
 
 # Model
-eqn = WesterveltGLL(mesh, mt, degree, c0, f0, p0, delta, beta, rho0)
+eqn = GLL(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
 eqn.init()
 eqn.rk4(t0, tf, dt)
+
+# Write solution to file
+with VTKFile(MPI.COMM_WORLD, "examples/u.pvd", "w") as vtk:
+    vtk.write_mesh(eqn.mesh, 0)
+    vtk.write_function(eqn.u_n, 0)
