@@ -7,7 +7,7 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar
 from dolfinx.mesh import create_interval, locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from common.westervelt import GLL
+from hifusim import Westervelt
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 16), (4, 8), (5, 4), (6, 2)])
@@ -58,7 +58,7 @@ def test_westervelt_L2(degree, epw):
     print("Final time:", tend)
 
     # Instantiate model
-    eqn = GLL(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
+    eqn = Westervelt(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
     eqn.alpha = 4
     print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
 

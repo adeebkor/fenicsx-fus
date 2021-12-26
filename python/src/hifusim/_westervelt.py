@@ -5,14 +5,14 @@ from dolfinx.fem import FunctionSpace, Function, assemble_vector
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
-class GLL:
+class Westervelt:
     """
-    Solver for linear second order wave equation.
+    Solver for Westervelt equation
 
     This solver uses GLL lattice and GLL quadrature.
     """
 
-    def __init__(self, mesh, meshtags, k, c0, freq0, p0):
+    def __init__(self, mesh, meshtags, k, c0, freq0, p0, delta, beta, rho0):
         self.mesh = mesh
 
         FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
@@ -20,6 +20,7 @@ class GLL:
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
         self.g = Function(self.V)
+        self.dg = Function(self.V)
         self.u_n = Function(self.V)
         self.v_n = Function(self.V)
 
@@ -31,6 +32,9 @@ class GLL:
         self.freq = freq0
         self.w0 = 2 * np.pi * freq0
         self.p0 = p0
+        self.delta = delta
+        self.beta = beta
+        self.rho0 = rho0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
 
@@ -42,17 +46,24 @@ class GLL:
 
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = inner(self.u, self.v) * dx(metadata=md)
-        self.m = assemble_vector(self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.a = inner(self.u, self.v) * dx(metadata=md) \
+            + self.delta / self.c0 * inner(self.u, self.v) \
+            * ds(2, metadata=md) \
+            - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n \
+            * inner(self.u, self.v) * dx(metadata=md)
 
-        self.L = self.c0**2*(- inner(grad(self.u_n), grad(self.v))
-                             * dx(metadata=md)
-                             + inner(self.g, self.v)
-                             * ds(1, metadata=md)
-                             - 1/self.c0*inner(self.v_n, self.v)
-                             * ds(2, metadata=md))
+        self.L = self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
+                               * dx(metadata=md)
+                               + inner(self.g, self.v)
+                               * ds(1, metadata=md)
+                               - 1 / self.c0*inner(self.v_n, self.v)
+                               * ds(2, metadata=md)) \
+            + self.delta * (- inner(grad(self.v_n), grad(self.v))
+                            * dx(metadata=md)
+                            + inner(self.dg, self.v)
+                            * ds(1, metadata=md)) \
+            + 2 * self.beta / self.rho0 / self.c0**2 \
+            * inner(self.v_n*self.v_n, self.v) * dx(metadata=md)
 
     def init(self):
         """
@@ -95,12 +106,18 @@ class GLL:
 
         if t < self.T * self.alpha:
             window = 0.5 * (1 - np.cos(self.freq * np.pi * t / self.alpha))
+            dwindow = 0.5 * np.pi * self.freq / self.alpha * \
+                np.sin(self.freq * np.pi * t / self.alpha)
         else:
             window = 1.0
+            dwindow = 0.0
 
-        # Update source
+        # Update boundary condition
         self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
             * np.cos(self.w0 * t)
+        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
+            * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
+            * np.sin(self.w0 * t)
 
         # Update fields
         u.copy(result=self.u_n.vector)
@@ -110,13 +127,18 @@ class GLL:
         self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                                     mode=PETSc.ScatterMode.FORWARD)
 
+        # Assemble LHS
+        m = assemble_vector(self.a)
+        m.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                      mode=PETSc.ScatterMode.REVERSE)
+
         # Assemble RHS
         b = assemble_vector(self.L)
         b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                       mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
-        result.pointwiseDivide(b, self.m)
+        result.pointwiseDivide(b, m)
 
         return result
 

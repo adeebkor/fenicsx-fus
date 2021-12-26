@@ -11,7 +11,7 @@ from petsc4py import PETSc
 
 from dolfinx.io import XDMFFile, VTKFile
 
-from common.linear import GLL
+from hifusim import Linear
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -49,16 +49,14 @@ t0 = 0.0
 tf = L/c0 + 10.0/f0
 
 # Read mesh and meshtags
-mesh_fname = "rectangle_dolfinx"
-with XDMFFile(MPI.COMM_WORLD,
-              "../mesh/{}.xdmf".format(mesh_fname), "r") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
     mesh = xdmf.read_mesh(name="rectangle")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
     mt = xdmf.read_meshtags(mesh, "rectangle_edge")
 
 # Model
-eqn = GLL(mesh, mt, degree, c0, f0, p0)
+eqn = Linear(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
@@ -66,6 +64,6 @@ eqn.init()
 eqn.rk4(t0, tf, dt)
 
 # Write solution to file
-with VTKFile(MPI.COMM_WORLD, "examples/u.pvd", "w") as vtk:
+with VTKFile(MPI.COMM_WORLD, "u.pvd", "w") as vtk:
     vtk.write_mesh(eqn.mesh, 0)
     vtk.write_function(eqn.u_n, 0)

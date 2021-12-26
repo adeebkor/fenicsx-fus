@@ -6,7 +6,7 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar
 from dolfinx.mesh import create_interval, locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from common.linear import GLL
+from hifusim import Linear
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
@@ -57,7 +57,7 @@ def test_linear_L2(degree, epw):
     print("Final time:", tend)
 
     # Instantiate model
-    eqn = GLL(mesh, mt, degree, c0, f0, p0)
+    eqn = Linear(mesh, mt, degree, c0, f0, p0)
     eqn.alpha = 4
     print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
 

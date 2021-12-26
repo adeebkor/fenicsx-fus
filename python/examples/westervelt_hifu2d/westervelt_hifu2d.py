@@ -5,7 +5,7 @@ from petsc4py import PETSc
 from dolfinx import cpp
 from dolfinx.io import XDMFFile, VTKFile
 
-from common.linear import GLL
+from hifusim import Westervelt
 
 # Material parameters
 c0 = 1486  # speed of sound (m/s)
@@ -37,9 +37,7 @@ nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
 
 # Read mesh and meshtags
-mesh_fname = "hifu_mesh_2d"
-with XDMFFile(
-        MPI.COMM_WORLD, "../mesh/{}.xdmf".format(mesh_fname), "r") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
     mesh = xdmf.read_mesh(name="hifu")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
@@ -60,7 +58,7 @@ t0 = 0.0
 tf = L/c0 + 4.0/f0
 
 # Model
-eqn = GLL(mesh, mt, degree, c0, f0, p0)
+eqn = Westervelt(mesh, mt, degree, c0, f0, p0, delta, beta, rho0)
 
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
@@ -69,6 +67,6 @@ eqn.init()
 eqn.rk4(t0, tf, dt)
 
 # Write solution to file
-with VTKFile(MPI.COMM_WORLD, "examples/u.pvd", "w") as vtk:
+with VTKFile(MPI.COMM_WORLD, "u.pvd", "w") as vtk:
     vtk.write_mesh(eqn.mesh, 0)
     vtk.write_function(eqn.u_n, 0)
