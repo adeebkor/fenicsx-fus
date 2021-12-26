@@ -67,10 +67,13 @@ jobs:
     - name: Build Python interface (dolfinx)
       run: python3 -m pip -v install ./dolfinx/python/
 
+    - name: Install hifusim package
+      run: python3 -m pip -v install python/ --no-cache-dir
+
     - name: Flake8 checks
       run: |
         python3 -m flake8 python/tests/
-        python3 -m flake8 python/common/
+        python3 -m flake8 python/src/hifusim/
     
     - name: Run tests
       run: |
