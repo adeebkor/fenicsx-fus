@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/rectangle_dolfinx.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "rectangle_dolfinx.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "rectangle"));
     mesh->topology().create_connectivity(1, 2);
