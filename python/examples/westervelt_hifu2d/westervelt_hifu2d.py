@@ -1,3 +1,10 @@
+#
+# .. _westervelt_hifu2d:
+#
+# Westervelt solver for the 2D HIFU problem
+# =========================================
+# Copyright (C) 2021 Adeeb Arif Kor
+
 import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
