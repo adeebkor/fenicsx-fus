@@ -4,6 +4,7 @@
 #include <basix/quadrature.h>
 #include <dolfinx.h>
 #include <dolfinx/common/math.h>
+#include <xtensor/xadapt.hpp>
 #include <xtensor/xio.hpp>
 
 using namespace dolfinx;
@@ -58,7 +59,7 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
     xt::xtensor<double, 2> phi = xt::view(basis, 0, xt::all(), xt::all(), 0);
     xt::xtensor<double, 3> dphi = xt::view(basis, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
     
-    const xt::xtensor<double, 2>& x = geometry.x();
+	  const xt::xtensor<double, 2> x = xt::adapt(geometry.x().data(), geometry.x().size(), xt::no_ownership(), std::vector{geometry.x().size() / 3, std::size_t(3)});
     const graph::AdjacencyList<std::int32_t>& x_dofmap = geometry.dofmap();
     const std::size_t num_nodes = x_dofmap.num_links(0);
 
@@ -87,6 +88,8 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 
             // Compute determinant
             detJ(c, q) = std::fabs(math::det(J_cell)) * weights[q];
+
+            std::cout << q << " " << J_cell << std::endl;
         }
     }
 
