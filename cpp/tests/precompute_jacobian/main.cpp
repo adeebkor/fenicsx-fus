@@ -10,16 +10,16 @@ using namespace dolfinx;
 using T = PetscScalar;
 
 int main(int argc, char* argv[]){
-	common::subsystem::init_logging(argc, argv);
-	common::subsystem::init_mpi(argc, argv);
-	{
-		std::cout.precision(15); // Set print precision
+  common::subsystem::init_logging(argc, argv);
+  common::subsystem::init_mpi(argc, argv);
+  {
+	std::cout.precision(15); // Set print precision
 
-		// Create mesh and function space
-		auto mesh = std::make_shared<mesh::Mesh>(mesh::create_rectangle(
-			MPI_COMM_WORLD, {{{0.0, 0.0}, {1.0, 1.0}}}, {2, 2},
-			mesh::CellType::quadrilateral, mesh::GhostMode::none));
+	// Create mesh and function space
+	auto mesh = std::make_shared<mesh::Mesh>(mesh::create_rectangle(
+	  MPI_COMM_WORLD, {{{0.0, 0.0}, {1.0, 1.0}}}, {4, 4},
+	  mesh::CellType::quadrilateral, mesh::GhostMode::none));
 			
-		auto [p1, p2] = precompute_jacobian(mesh, 1);
-	}
+	  auto [p1, p2] = precompute_jacobian(mesh, 1);
+  }
 }

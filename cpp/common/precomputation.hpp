@@ -10,7 +10,7 @@
 
 
 std::pair<xt::xtensor<double, 4>, xt::xtensor<double, 2>>
-precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int q){
+precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int p){
 	// Get geometrical and topological data
 	const mesh::Geometry& geometry = mesh->geometry();
 	const mesh::Topology& topology = mesh->topology();
@@ -24,10 +24,22 @@ precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int q){
 	const graph::AdjacencyList<std::int32_t>& x_dofmap = geometry.dofmap();
 	const std::size_t num_nodes = x_dofmap.num_links(0);
 
+	// Create map between basis degree and quadrature degree
+	std::map<int, int> qd;
+	qd[2] = 3;
+	qd[3] = 4;
+	qd[4] = 6;
+	qd[5] = 8;
+	qd[6] = 10;
+	qd[7] = 12;
+	qd[8] = 14;
+	qd[9] = 16;
+	qd[10] = 18;
+
 	// Tabulate quadrature points and weights
 	auto cell = basix::cell::type::quadrilateral;
 	auto quad = basix::quadrature::type::gll;
-	auto [points, weights] = basix::quadrature::make_quadrature(quad, cell, q);
+	auto [points, weights] = basix::quadrature::make_quadrature(quad, cell, qd[p]);
 	const std::size_t nq = weights.size();
 
 	// Tabulate coordinate map basis functions
@@ -59,10 +71,9 @@ precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int q){
 			xt::view(J, 0, 1) = xt::sum(xt::view(coords, xt::all(), 1) * xt::view(dphi, 0, q, xt::all()));
 			xt::view(J, 1, 0) = xt::sum(xt::view(coords, xt::all(), 0) * xt::view(dphi, 1, q, xt::all()));
 			xt::view(J, 1, 1) = xt::sum(xt::view(coords, xt::all(), 1) * xt::view(dphi, 1, q, xt::all()));
-			detJ(c, q) = xt::linalg::det(J) * weights[q];
+			detJ(c, q) = std::fabs(xt::linalg::det(J)) * weights[q];
 			xt::view(J_inv, c, q, xt::all(), xt::all()) = xt::linalg::inv(J);
-			std::cout << q << " " << xt::view(J_inv, c, q, xt::all(), xt::all()) << std::endl;
 		}
 	}
-	return {J, detJ};
+	return {J_inv, detJ};
 }

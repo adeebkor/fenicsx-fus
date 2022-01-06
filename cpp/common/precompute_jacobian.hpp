@@ -88,8 +88,6 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 
             // Compute determinant
             detJ(c, q) = std::fabs(math::det(J_cell)) * weights[q];
-
-            std::cout << q << " " << J_cell << std::endl;
         }
     }
 
@@ -98,7 +96,7 @@ precompute_jacobian(std::shared_ptr<const mesh::Mesh> mesh, int q){
 
 // Get permutation vector
 std::pair<xt::xtensor<int, 1>, xt::xtensor<double, 4>>
-tabulate_basis_and_permutation(int p=5, int q=8){
+tabulate_basis_and_permutation(int p=3, int q=4){
     // Tabulate quadrature points and weights
     auto family = basix::element::family::P;
     auto cell_type = basix::cell::type::quadrilateral;

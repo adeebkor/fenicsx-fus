@@ -21,7 +21,7 @@ class MassOperator {
         xt::xtensor<double, 2> _detJ, _phi;
         xt::xtensor<int, 1> _pidx;
     public:
-        MassOperator(std::shared_ptr<fem::FunctionSpace>& V, int P=5) : _dofmap(0) {
+        MassOperator(std::shared_ptr<fem::FunctionSpace>& V, int P=3) : _dofmap(0) {
             std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
             int tdim = mesh->topology().dim();
             _ncells = mesh->topology().index_map(tdim)->size_local();
@@ -30,7 +30,7 @@ class MassOperator {
             _y.resize(_ndofs);
 
             std::pair<xt::xtensor<double, 4>, xt::xtensor<double, 2>> 
-            p1 = precompute_jacobian(mesh, 8);
+            p1 = precompute_jacobian(mesh, 4);
             _J = std::get<xt::xtensor<double, 4>>(p1);
             _detJ = std::get<xt::xtensor<double, 2>>(p1);
 
