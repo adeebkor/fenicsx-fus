@@ -1,7 +1,7 @@
 import numpy as np
 from petsc4py import PETSc
 
-from dolfinx.fem import FunctionSpace, Function, assemble_vector
+from dolfinx.fem import FunctionSpace, Function, assemble_vector, form
 from ufl import FiniteElement, TestFunction, Measure, inner, grad, dx
 
 
@@ -46,24 +46,24 @@ class Westervelt:
 
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = inner(self.u, self.v) * dx(metadata=md) \
-            + self.delta / self.c0 * inner(self.u, self.v) \
-            * ds(2, metadata=md) \
-            - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n \
-            * inner(self.u, self.v) * dx(metadata=md)
+        self.a = form(inner(self.u, self.v) * dx(metadata=md)
+                      + self.delta / self.c0 * inner(self.u, self.v)
+                      * ds(2, metadata=md)
+                      - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n
+                      * inner(self.u, self.v) * dx(metadata=md))
 
-        self.L = self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
-                               * dx(metadata=md)
-                               + inner(self.g, self.v)
-                               * ds(1, metadata=md)
-                               - 1 / self.c0*inner(self.v_n, self.v)
-                               * ds(2, metadata=md)) \
-            + self.delta * (- inner(grad(self.v_n), grad(self.v))
-                            * dx(metadata=md)
-                            + inner(self.dg, self.v)
-                            * ds(1, metadata=md)) \
-            + 2 * self.beta / self.rho0 / self.c0**2 \
-            * inner(self.v_n*self.v_n, self.v) * dx(metadata=md)
+        self.L = form(self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
+                                    * dx(metadata=md)
+                                    + inner(self.g, self.v)
+                                    * ds(1, metadata=md)
+                                    - 1 / self.c0*inner(self.v_n, self.v)
+                                    * ds(2, metadata=md))
+                      + self.delta * (- inner(grad(self.v_n), grad(self.v))
+                                      * dx(metadata=md)
+                                      + inner(self.dg, self.v)
+                                      * ds(1, metadata=md))
+                      + 2 * self.beta / self.rho0 / self.c0**2
+                      * inner(self.v_n*self.v_n, self.v) * dx(metadata=md))
 
     def init(self):
         """

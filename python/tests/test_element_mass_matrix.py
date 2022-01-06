@@ -60,7 +60,7 @@ def test_diagonal(dimension, p):
     md = {"quadrature_rule": "GLL",
           "quadrature_degree": qd[str(p)]}
 
-    a = u*v*ufl.dx(metadata=md)
+    a = dolfinx.fem.form(u*v*ufl.dx(metadata=md))
 
     # Build element mass matrix
     A = dolfinx.fem.assemble_matrix(a)

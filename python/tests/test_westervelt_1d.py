@@ -3,7 +3,7 @@ import numpy as np
 from scipy.special import jv
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function, assemble_scalar
+from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
@@ -97,9 +97,9 @@ def test_westervelt_L2(degree, epw):
     # L2 error
     diff = eqn.u_n - u_e
     L2_diff = mesh.comm.allreduce(
-        assemble_scalar(inner(diff, diff) * dx), op=MPI.SUM)
+        assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
     L2_exact = mesh.comm.allreduce(
-        assemble_scalar(inner(u_e, u_e) * dx), op=MPI.SUM)
+        assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
