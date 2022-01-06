@@ -58,7 +58,7 @@ class StiffnessOperator {
         xt::xtensor<double, 3> _phi;
         xt::xtensor<int, 1> _pidx;
     public:
-        StiffnessOperator(std::shared_ptr<fem::FunctionSpace>& V, int P=6) : _dofmap(0) {
+        StiffnessOperator(std::shared_ptr<fem::FunctionSpace>& V, int P=3) : _dofmap(0) {
             std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
             int tdim = mesh->topology().dim();
             _ncells = mesh->topology().index_map(tdim)->size_local();
@@ -67,7 +67,7 @@ class StiffnessOperator {
             _y.resize(_ndofs);
 
             std::pair<xt::xtensor<double, 4>, xt::xtensor<double, 2>> 
-            p1 = precompute_jacobian(mesh, 10);
+            p1 = precompute_jacobian(mesh, 4);
             _J = std::get<xt::xtensor<double, 4>>(p1);
             _detJ = std::get<xt::xtensor<double, 2>>(p1);
 
@@ -112,6 +112,7 @@ class StiffnessOperator {
             xt::xtensor<double, 3> J;
             double* c = new double[1];
             c[0] = 1486.0;
+            // c[0] = 1.0;
             for (std::int32_t cell = 0; cell < _ncells; ++cell){
                 cell_dofs = _dofmap.links(cell);
                 for (int i = 0; i < _ndofs; i++){

@@ -47,22 +47,23 @@ class MassOperator {
     MassOperator(std::shared_ptr<fem::FunctionSpace>& V, int bdegree) : _dofmap(0) {
       std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
       int tdim = mesh->topology().dim();
+      _dofmap = V->dofmap()->list();
       _ncells = mesh->topology().index_map(tdim)->size_local();
       _ndofs = (bdegree + 1) * (bdegree + 1);
       _x.resize(_ndofs);
       _y.resize(_ndofs);
 
       // Create map between basis degree and quadrature degree
-	    std::map<int, int> qdegree;
-	    qdegree[2] = 3;
-	    qdegree[3] = 4;
-	    qdegree[4] = 6;
-	    qdegree[5] = 8;
-	    qdegree[6] = 10;
-	    qdegree[7] = 12;
-	    qdegree[8] = 14;
-	    qdegree[9] = 16;
-	    qdegree[10] = 18;
+      std::map<int, int> qdegree;
+      qdegree[2] = 3;
+      qdegree[3] = 4;
+      qdegree[4] = 6;
+      qdegree[5] = 8;
+      qdegree[6] = 10;
+      qdegree[7] = 12;
+      qdegree[8] = 14;
+      qdegree[9] = 16;
+      qdegree[10] = 18;
 
       // Get the determinant and inverse of the Jacobian
       auto jacobian_data = precompute_jacobian_data(mesh, bdegree);
@@ -73,7 +74,6 @@ class MassOperator {
       _table = std::get<1>(table_perm);
       _phi = xt::view(_table, 0, xt::all(), xt::all(), 0);
 
-      _dofmap = V->dofmap()->list();
     }
 
     template <typename Alloc>
@@ -102,6 +102,13 @@ class MassOperator {
     }
 };
 
+namespace {
+  template <typename T>
+  inline void skernel(T* A, const T* w, const std::map<std::string, double>& c, const double* detJ, const xt::xtensor<double, 3>& J, const xt::xtensor<double, 3>& dphi, int nq, int nd){
+    
+  }
+}
+
 template <typename T>
 class StiffnessOperator {
   private:
@@ -112,16 +119,60 @@ class StiffnessOperator {
     xt::xtensor<double, 2> _detJ;
     xt::xtensor<double, 3> _dphi;
     std::vector<int> _perm;
+    std::map<std::string, double> _params;
 
   public:
-    StiffnessOperator(std::shared_ptr<fem::FunctionSpace>& V, int bdegree) : _dofmap(0) {
+    StiffnessOperator(std::shared_ptr<fem::FunctionSpace>& V, int bdegree, std::map<std::string, double>& params) : _dofmap(0) {
       std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
       int tdim  = mesh->topology().dim();
+      _dofmap = V->dofmap()->list();
       _ncells = mesh->topology().index_map(tdim)->size_local();
       _ndofs = (bdegree + 1)*(bdegree + 1);
       _x.resize(_ndofs);
       _y.resize(_ndofs);
+      _params = params;
 
-      
+      // Create map between basis degree and quadrature degree
+      std::map<int, int> qdegree;
+      qdegree[2] = 3;
+      qdegree[3] = 4;
+      qdegree[4] = 6;
+      qdegree[5] = 8;
+      qdegree[6] = 10;
+      qdegree[7] = 12;
+      qdegree[8] = 14;
+      qdegree[9] = 16;
+      qdegree[10] = 18;
+
+      // Get the determinant and inverse of the Jacobian
+      auto jacobian_data = precompute_jacobian_data(mesh, bdegree);
+      _J_inv = std::get<0>(jacobian_data);
+      _detJ = std::get<1>(jacobian_data);
+      auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
+      _perm = std::get<0>(table_perm);
+      _table = std::get<1>(table_perm);
+      _dphi = xt::view(_table, xt::range(1, 3), xt::all(), xt::all(), 0);
     }
-}
+
+    template <typename Alloc>
+    void operator()(const la::Vector<T, Alloc>& x, la::Vector<T, Alloc>& y){
+      std::cout << _params["c"] << std::endl;
+      std::getchar();
+      xtl::span<const T> x_array = x.array();
+      xtl::span<T> y_array = y.mutable_array();
+      int nq = _detJ.shape(1);
+      tcb::span<const int> cell_dofs;
+      for (std::int32_t cell = 0; cell < _ncells; ++cell){
+        cell_dofs = _dofmap.links(cell);
+        for (int i = 0; i < _ndofs; i++){
+          _x[i] = x_array[cell_dofs[i]];
+        }
+        std::fill(_y.begin(), _y.end(), 0.0);
+        double* detJ_ptr = _detJ.data() + cell * nq;
+        skernel<double> (_y.data(), _x.data(), _params, detJ_ptr, _J_inv, _dphi, nq, _ndofs);
+        for (int i = 0; i < _ndofs; i++){
+          y_array[cell_dofs[i]] += _y[i];
+        }
+      }
+    }
+};

@@ -1,0 +1,16 @@
+# A simple UFL form
+
+element = FiniteElement("Lagrange", quadrilateral, 3, variant="gll")
+coord_element = VectorElement("Lagrange", quadrilateral, 1)
+mesh = Mesh(coord_element)
+
+V = FunctionSpace(mesh, element)
+
+u = Coefficient(V)
+v = TestFunction(V)
+
+md = {"quadrature_rule": "GLL", "quadrature_degree": 4}
+
+a = inner(grad(u), grad(v)) * dx(metadata=md)
+
+forms = [a]
