@@ -51,6 +51,9 @@ class Westervelt:
                       * ds(2, metadata=md)
                       - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n
                       * inner(self.u, self.v) * dx(metadata=md))
+        self.m = assemble_vector(self.a)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
                                     * dx(metadata=md)
@@ -64,6 +67,9 @@ class Westervelt:
                                       * ds(1, metadata=md))
                       + 2 * self.beta / self.rho0 / self.c0**2
                       * inner(self.v_n*self.v_n, self.v) * dx(metadata=md))
+        self.b = assemble_vector(self.L)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -128,17 +134,21 @@ class Westervelt:
                                     mode=PETSc.ScatterMode.FORWARD)
 
         # Assemble LHS
-        m = assemble_vector(self.a)
-        m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                      mode=PETSc.ScatterMode.REVERSE)
+        with self.m.localForm() as m_local:
+            m_local.set(0.0)
+        assemble_vector(self.m, self.a)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
         # Assemble RHS
-        b = assemble_vector(self.L)
-        b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                      mode=PETSc.ScatterMode.REVERSE)
+        with self.b.localForm() as b_local:
+            b_local.set(0.0)
+        assemble_vector(self.b, self.L)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
-        result.pointwiseDivide(b, m)
+        result.pointwiseDivide(self.b, self.m)
 
         return result
 

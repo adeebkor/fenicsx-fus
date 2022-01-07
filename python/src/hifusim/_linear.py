@@ -53,6 +53,9 @@ class Linear:
                                   * ds(1, metadata=md)
                                   - 1/self.c0*inner(self.v_n, self.v)
                                   * ds(2, metadata=md)))
+        self.b = assemble_vector(self.L)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -111,12 +114,14 @@ class Linear:
                                     mode=PETSc.ScatterMode.FORWARD)
 
         # Assemble RHS
-        b = assemble_vector(self.L)
-        b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                      mode=PETSc.ScatterMode.REVERSE)
+        with self.b.localForm() as b_local:
+            b_local.set(0.0)
+        assemble_vector(self.b, self.L)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
-        result.pointwiseDivide(b, self.m)
+        result.pointwiseDivide(self.b, self.m)
 
         return result
 
