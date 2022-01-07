@@ -48,7 +48,7 @@ precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int p){
 	xt::xtensor<double, 3> dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all());
 
 	// Create placeholder for Jacobian data
-	xt::xtensor<double, 4> J_inv({ncells, nq, tdim, gdim});
+	xt::xtensor<double, 4> G({ncells, nq, tdim, gdim});
 	xt::xtensor<double, 2> J({tdim, gdim});
 	xt::xtensor<double, 2> detJ({ncells, nq});
 	xt::xtensor<double, 2> coords({num_nodes, gdim});
@@ -72,8 +72,8 @@ precompute_jacobian_data(std::shared_ptr<const mesh::Mesh> mesh, int p){
 			xt::view(J, 1, 0) = xt::sum(xt::view(coords, xt::all(), 0) * xt::view(dphi, 1, q, xt::all()));
 			xt::view(J, 1, 1) = xt::sum(xt::view(coords, xt::all(), 1) * xt::view(dphi, 1, q, xt::all()));
 			detJ(c, q) = std::fabs(xt::linalg::det(J)) * weights[q];
-			xt::view(J_inv, c, q, xt::all(), xt::all()) = xt::linalg::inv(J);
+			xt::view(G, c, q, xt::all(), xt::all()) = xt::transpose(xt::linalg::inv(J)) * xt::linalg::inv(J) * detJ(c, q);
 		}
 	}
-	return {J_inv, detJ};
+	return {G, detJ};
 }

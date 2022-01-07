@@ -1,8 +1,12 @@
 #include "form.h"
-#include "precomputation.hpp"
-#include "operators.hpp"
+#include "precompute_jacobian.hpp"
+#include "stiffness_operator.hpp"
 #include <cmath>
 #include <dolfinx.h>
+#include <dolfinx/fem/Constant.h>
+#include <dolfinx/fem/petsc.h>
+#include <xtensor/xarray.hpp>
+#include <xtensor/xview.hpp>
 
 using namespace dolfinx;
 
@@ -10,7 +14,7 @@ int main(int argc, char* argv[]){
   common::subsystem::init_logging(argc, argv);
   common::subsystem::init_mpi(argc, argv);
   {
-	std::cout.precision(15);
+	std::cout.precision(18);
 
 	// Create mesh and function space
 	std::shared_ptr<mesh::Mesh> mesh = std::make_shared<mesh::Mesh>(mesh::create_rectangle(
@@ -24,14 +28,12 @@ int main(int argc, char* argv[]){
 	std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
 	int bs = V->dofmap()->index_map_bs();
 
-	// Create mass operator
+	// Create stiffness operator
 	std::shared_ptr<fem::Function<double>> u = std::make_shared<fem::Function<double>>(V);
 	xtl::span<double> _u = u->x()->mutable_array();
-	std::fill(_u.begin(), _u.end(), 1.0);
+	std::fill(_u.begin(), _u.end(), 1.0e10);
 
-	std::map<std::string, double> params;
-	params["c"] = 1480.0;
-	std::shared_ptr<StiffnessOperator<double>> stiffness_operator = std::make_shared<StiffnessOperator<double>>(V, 3, params);
+	std::shared_ptr<StiffnessOperator<double>> stiffness_operator = std::make_shared<StiffnessOperator<double>>(V);
 	std::shared_ptr<la::Vector<double>> s = std::make_shared<la::Vector<double>>(index_map, bs);
 	tcb::span<double> _s = s->mutable_array();
 	std::fill(_s.begin(), _s.end(), 0.0);
@@ -42,6 +44,4 @@ int main(int argc, char* argv[]){
     }
 	std::getchar();
   }
-
-  return 0;
 }
