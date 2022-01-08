@@ -67,7 +67,7 @@ class MassOperator {
       qdegree[10] = 18;
 
       // Get the determinant and inverse of the Jacobian
-      auto jacobian_data = precompute_jacobian_data(mesh, bdegree);
+      auto jacobian_data = precompute_jacobian_data_quad(mesh, bdegree);
       G = std::get<0>(jacobian_data);
       _detJ = std::get<1>(jacobian_data);
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
