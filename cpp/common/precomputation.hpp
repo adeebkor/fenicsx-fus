@@ -5,6 +5,7 @@
 #include <dolfinx.h>
 #include <dolfinx/common/math.h>
 #include <xtensor/xadapt.hpp>
+#include <xtensor/xindex_view.hpp>
 #include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xio.hpp>
 
@@ -44,6 +45,9 @@ precompute_jacobian_data_quad(std::shared_ptr<const mesh::Mesh> mesh, int p){
 
 	// Tabulate coordinate map basis functions
 	xt::xtensor<double, 4> table = cmap.tabulate(1, points);
+    xt::filtration(table, xt::isclose(table, 0.0)) = 0;
+    xt::filtration(table, xt::isclose(table, 1.0)) = 1;
+    xt::filtration(table, xt::isclose(table, -1.0)) = -1;
 	xt::xtensor<double, 2> phi = xt::view(table, 0, xt::all(), xt::all(), 0);
 	xt::xtensor<double, 3> dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
 
@@ -113,6 +117,9 @@ precompute_jacobian_data_hex(std::shared_ptr<const mesh::Mesh> mesh, int p){
 
 	// Tabulate coordinate map basis functions
 	xt::xtensor<double, 4> table = cmap.tabulate(1, points);
+    xt::filtration(table, xt::isclose(table, 0.0)) = 0;
+    xt::filtration(table, xt::isclose(table, 1.0)) = 1;
+    xt::filtration(table, xt::isclose(table, -1.0)) = -1;
 	xt::xtensor<double, 2> phi = xt::view(table, 0, xt::all(), xt::all(), 0);
 	xt::xtensor<double, 3> dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
 

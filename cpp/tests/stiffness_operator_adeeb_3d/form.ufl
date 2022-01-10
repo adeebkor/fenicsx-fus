@@ -7,7 +7,6 @@ mesh = Mesh(coord_element)
 V = FunctionSpace(mesh, element)
 
 c0 = Constant(mesh)
-
 u = Coefficient(V)
 v = TestFunction(V)
 

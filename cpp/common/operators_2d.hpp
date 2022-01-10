@@ -164,7 +164,7 @@ class StiffnessOperator {
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
-      _dphi = xt::view(_table, xt::range(1, 3), xt::all(), xt::all(), 0);
+      _dphi = xt::view(_table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
       xt::filtration(_dphi, xt::isclose(_dphi, 0.0)) = 0;
       xt::filtration(_dphi, xt::isclose(_dphi, 1.0)) = 1;
       xt::filtration(_dphi, xt::isclose(_dphi, -1.0)) = -1;

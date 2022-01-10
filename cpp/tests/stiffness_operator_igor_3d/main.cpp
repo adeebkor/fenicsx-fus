@@ -1,6 +1,12 @@
 #include "form.h"
+#include "precompute_jacobian_3d.hpp"
+#include "stiffness_operator_3d.hpp"
 #include <cmath>
 #include <dolfinx.h>
+#include <dolfinx/fem/Constant.h>
+#include <dolfinx/fem/petsc.h>
+#include <xtensor/xarray.hpp>
+#include <xtensor/xview.hpp>
 
 using namespace dolfinx;
 
@@ -8,7 +14,7 @@ int main(int argc, char* argv[]){
   common::subsystem::init_logging(argc, argv);
   common::subsystem::init_mpi(argc, argv);
   {
-	std::cout.precision(15);
+	std::cout.precision(18);
 
 	// Create mesh and function space
 	std::shared_ptr<mesh::Mesh> mesh = std::make_shared<mesh::Mesh>(mesh::create_box(
@@ -22,24 +28,20 @@ int main(int argc, char* argv[]){
 	std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
 	int bs = V->dofmap()->index_map_bs();
 
-	// Create stiffness vector
+	// Create stiffness operator
 	std::shared_ptr<fem::Function<double>> u = std::make_shared<fem::Function<double>>(V);
 	xtl::span<double> _u = u->x()->mutable_array();
 	std::fill(_u.begin(), _u.end(), 1.0e10);
 
-	double speedOfSound = 1486.0;
-	std::shared_ptr<fem::Constant<double>> c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
-	std::shared_ptr<fem::Form<double>> a = std::make_shared<fem::Form<double>>(fem::create_form<double>(*form_form_a, {V}, {{"u", u}}, {{"c0", c0}}, {}));
+	std::shared_ptr<StiffnessOperator<double>> stiffness_operator = std::make_shared<StiffnessOperator<double>>(V);
 	std::shared_ptr<la::Vector<double>> s = std::make_shared<la::Vector<double>>(index_map, bs);
 	tcb::span<double> _s = s->mutable_array();
 	std::fill(_s.begin(), _s.end(), 0.0);
-	fem::assemble_vector(_s, *a);
-	s->scatter_rev(common::IndexMap::Mode::add);
+	stiffness_operator->operator()(*u->x(), *s);
 
-	for (int i = 0; i < 10; i++){
-		std::cout << s->mutable_array()[i] << "\n";
-	}
+	for (int i = 0; i < 10; ++i){
+      std::cout << s->mutable_array()[i] << std::endl;
+    }
+	std::getchar();
   }
-
-  return 0;
 }
