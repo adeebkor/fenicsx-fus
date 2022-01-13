@@ -73,9 +73,9 @@ class MassOperator {
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
-      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0;
-      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1;
-      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1;
+      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0.0;
+      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1.0;
+      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1.0;
       _phi = xt::view(_table, 0, xt::all(), xt::all(), 0);
 
     }
@@ -108,7 +108,7 @@ class MassOperator {
 
 namespace {
   template <typename T>
-  inline void skernel(T* A, const T* w, const std::map<std::string, double>& c, const xt::xtensor<double, 3>& G, const xt::xtensor<double, 3>& dphi, int nq, int nd){
+  inline void skernel(T* A, const T* w, std::map<std::string, double>& c, const xt::xtensor<double, 3>& G, const xt::xtensor<double, 3>& dphi, int nq, int nd){
     for (int iq = 0; iq < nq; iq++){
       double w0 = 0.0;
       double w1 = 0.0;
@@ -116,8 +116,8 @@ namespace {
         w0 += w[ic] * dphi(0, iq, ic); // dx
         w1 += w[ic] * dphi(1, iq, ic); // dy
       }
-      const double fw0 = std::pow(1486.0, 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
-      const double fw1 = std::pow(1486.0, 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
+      const double fw0 = - std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
+      const double fw1 = - std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
       for (int i = 0; i < nd; i++){
         A[i] += fw0 * dphi(0, iq, i) + fw1 * dphi(1, iq, i);
       }
@@ -167,9 +167,9 @@ class StiffnessOperator {
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
-      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0;
-      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1;
-      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1;
+      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0.0;
+      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1.0;
+      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1.0;
       _dphi = xt::view(_table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
     }
 

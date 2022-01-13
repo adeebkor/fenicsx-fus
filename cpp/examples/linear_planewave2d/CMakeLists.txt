@@ -17,7 +17,6 @@ if (NOT TARGET dolfinx)
 endif()
 
 include_directories("../../common" ".")
-add_directory("../../../mesh")
 
 # Executable
 add_executable(${PROJECT_NAME} forms.c main.cpp)

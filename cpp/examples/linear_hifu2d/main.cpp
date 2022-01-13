@@ -18,8 +18,8 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // Material parameters
-    double speedOfSound = 1486.0;    // (m/s)
-    double densityOfMedium = 998.0; // (kg/m^3)
+    double speedOfSound = 1482.36;    // (m/s)
+    double densityOfMedium = 998.2; // (kg/m^3)
     double coeffOfNonlinearity = 3.5;
     double diffusivityOfSound = 4.33e-6;
 
@@ -39,11 +39,11 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 5;
+    int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile xdmf(MPI_COMM_WORLD, "../../../mesh/hifu_mesh_2d_p4.xdmf", "r");
+    io::XDMFFile xdmf(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh
         = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "hifu"));
     mesh->topology().create_connectivity(0, 1);

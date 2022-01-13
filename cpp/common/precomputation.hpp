@@ -79,6 +79,10 @@ precompute_jacobian_data_quad(std::shared_ptr<const mesh::Mesh> mesh, int p){
 			xt::view(G, c, q, xt::all(), xt::all()) = xt::transpose(xt::linalg::inv(J)) * xt::linalg::inv(J) * detJ(c, q);
 		}
 	}
+    xt::filtration(G, xt::isclose(G, 0.0)) = 0.0;
+    xt::filtration(G, xt::isclose(G, 1.0)) = 1.0;
+    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
+
 	return {G, detJ};
 }
 
@@ -156,5 +160,9 @@ precompute_jacobian_data_hex(std::shared_ptr<const mesh::Mesh> mesh, int p){
 			xt::view(G, c, q, xt::all(), xt::all()) = xt::transpose(xt::linalg::inv(J)) * xt::linalg::inv(J) * detJ(c, q);
 		}
 	}
+
+    xt::filtration(G, xt::isclose(G, 0.0)) = 0.0;
+    xt::filtration(G, xt::isclose(G, 1.0)) = 1.0;
+    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
 	return {G, detJ};
 }

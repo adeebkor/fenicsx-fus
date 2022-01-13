@@ -1,7 +1,5 @@
 #include "forms.h"
-#include "mass_operator.hpp"
-#include "stiffness_operator.hpp"
-
+#include "operators_2d.hpp"
 #include <dolfinx.h>
 #include <dolfinx/la/Vector.h>
 #include <memory>
@@ -97,16 +95,12 @@ class LinearGLLOpt {
       xtl::span<double> _u = u->x()->mutable_array();
       std::fill(_u.begin(), _u.end(), 1.0);
   
-      mass_op = std::make_shared<MassOperator<double>>(V);
+      mass_op = std::make_shared<MassOperator<double>>(V, k_);
       m = std::make_shared<la::Vector<double>>(index_map, bs);
       _m = m->mutable_array();
       std::fill(_m.begin(), _m.end(), 0.0);
       mass_op->operator()(*u->x(), *m);
-
-      for (int i = 0; i < 10; ++i){
-        std::cout << m->mutable_array()[i] << std::endl;
-      }
-      std::getchar();
+      // m->scatter_rev(common::IndexMap::Mode::add);
 
       // Create RHS form
       L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -116,12 +110,14 @@ class LinearGLLOpt {
       xtl::span<double> _un = u_n->x()->mutable_array();
       std::fill(_un.begin(), _un.end(), 0.0);
 
-      stiff_op = std::make_shared<StiffnessOperator<double>>(V);
+      std::map<std::string, double> params;
+      params["c0"] = c0_;
+      stiff_op = std::make_shared<StiffnessOperator<double>>(V, k_, params);
       b = std::make_shared<la::Vector<double>>(index_map, bs);
-      _b = m->mutable_array();
+      _b = b->mutable_array();
       std::fill(_b.begin(), _b.end(), 0.0);
       stiff_op->operator()(*u_n->x(), *b);
-      b->scatter_rev(common::IndexMap::Mode::add);
+      // b->scatter_rev(common::IndexMap::Mode::add);
 
   }
 
@@ -162,10 +158,10 @@ class LinearGLLOpt {
     // Update boundary condition
     std::fill(_g.begin(), _g.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
 
-    u->scatter_fwd();
+    // u->scatter_fwd();
     kernels::copy(*u, *u_n->x());
 
-    v->scatter_fwd();
+    // v->scatter_fwd();
     kernels::copy(*v, *v_n->x());
 
     // TODO: Compute coefficients
@@ -174,12 +170,7 @@ class LinearGLLOpt {
     std::fill(_b.begin(), _b.end(), 0.0);
     stiff_op->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
-    b->scatter_rev(common::IndexMap::Mode::add);
-
-    // for (int i = 0; i < 10; ++i){
-    //   std::cout << b->mutable_array()[i] << std::endl;
-    // }
-    // std::getchar();
+    // b->scatter_rev(common::IndexMap::Mode::add);
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -194,6 +185,11 @@ class LinearGLLOpt {
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
                      [](const double& bi, const double& mi) { return bi / mi; });
+      
+      // for (int i = 0; i < 10; i++){
+      //   std::cout << m_[i] << " " << b_[i] << " " << out[i] << std::endl;
+      // }
+      // std::getchar();
     }
   } 
 
@@ -293,8 +289,8 @@ class LinearGLLOpt {
     // Prepare solution at final time
     kernels::copy(*u_, *u_n->x());
     kernels::copy(*v_, *v_n->x());
-    u_n->x()->scatter_fwd();
-    v_n->x()->scatter_fwd();
+    // u_n->x()->scatter_fwd();
+    // v_n->x()->scatter_fwd();
 
     file.write(t);
     file.close();
