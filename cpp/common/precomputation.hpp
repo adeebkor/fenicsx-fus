@@ -43,11 +43,11 @@ precompute_jacobian_data_quad(std::shared_ptr<const mesh::Mesh> mesh, int p){
 	auto [points, weights] = basix::quadrature::make_quadrature(quad, cell, qd[p]);
 	const std::size_t nq = weights.size();
 
-	// Tabulate coordinate map basis functions
+	// Tabulate coordinate map basis functions and clamp -1, 0, 1 values
 	xt::xtensor<double, 4> table = cmap.tabulate(1, points);
-    xt::filtration(table, xt::isclose(table, 0.0)) = 0;
-    xt::filtration(table, xt::isclose(table, 1.0)) = 1;
-    xt::filtration(table, xt::isclose(table, -1.0)) = -1;
+    xt::filtration(table, xt::isclose(table, -1.0)) = -1.0;
+    xt::filtration(table, xt::isclose(table, 0.0)) = 0.0;
+    xt::filtration(table, xt::isclose(table, 1.0)) = 1.0;
 	xt::xtensor<double, 2> phi = xt::view(table, 0, xt::all(), xt::all(), 0);
 	xt::xtensor<double, 3> dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
 
@@ -79,9 +79,10 @@ precompute_jacobian_data_quad(std::shared_ptr<const mesh::Mesh> mesh, int p){
 			xt::view(G, c, q, xt::all(), xt::all()) = xt::transpose(xt::linalg::inv(J)) * xt::linalg::inv(J) * detJ(c, q);
 		}
 	}
+	// Clamp -1, 0, 1 values
+    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
     xt::filtration(G, xt::isclose(G, 0.0)) = 0.0;
     xt::filtration(G, xt::isclose(G, 1.0)) = 1.0;
-    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
 
 	return {G, detJ};
 }
@@ -119,11 +120,11 @@ precompute_jacobian_data_hex(std::shared_ptr<const mesh::Mesh> mesh, int p){
 	auto [points, weights] = basix::quadrature::make_quadrature(quad, cell, qd[p]);
 	const std::size_t nq = weights.size();
 
-	// Tabulate coordinate map basis functions
+	// Tabulate coordinate map basis functions and clamp -1, 0, 1 values
 	xt::xtensor<double, 4> table = cmap.tabulate(1, points);
-    xt::filtration(table, xt::isclose(table, 0.0)) = 0;
-    xt::filtration(table, xt::isclose(table, 1.0)) = 1;
-    xt::filtration(table, xt::isclose(table, -1.0)) = -1;
+    xt::filtration(table, xt::isclose(table, -1.0)) = -1.0;
+    xt::filtration(table, xt::isclose(table, 0.0)) = 0.0;
+    xt::filtration(table, xt::isclose(table, 1.0)) = 1.0;
 	xt::xtensor<double, 2> phi = xt::view(table, 0, xt::all(), xt::all(), 0);
 	xt::xtensor<double, 3> dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
 
@@ -161,8 +162,10 @@ precompute_jacobian_data_hex(std::shared_ptr<const mesh::Mesh> mesh, int p){
 		}
 	}
 
+	// Clamp -1, 0, 1 values
+    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
     xt::filtration(G, xt::isclose(G, 0.0)) = 0.0;
     xt::filtration(G, xt::isclose(G, 1.0)) = 1.0;
-    xt::filtration(G, xt::isclose(G, -1.0)) = -1.0;
+
 	return {G, detJ};
 }
