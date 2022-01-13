@@ -12,6 +12,6 @@ v = TestFunction(V)
 
 md = {"quadrature_rule": "GLL", "quadrature_degree": 4}
 
-a = c0**2 * inner(grad(u), grad(v)) * dx(metadata=md)
+a = - c0**2 * inner(grad(u), grad(v)) * dx(metadata=md)
 
 forms = [a]

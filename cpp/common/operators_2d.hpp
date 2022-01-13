@@ -116,8 +116,8 @@ namespace {
         w0 += w[ic] * dphi(0, iq, ic); // dx
         w1 += w[ic] * dphi(1, iq, ic); // dy
       }
-      const double fw0 = - std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
-      const double fw1 = - std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
+      const double fw0 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
+      const double fw1 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
       for (int i = 0; i < nd; i++){
         A[i] += fw0 * dphi(0, iq, i) + fw1 * dphi(1, iq, i);
       }

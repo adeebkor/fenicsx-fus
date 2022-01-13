@@ -36,14 +36,14 @@ int main(int argc, char* argv[]){
         });
 
 	std::map<std::string, double> params;
-	params["c"] = 1486.0;
+	params["c0"] = 1486.0;
 	std::shared_ptr<StiffnessOperator<double>> stiffness_operator = std::make_shared<StiffnessOperator<double>>(V, 3, params);
 	std::shared_ptr<la::Vector<double>> s = std::make_shared<la::Vector<double>>(index_map, bs);
 	tcb::span<double> _s = s->mutable_array();
 	std::fill(_s.begin(), _s.end(), 0.0);
 	stiffness_operator->operator()(*u->x(), *s);
 
-	double speedOfSound = params["c"];
+	double speedOfSound = params["c0"];
 	std::shared_ptr<fem::Constant<double>> c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
 	std::shared_ptr<fem::Form<double>> a = std::make_shared<fem::Form<double>>(fem::create_form<double>(*form_form_a, {V}, {{"u", u}}, {{"c0", c0}}, {}));
 	std::shared_ptr<la::Vector<double>> s_ref = std::make_shared<la::Vector<double>>(index_map, bs);

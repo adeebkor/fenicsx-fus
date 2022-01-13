@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
 	std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
 	int bs = V->dofmap()->index_map_bs();
 
-	// Create mass operator
+	// Create stiffness operator
 	std::shared_ptr<fem::Function<double>> u = std::make_shared<fem::Function<double>>(V);
 
 	u->interpolate(
@@ -58,7 +58,6 @@ int main(int argc, char* argv[]){
 		          << " " << (s->mutable_array()[i] - s_ref->mutable_array()[i]) / s_ref->mutable_array()[i]
 				  << std::endl;
 	}
-
   }
 
   return 0;
