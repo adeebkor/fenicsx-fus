@@ -73,6 +73,9 @@ class MassOperator {
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
+      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0;
+      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1;
+      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1;
       _phi = xt::view(_table, 0, xt::all(), xt::all(), 0);
 
     }
@@ -158,16 +161,16 @@ class StiffnessOperator {
       qdegree[10] = 18;
 
       // Get the determinant and inverse of the Jacobian
-      auto jacobian_data = precompute_jacobian_data(mesh, bdegree);
+      auto jacobian_data = precompute_jacobian_data_quad(mesh, bdegree);
       G = std::get<0>(jacobian_data);
       _detJ = std::get<1>(jacobian_data);
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
+      xt::filtration(_table, xt::isclose(_table, 0.0)) = 0;
+      xt::filtration(_table, xt::isclose(_table, 1.0)) = 1;
+      xt::filtration(_table, xt::isclose(_table, -1.0)) = -1;
       _dphi = xt::view(_table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
-      xt::filtration(_dphi, xt::isclose(_dphi, 0.0)) = 0;
-      xt::filtration(_dphi, xt::isclose(_dphi, 1.0)) = 1;
-      xt::filtration(_dphi, xt::isclose(_dphi, -1.0)) = -1;
     }
 
     template <typename Alloc>
