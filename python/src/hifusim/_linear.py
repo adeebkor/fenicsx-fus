@@ -61,6 +61,7 @@ class Linear:
         """
         Set the inital values of u and v, i.e. u_0 and v_0
         """
+
         self.u_n.x.array[:] = 0.0
         self.v_n.x.array[:] = 0.0
 
