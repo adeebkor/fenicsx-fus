@@ -111,7 +111,7 @@ public:
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
-  void init() {
+  void init(){
     tcb::span<double> u_0 = u_n->x()->mutable_array();
     tcb::span<double> v_0 = v_n->x()->mutable_array();
 
@@ -173,6 +173,11 @@ public:
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
                      [](const double& bi, const double& mi) { return bi / mi; });
+
+      for (int i = 0; i < 10; i++){
+        std::cout << m_[i] << " " << b_[i] << " " << out[i] << std::endl;
+      }
+      std::getchar();
     }
   }
 
