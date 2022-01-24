@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
 
     auto _s = s.array();
     auto _s_ref = s_ref.array();
-    for (int i = 0; i < 10; ++i) {
-      std::cout << _s[i] << "\t " << _s_ref[i] << "\t " << (_s[i] - _s_ref[i]) << std::endl;
+    for (std::size_t i = 0; i < _s.size(); ++i) {
+      std::cout << _s[i] << "\t " << _s_ref[i] << "\t " << std::abs(_s[i] - _s_ref[i]) << std::endl;
     }
   }
   common::subsystem::finalize_mpi();
