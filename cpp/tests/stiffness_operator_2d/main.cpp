@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
 
 	// Create mesh and function space
 	std::shared_ptr<mesh::Mesh> mesh = std::make_shared<mesh::Mesh>(mesh::create_rectangle(
-	  MPI_COMM_WORLD, {{{0.0, 0.0}, {1.0, 1.0}}}, {4, 4},
+	  MPI_COMM_WORLD, {{{0.0, 0.0}, {1.0, 1.0}}}, {1, 1},
 	  mesh::CellType::quadrilateral, mesh::GhostMode::none));
 
 	std::shared_ptr<fem::FunctionSpace> V = std::make_shared<fem::FunctionSpace>(
@@ -32,8 +32,9 @@ int main(int argc, char* argv[]){
         {
           auto dx = xt::square(xt::row(x, 0) - 0.5)
                     + xt::square(xt::row(x, 1) - 0.5);
-          return 10e10 * xt::exp(-(dx) / 0.02);
+          return 1.0 * xt::exp(-(dx) / 0.02);
         });
+		u->x()->set(1.0);
 
 	std::map<std::string, double> params;
 	params["c0"] = 1486.0;
