@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
     StiffnessOperator<double> stiffness_operator(V, 3, params);
     la::Vector<double> s(index_map, bs);
     stiffness_operator(*u->x(), s);
+    s.scatter_rev(common::IndexMap::Mode::add);
 
     std::shared_ptr<fem::Constant<double>> c0
         = std::make_shared<fem::Constant<double>>(params["c0"]);
