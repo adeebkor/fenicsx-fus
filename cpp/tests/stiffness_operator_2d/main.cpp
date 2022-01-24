@@ -24,12 +24,10 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<const common::IndexMap> index_map = V->dofmap()->index_map;
     int bs = V->dofmap()->index_map_bs();
 
-    // Create stiffness operator
     std::shared_ptr<fem::Function<double>> u = std::make_shared<fem::Function<double>>(V);
+    u->interpolate([](auto& x) { return xt::sin(xt::row(x, 0)); });
 
-    u->interpolate(
-        [](auto& x) -> xt::xarray<PetscScalar> { return xt::row(x, 0) * xt::row(x, 1); });
-
+    // Create stiffness operator
     std::map<std::string, double> params;
     params["c0"] = 1486.0;
     StiffnessOperator<double> stiffness_operator(V, 3, params);
@@ -48,8 +46,7 @@ int main(int argc, char* argv[]) {
     auto _s = s.array();
     auto _s_ref = s_ref.array();
     for (std::size_t i = 0; i < _s.size(); ++i) {
-      std::cout << _s[i] << "\t " << _s_ref[i] << "\t "
-                << std::abs(_s[i] - _s_ref[i]) / s_ref.norm() << std::endl;
+      std::cout << _s[i] << "\t " << _s_ref[i] << "\t " << std::abs(_s[i] - _s_ref[i]) << std::endl;
     }
   }
   common::subsystem::finalize_mpi();
