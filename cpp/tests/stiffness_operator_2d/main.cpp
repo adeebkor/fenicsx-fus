@@ -10,7 +10,8 @@ int main(int argc, char* argv[]) {
   common::subsystem::init_logging(argc, argv);
   common::subsystem::init_mpi(argc, argv);
   {
-    std::cout.precision(15);
+    std::cout.precision(10);
+    std::cout << std::fixed;
 
     // Create mesh and function space
     std::shared_ptr<mesh::Mesh> mesh = std::make_shared<mesh::Mesh>(
