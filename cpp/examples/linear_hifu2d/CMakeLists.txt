@@ -1,21 +1,23 @@
 cmake_minimum_required(VERSION 3.16)
-project(LINEAR HIFU 2D)
+
+set(PROJECT_NAME linear_hifu2d)
+project(${PROJECT_NAME})
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(PROJECT_NAME linear_hifu2d)
-
 set(CMAKE_CXX_FLAGS "-O3 -march=native ${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_C_FLAGS "-O3 -march=native  ${CMAKE_C_FLAGS} -Wall")
 
-project(${PROJECT_NAME})
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
+  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.ufl -o ${CMAKE_CURRENT_SOURCE_DIR}/
+  DEPENDS forms.ufl
+)
 
-# Get DOLFINx configuration data (DOLFINXConfig.cmake must be in
-# DOLFINX_CMAKE_CONFIG_PATH)
-if (NOT TARGET dolfinx)
-  find_package(DOLFINX REQUIRED)
-endif()
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+
+find_package(DOLFINX REQUIRED)
 
 include_directories("../../common" ".")
 
@@ -23,6 +25,6 @@ include_directories("../../common" ".")
 add_executable(${PROJECT_NAME} forms.c main.cpp)
 
 # Target libraries
-target_link_libraries(${PROJECT_NAME} dolfinx)
+target_link_libraries(${PROJECT_NAME} dolfinx blas lapack)
 
 message(STATUS ${CMAKE_CXX_FLAGS})
