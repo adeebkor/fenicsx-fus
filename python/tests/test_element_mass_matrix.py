@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 
-import dolfinx.cpp
 import dolfinx.fem
 import dolfinx.mesh
 import ufl
@@ -29,7 +28,7 @@ def test_diagonal(dimension, p):
             MPI.COMM_WORLD,
             [np.array([-1., -1.]), np.array([1., 1.])],
             [1, 1],
-            cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
+            cell_type=dolfinx.mesh.CellType.quadrilateral
         )
         cell_type = ufl.quadrilateral
     elif dimension == 3:
@@ -38,7 +37,7 @@ def test_diagonal(dimension, p):
             MPI.COMM_WORLD,
             [np.array([-1., -1., -1.]), np.array([1., 1., 1.])],
             [1, 1, 1],
-            cell_type=dolfinx.cpp.mesh.CellType.hexahedron
+            cell_type=dolfinx.mesh.CellType.hexahedron
         )
         cell_type = ufl.hexahedron
     else:
