@@ -93,7 +93,7 @@ public:
     a = std::make_shared<fem::Form<double>>(
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
-    // // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
+    // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0);
@@ -112,28 +112,25 @@ public:
 
   // Set the initial values of u and v, i.e. u_0 and v_0
   void init(){
-    tcb::span<double> u_0 = u_n->x()->mutable_array();
-    tcb::span<double> v_0 = v_n->x()->mutable_array();
-
-    std::fill(u_0.begin(), u_0.end(), 0.0);
-    std::fill(v_0.begin(), v_0.end(), 0.0);
+    u_n->x()->set(0.0);
+    v_n->x()->set(0.0);
   }
 
   /// Evaluate du/dt = f0(t, u, v)
-  /// @param t Current time
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result
+  /// @param[in] t Current time
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result
   void f0(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
-  /// @param t Current time, i.e. tn
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result, i.e. dvn/dtn
+  /// @param[in] t Current time, i.e. tn
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result, i.e. dvn/dtn
   void f1(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     
@@ -173,11 +170,6 @@ public:
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
                      [](const double& bi, const double& mi) { return bi / mi; });
-
-      for (int i = 0; i < 10; i++){
-        std::cout << m_[i] << " " << b_[i] << " " << out[i] << std::endl;
-      }
-      std::getchar();
     }
   }
 

@@ -100,7 +100,7 @@ class LinearGLLOpt {
       _m = m->mutable_array();
       std::fill(_m.begin(), _m.end(), 0.0);
       mass_op->operator()(*u->x(), *m);
-      // m->scatter_rev(common::IndexMap::Mode::add);
+      m->scatter_rev(common::IndexMap::Mode::add);
 
       // Create RHS form
       L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
@@ -117,34 +117,30 @@ class LinearGLLOpt {
       _b = b->mutable_array();
       std::fill(_b.begin(), _b.end(), 0.0);
       stiff_op->operator()(*u_n->x(), *b);
-      // b->scatter_rev(common::IndexMap::Mode::add);
-
+      b->scatter_rev(common::IndexMap::Mode::add);
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
   void init(){
-    tcb::span<double> u_0 = u_n->x()->mutable_array();
-    tcb::span<double> v_0 = v_n->x()->mutable_array();
-
-    std::fill(u_0.begin(), u_0.end(), 0.0);
-    std::fill(v_0.begin(), v_0.end(), 0.0);
+    u_n->x()->set(0.0);
+    v_n->x()->set(0.0);
   }
 
   /// Evaluate du/dt = f0(t, u, v)
-  /// @param t Current time
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result
+  /// @param[in] t Current time
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result
   void f0(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
-  /// @param t Current time, i.e. tn
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result, i.e. dvn/dtn
+  /// @param[in] t Current time, i.e. tn
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result, i.e. dvn/dtn
   void f1(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     
@@ -170,7 +166,7 @@ class LinearGLLOpt {
     std::fill(_b.begin(), _b.end(), 0.0);
     stiff_op->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
-    // b->scatter_rev(common::IndexMap::Mode::add);
+    b->scatter_rev(common::IndexMap::Mode::add);
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -185,18 +181,13 @@ class LinearGLLOpt {
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
                      [](const double& bi, const double& mi) { return bi / mi; });
-      
-      // for (int i = 0; i < 10; i++){
-      //   std::cout << m_[i] << " " << b_[i] << " " << out[i] << std::endl;
-      // }
-      // std::getchar();
     }
   } 
 
   /// Runge-Kutta 4th order solver
-  /// @param startTime initial time of the solver
-  /// @param finalTime final time of the solver
-  /// @param timeStep  time step size of the solver
+  /// @param[in] startTime initial time of the solver
+  /// @param[in] finalTime final time of the solver
+  /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
 
     double t = startTime;
@@ -289,8 +280,8 @@ class LinearGLLOpt {
     // Prepare solution at final time
     kernels::copy(*u_, *u_n->x());
     kernels::copy(*v_, *v_n->x());
-    // u_n->x()->scatter_fwd();
-    // v_n->x()->scatter_fwd();
+    u_n->x()->scatter_fwd();
+    v_n->x()->scatter_fwd();
 
     file.write(t);
     file.close();
