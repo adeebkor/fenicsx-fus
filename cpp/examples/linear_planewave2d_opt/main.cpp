@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 6;
+    int degreeOfBasis = 4;
 
     // Mesh parameters
     int elementPerWavelength = 4;
@@ -53,10 +53,10 @@ int main(int argc, char* argv[]) {
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
     io::XDMFFile xdmf(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh
-        = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "rectangle"));
+        = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "mesh"));
     mesh->topology().create_connectivity(1, 2);
     auto mt = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        xdmf.read_meshtags(mesh, "rectangle_edge"));
+        xdmf.read_meshtags(mesh, "edges"));
 
     // Model
     LinearGLLOpt eqn(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency, pressureAmplitude);

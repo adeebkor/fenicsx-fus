@@ -2,21 +2,21 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
   <Domain>
-    <Grid Name="rectangle" GridType="Uniform">
+    <Grid Name="mesh" GridType="Uniform">
       <Topology TopologyType="Quadrilateral" NumberOfElements="1681" NodesPerElement="4">
-        <DataItem Dimensions="1681 4" NumberType="Int" Format="HDF">rectangle_dolfinx.h5:/Mesh/rectangle/topology</DataItem>
+        <DataItem Dimensions="1681 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/mesh/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="1764 2" Format="HDF">rectangle_dolfinx.h5:/Mesh/rectangle/geometry</DataItem>
+        <DataItem Dimensions="1764 2" Format="HDF">mesh.h5:/Mesh/mesh/geometry</DataItem>
       </Geometry>
     </Grid>
-    <Grid Name="rectangle_edge" GridType="Uniform">
+    <Grid Name="edges" GridType="Uniform">
       <xi:include xpointer="xpointer(/Xdmf/Domain/Grid/Geometry)" />
       <Topology TopologyType="PolyLine" NumberOfElements="82" NodesPerElement="2">
-        <DataItem Dimensions="82 2" NumberType="Int" Format="HDF">rectangle_dolfinx.h5:/MeshTags/rectangle_edge/topology</DataItem>
+        <DataItem Dimensions="82 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/edges/topology</DataItem>
       </Topology>
-      <Attribute Name="rectangle_edge" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="82 1" Format="HDF">rectangle_dolfinx.h5:/MeshTags/rectangle_edge/Values</DataItem>
+      <Attribute Name="edges" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="82 1" Format="HDF">mesh.h5:/MeshTags/edges/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>
