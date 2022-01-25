@@ -3,6 +3,7 @@
 #include "precomputation.hpp"
 #include <cstdint>
 #include <map>
+#include <cmath>
 #include <basix/finite-element.h>
 #include <basix/quadrature.h>
 #include <xtensor/xindex_view.hpp>
@@ -72,14 +73,13 @@ class MassOperator {
       qdegree[10] = 18;
 
       // Get the determinant and inverse of the Jacobian
-      auto jacobian_data = precompute_jacobian_data_quad(mesh, bdegree);
+      auto jacobian_data = precompute_geometric_data_quad(mesh, bdegree);
       G = std::get<0>(jacobian_data);
       _detJ = std::get<1>(jacobian_data);
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
       _perm = std::get<0>(table_perm);
       _table = std::get<1>(table_perm);
       _phi = xt::view(_table, 0, xt::all(), xt::all(), 0);
-
     }
 
     template <typename Alloc>
@@ -118,8 +118,8 @@ namespace {
         w0 += w[ic] * dphi(0, iq, ic); // dx
         w1 += w[ic] * dphi(1, iq, ic); // dy
       }
-      const double fw0 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
-      const double fw1 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
+      const double fw0 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1);
+      const double fw1 = - 1.0 * std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1);
       for (int i = 0; i < nd; i++){
         A[i] += fw0 * dphi(0, iq, i) + fw1 * dphi(1, iq, i);
       }
@@ -163,7 +163,7 @@ class StiffnessOperator {
       qdegree[10] = 18;
 
       // Get the determinant and inverse of the Jacobian
-      auto jacobian_data = precompute_jacobian_data_quad(mesh, bdegree);
+      auto jacobian_data = precompute_geometric_data_quad(mesh, bdegree);
       G = std::get<0>(jacobian_data);
       _detJ = std::get<1>(jacobian_data);
       auto table_perm = tabulate_basis_and_permutation(bdegree, qdegree[bdegree]);
