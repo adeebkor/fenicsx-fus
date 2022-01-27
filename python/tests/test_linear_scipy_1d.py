@@ -29,7 +29,6 @@ def test_linear_scipy_L2(degree, epw):
     # Mesh parameters
     nw = L / lmbda  # number of waves
     nx = int(epw * nw + 1)  # total number of elements
-    h = L / nx
 
     # Generate mesh
     mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
