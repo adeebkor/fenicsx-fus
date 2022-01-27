@@ -140,6 +140,8 @@ class Linear:
         -------
         u : u at final time
         v : v at final time
+        t : final time
+        step : number of RK steps
         """
 
         # Placeholder vectors at time step n
@@ -207,3 +209,5 @@ class Linear:
                        mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
+
+        return self.u_n, self.v_n, t, step

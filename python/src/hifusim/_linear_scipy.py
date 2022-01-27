@@ -131,6 +131,8 @@ class LinearSciPy:
         -------
         u : u at final time
         v : v at final time
+        t : final time
+        step : number of RK steps
         """
 
         # Create a placeholder vector for initial condition
@@ -152,3 +154,5 @@ class LinearSciPy:
         # Solution at final time
         self.u_n.x.array[:] = model.y[:self.ndof]
         self.v_n.x.array[:] = model.y[self.ndof:]
+
+        return self.u_n, self.v_n, model.t, step
