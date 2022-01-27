@@ -65,8 +65,8 @@ def test_linear_L2(degree, epw):
     eqn.init()
     eqn.rk4(tstart, tend, dt)
 
-    # Calculate L2 and H1 errors of FEM solution and best approximation
     class Analytical:
+        """ Analytical solution """
 
         def __init__(self, c0, f0, p0, t):
             self.p0 = p0
