@@ -141,7 +141,7 @@ class LinearSciPy:
         y0 = np.concatenate([u0, v0])
 
         # Instantiate RK45 solver
-        model = RK45(self.f, t0, y0, tf, atol=1e-6, rtol=1e-6)
+        model = RK45(self.f, t0, y0, tf, atol=1e-9, rtol=1e-9)
 
         # RK solve
         step = 0
