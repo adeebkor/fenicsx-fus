@@ -258,6 +258,9 @@ class WesterveltSciPy:
         self.u_n = Function(self.V)
         self.v_n = Function(self.V)
 
+        # Get degrees of freedom
+        self.ndof = self.V.dofmap.index_map.size_global
+
         # Tag boundary facets
         ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
 
