@@ -25,6 +25,7 @@ class Westervelt:
         self.v = TestFunction(self.V)
         self.u = TrialFunction(self.V)
         self.g = Function(self.V)
+        self.dg = Function(self.V)
         self.u_n = Function(self.V)
         self.v_n = Function(self.V)
 

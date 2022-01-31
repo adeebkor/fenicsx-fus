@@ -1,24 +1,25 @@
 import pytest
 import numpy as np
+from scipy.special import jv
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, MeshTags
 from ufl import inner, dx
 
-from hifusim import LinearGLLSciPy
+from hifusim import WesterveltGLL
 
 
-@pytest.mark.parametrize("degree, epw", [(3, 16), (4, 8), (5, 4), (6, 4)])
-def test_linear_scipy_L2(degree, epw):
+@pytest.mark.parametrize("degree, epw", [(3, 16), (4, 8), (5, 4), (6, 2)])
+def test_westervelt_L2(degree, epw):
     # Material parameters
-    c0 = 1  # speed of sound (m/s)
+    c0 = 1  # speed of sound (m / s)
     rho0 = 1  # density of medium (kg / m^3)
+    beta = 0.01  # coefficient of nonlinearity
 
     # Source parameters
     f0 = 10  # source frequency (Hz)
-    u0 = 1  # velocity amplitude (m / s)
-    p0 = rho0*c0*u0  # pressure amplitude (Pa)
+    p0 = 1  # pressure amplitude (Pa)
 
     # Domain parameters
     L = 1.0  # domain length (m)
@@ -29,6 +30,7 @@ def test_linear_scipy_L2(degree, epw):
     # Mesh parameters
     nw = L / lmbda  # number of waves
     nx = int(epw * nw + 1)  # total number of elements
+    h = L / nx
 
     # Generate mesh
     mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
@@ -48,36 +50,49 @@ def test_linear_scipy_L2(degree, epw):
 
     # Temporal parameters
     tstart = 0.0  # simulation start time (s)
-    tend = L / c0 + 16 / f0  # simulation final time (s)
+    tend = L / c0 + 8 / f0  # simulation final time (s)
+
+    CFL = 0.9
+    dt = CFL * h / (c0 * degree**2)
+
+    print("Final time:", tend)
 
     # Instantiate model
-    eqn = LinearGLLSciPy(mesh, mt, degree, c0, f0, p0)
+    eqn = WesterveltGLL(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
     eqn.alpha = 4
-    print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
+    print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
 
     # Solve
     eqn.init()
-    eqn.rk(tstart, tend)
+    eqn.rk4(tstart, tend, dt)
 
+    # Calculate L2
     class Analytical:
-        """ Analytical solution """
 
-        def __init__(self, c0, f0, p0, t):
-            self.p0 = p0
+        def __init__(self, c0, f0, p0, rho0, beta, t):
             self.c0 = c0
             self.f0 = f0
             self.w0 = 2 * np.pi * f0
+            self.p0 = p0
+            self.u0 = p0 / rho0 / c0
+            self.rho0 = rho0
+            self.beta = beta
             self.t = t
 
         def __call__(self, x):
-            val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-                np.heaviside(self.t-x[0]/self.c0, 0)
+            xsh = self.c0**2 / self.w0 / self.beta / self.u0
+            sigma = (x[0]+0.0000001) / xsh
 
-            return val
+            val = np.zeros(sigma.shape[0])
+            for term in range(1, 50):
+                val += 2/term/sigma * jv(term, term*sigma) * \
+                    np.sin(term*self.w0*(self.t - x[0]/self.c0))
+
+            return self.p0 * val
 
     V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
-    u_e.interpolate(Analytical(c0, f0, p0, tend))
+    u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tend))
 
     # L2 error
     diff = eqn.u_n - u_e
@@ -88,4 +103,4 @@ def test_linear_scipy_L2(degree, epw):
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
-    assert(L2_error < 1E-3)
+    assert(L2_error < 1E-1)
