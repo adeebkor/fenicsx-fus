@@ -9,9 +9,11 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
+from dolfinx import cpp
+from dolfinx.common import Timer
 from dolfinx.io import XDMFFile
 
-from hifusim import Linear
+from hifusim import LinearGLL, LinearGLLSciPy, Linear
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -35,11 +37,38 @@ degree = 4
 
 # Read mesh and meshtags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="domain")
+    mesh = xdmf.read_mesh(name="sound_soft")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
-    mt = xdmf.read_meshtags(mesh, "edges")
+    mt = xdmf.read_meshtags(mesh, "sound_soft_surface")
+
+# Mesh parameters
+tdim = mesh.topology.dim
+num_cells = num_cells = mesh.topology.index_map(tdim).size_local
+hmin = np.array([cpp.mesh.h(mesh, tdim, range(num_cells)).min()])
+h = np.zeros(1)
+MPI.COMM_WORLD.Reduce(hmin, h, op=MPI.MIN, root=0)
+MPI.COMM_WORLD.Bcast(h, root=0)
 
 # Model
-eqn = Linear(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLLSciPy(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
+
+# Temporal parameters : allows wave to fully propagate across the domain
+CFL = 0.45
+tstart = 0.0  # start time (s)
+dt = CFL * h[0] / (c0 * degree**2)  # time step size
+tend = L / c0 / 1.5  # final time (s)
+print(tend)
+
+# Solve
+eqn.init()
+with Timer() as tsolve:
+    # u, v, tf, nstep = eqn.rk4(tstart, tend, dt)
+    u, v, tf, nstep = eqn.rk(tstart, tend)
+
+print("Solve time per step:", tsolve.elapsed()[0] / nstep)
+
+with XDMFFile(MPI.COMM_WORLD, "u.xdmf", "w") as f:
+    f.write_mesh(mesh)
+    f.write_function(u)
