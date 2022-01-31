@@ -9,7 +9,7 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.io import XDMFFile, VTKFile
+from dolfinx.io import XDMFFile
 
 from hifusim import Linear
 
