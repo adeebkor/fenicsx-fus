@@ -13,7 +13,7 @@ from dolfinx import cpp
 from dolfinx.common import Timer
 from dolfinx.io import XDMFFile
 
-from hifusim import LinearGLL, LinearGLLSciPy, Linear
+from hifusim import LinearGLL
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -51,21 +51,19 @@ MPI.COMM_WORLD.Reduce(hmin, h, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(h, root=0)
 
 # Model
-eqn = LinearGLLSciPy(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Temporal parameters : allows wave to fully propagate across the domain
-CFL = 0.45
+CFL = 0.225
 tstart = 0.0  # start time (s)
 dt = CFL * h[0] / (c0 * degree**2)  # time step size
-tend = L / c0 / 1.5  # final time (s)
-print(tend)
+tend = L / c0 + 2 / f0  # final time (s)
 
 # Solve
 eqn.init()
 with Timer() as tsolve:
-    # u, v, tf, nstep = eqn.rk4(tstart, tend, dt)
-    u, v, tf, nstep = eqn.rk(tstart, tend)
+    u, v, tf, nstep = eqn.rk4(tstart, tend, dt)
 
 print("Solve time per step:", tsolve.elapsed()[0] / nstep)
 
