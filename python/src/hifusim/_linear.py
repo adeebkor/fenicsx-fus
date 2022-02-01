@@ -84,7 +84,7 @@ class LinearGLL:
         result : Result, i.e. dun/dtn
         """
 
-        return v.copy(result=result)
+        v.copy(result=result)
 
     def f1(self, t: float, u: PETSc.Vec, v: PETSc.Vec, result: PETSc.Vec):
         """
@@ -127,8 +127,6 @@ class LinearGLL:
 
         # Solve
         result.pointwiseDivide(self.b, self.m)
-
-        return result
 
     def rk4(self, t0: float, tf: float, dt: float):
         """
@@ -192,8 +190,8 @@ class LinearGLL:
                 tn = t + c_runge[i] * dt
 
                 # Compute slopes
-                ku = self.f0(tn, un, vn, result=ku)
-                kv = self.f1(tn, un, vn, result=kv)
+                self.f0(tn, un, vn, result=ku)
+                self.f1(tn, un, vn, result=kv)
 
                 # Update solution
                 u_.axpy(b_runge[i]*dt, ku)
@@ -441,7 +439,7 @@ class Linear:
         result : Result, i.e. dun/dtn
         """
 
-        return v.copy(result=result)
+        v.copy(result=result)
 
     def f1(self, t: float, u: PETSc.Vec, v: PETSc.Vec, result: PETSc.Vec):
         """
@@ -484,8 +482,6 @@ class Linear:
 
         # Solve
         self.solver.solve(self.b, result)
-
-        return result
 
     def rk4(self, t0: float, tf: float, dt: float):
         """
@@ -549,8 +545,8 @@ class Linear:
                 tn = t + c_runge[i] * dt
 
                 # Compute slopes
-                ku = self.f0(tn, un, vn, result=ku)
-                kv = self.f1(tn, un, vn, result=kv)
+                self.f0(tn, un, vn, result=ku)
+                self.f1(tn, un, vn, result=kv)
 
                 # Update solution
                 u_.axpy(b_runge[i]*dt, ku)
