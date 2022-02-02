@@ -1,7 +1,7 @@
 #
-# ..linear_soundsoft2d:
+# .. _linear_soundhard2d:
 #
-# Linear solver for the 2D sound soft problem
+# Linear solver for the 2D sound hard problem
 # ===========================================
 # Copyright (C) 2021 Adeeb Arif Kor
 
@@ -13,7 +13,7 @@ from dolfinx import cpp
 from dolfinx.common import Timer
 from dolfinx.io import XDMFFile
 
-from hifusim import LinearSoundSoftGLL
+from hifusim import LinearSoundHardGLL
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -37,10 +37,10 @@ degree = 4
 
 # Read mesh and meshtags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
-    mesh = xdmf.read_mesh(name="sound_soft")
+    mesh = xdmf.read_mesh(name="sound_hard")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
-    mt = xdmf.read_meshtags(mesh, "sound_soft_surface")
+    mt = xdmf.read_meshtags(mesh, "sound_hard_surface")
 
 # Mesh parameters
 tdim = mesh.topology.dim
@@ -51,7 +51,7 @@ MPI.COMM_WORLD.Reduce(hmin, h, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(h, root=0)
 
 # Model
-eqn = LinearSoundSoftGLL(mesh, mt, degree, c0, f0, p0)
+eqn = LinearSoundHardGLL(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Temporal parameters : allows wave to fully propagate across the domain
@@ -66,3 +66,7 @@ with Timer() as tsolve:
     u, v, tf, nstep = eqn.rk4(tstart, tend, dt)
 
 print("Solve time per step:", tsolve.elapsed()[0] / nstep)
+
+with XDMFFile(MPI.COMM_WORLD, "u.xdmf", "w") as f:
+    f.write_mesh(mesh)
+    f.write_function(u)
