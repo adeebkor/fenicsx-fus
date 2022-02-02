@@ -10,6 +10,8 @@ mesh/*.geo
 *.pvd
 *.c
 *.h
+*u_t.h5
+*u_t.xdmf
 
 *build/
 
