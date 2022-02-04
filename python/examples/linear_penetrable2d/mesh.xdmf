@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="penetrable" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="53428" NodesPerElement="4">
+        <DataItem Dimensions="53428 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/penetrable/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="53505 2" Format="HDF">mesh.h5:/Mesh/penetrable/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="penetrable_surface" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='penetrable']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="152" NodesPerElement="2">
+        <DataItem Dimensions="152 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/topology</DataItem>
+      </Topology>
+      <Attribute Name="penetrable_surface" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="152 1" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
