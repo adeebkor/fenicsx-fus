@@ -66,7 +66,3 @@ with Timer() as tsolve:
     u, v, tf, nstep = eqn.rk4(tstart, tend, dt)
 
 print("Solve time per step:", tsolve.elapsed()[0] / nstep)
-
-with XDMFFile(MPI.COMM_WORLD, "u.xdmf", "w") as f:
-    f.write_mesh(mesh)
-    f.write_function(u)
