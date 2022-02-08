@@ -12,11 +12,11 @@
     </Grid>
     <Grid Name="penetrable_surface" GridType="Uniform">
       <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='penetrable']/Geometry)" />
-      <Topology TopologyType="PolyLine" NumberOfElements="152" NodesPerElement="2">
-        <DataItem Dimensions="152 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/topology</DataItem>
+      <Topology TopologyType="PolyLine" NumberOfElements="76" NodesPerElement="2">
+        <DataItem Dimensions="76 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/topology</DataItem>
       </Topology>
       <Attribute Name="penetrable_surface" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="152 1" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/Values</DataItem>
+        <DataItem Dimensions="76 1" Format="HDF">mesh.h5:/MeshTags/penetrable_surface/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>

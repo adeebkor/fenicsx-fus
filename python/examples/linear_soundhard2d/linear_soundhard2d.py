@@ -44,7 +44,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
 
 # Mesh parameters
 tdim = mesh.topology.dim
-num_cells = num_cells = mesh.topology.index_map(tdim).size_local
+num_cells = mesh.topology.index_map(tdim).size_local
 hmin = np.array([cpp.mesh.h(mesh, tdim, range(num_cells)).min()])
 h = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, h, op=MPI.MIN, root=0)
