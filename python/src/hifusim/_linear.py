@@ -1,4 +1,3 @@
-from weakref import ref
 import numpy as np
 from scipy.integrate import RK45
 from mpi4py import MPI

@@ -268,9 +268,13 @@ class LinearSoundHardGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
+        # JIT compilation parameters
+        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
+
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u, self.v) * dx(metadata=md))
+        self.a = form(inner(self.u, self.v) * dx(metadata=md),
+                      jit_parameters=jit_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -280,7 +284,8 @@ class LinearSoundHardGLL:
                                   + inner(self.g, self.v)
                                   * ds(1, metadata=md)
                                   - 1/self.c0*inner(self.v_n, self.v)
-                                  * ds(2, metadata=md)))
+                                  * ds(2, metadata=md)),
+                      jit_parameters=jit_params)
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -430,7 +435,7 @@ class LinearSoundHardGLL:
 
             if step % 100 == 0:
                 file.write_function(self.u_n, t=t)
-                PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
+                PETSc.Sys.syncPrint("t: {:10.10f},\t Steps: {}/{}".format(
                     t, step, nstep))
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,

@@ -276,13 +276,17 @@ class WesterveltGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
+        # JIT compilation parameters
+        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
+
         # Define variational form
         self.u.x.array[:] = 1.0
         self.a = form(inner(self.u, self.v) * dx(metadata=md)
                       + self.delta / self.c0 * inner(self.u, self.v)
                       * ds(2, metadata=md)
                       - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n
-                      * inner(self.u, self.v) * dx(metadata=md))
+                      * inner(self.u, self.v) * dx(metadata=md),
+                      jit_parameters=jit_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -298,7 +302,8 @@ class WesterveltGLL:
                                       + inner(self.dg, self.v)
                                       * ds(1, metadata=md))
                       + 2 * self.beta / self.rho0 / self.c0**2
-                      * inner(self.v_n*self.v_n, self.v) * dx(metadata=md))
+                      * inner(self.v_n*self.v_n, self.v) * dx(metadata=md),
+                      jit_parameters=jit_params)
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
