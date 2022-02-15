@@ -30,7 +30,7 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 class LinearGLL {
 private:
-  int rank;      // MPI rank
+  int rank; // MPI rank
 protected:
   int k_;        // degree of basis function
   double c0_;    // speed of sound (m/s)
@@ -111,7 +111,7 @@ public:
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
-  void init(){
+  void init() {
     u_n->x()->set(0.0);
     v_n->x()->set(0.0);
   }
@@ -121,8 +121,8 @@ public:
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result
-  void f0(double& t, std::shared_ptr<la::Vector<double>> u,
-          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
+  void f0(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
+          std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
   }
 
@@ -131,9 +131,9 @@ public:
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result, i.e. dvn/dtn
-  void f1(double& t, std::shared_ptr<la::Vector<double>> u,
-          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
-    
+  void f1(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
+          std::shared_ptr<la::Vector<double>> result) {
+
     // Apply windowing
     if (t < T_ * alpha_) {
       window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
@@ -190,7 +190,7 @@ public:
     // Placeholder vectors at time step n
     u_ = std::make_shared<la::Vector<double>>(index_map, bs);
     v_ = std::make_shared<la::Vector<double>>(index_map, bs);
-    
+
     kernels::copy(*u_n->x(), *u_);
     kernels::copy(*v_n->x(), *v_);
 
@@ -233,9 +233,9 @@ public:
       for (int i = 0; i < n_RK; i++) {
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
-      
-        kernels::axpy(*un, dt*a_runge(i), *ku, *un);
-        kernels::axpy(*vn, dt*a_runge(i), *kv, *vn);
+
+        kernels::axpy(*un, dt * a_runge(i), *ku, *un);
+        kernels::axpy(*vn, dt * a_runge(i), *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;
@@ -253,16 +253,16 @@ public:
       t += dt;
       step += 1;
 
-      if (step % 50 == 0){
+      if (step % 50 == 0) {
         kernels::copy(*u_, *u_n->x());
         file.write(t);
-        if (rank == 0){
+        if (rank == 0) {
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
       }
     }
 
-    if (rank == 0){
+    if (rank == 0) {
       std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
     }
 

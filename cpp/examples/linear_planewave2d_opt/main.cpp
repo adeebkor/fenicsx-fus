@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     int degreeOfBasis = 4;
 
     // Mesh parameters
-    int elementPerWavelength = 32;
+    int elementPerWavelength = 4;
     double numberOfWaves = domainLength / wavelength;
     int numberOfElement = elementPerWavelength * numberOfWaves + 1;
     double meshSize = sqrt(2 * pow(domainLength / numberOfElement, 2));
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     double CFL = 0.8;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = 200 * timeStepSize; // domainLength / speedOfSound + 10.0 / sourceFrequency;
+    double finalTime = domainLength / speedOfSound + 10.0 / sourceFrequency;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
