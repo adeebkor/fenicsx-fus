@@ -2,21 +2,21 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
   <Domain>
-    <Grid Name="mesh" GridType="Uniform">
-      <Topology TopologyType="Quadrilateral" NumberOfElements="1681" NodesPerElement="4">
-        <DataItem Dimensions="1681 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/mesh/topology</DataItem>
+    <Grid Name="rectangle" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="102400" NodesPerElement="4">
+        <DataItem Dimensions="102400 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/rectangle/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="1764 2" Format="HDF">mesh.h5:/Mesh/mesh/geometry</DataItem>
+        <DataItem Dimensions="103041 2" Format="HDF">mesh.h5:/Mesh/rectangle/geometry</DataItem>
       </Geometry>
     </Grid>
-    <Grid Name="edges" GridType="Uniform">
-      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid/Geometry)" />
-      <Topology TopologyType="PolyLine" NumberOfElements="82" NodesPerElement="2">
-        <DataItem Dimensions="82 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/edges/topology</DataItem>
+    <Grid Name="rectangle_boundaries" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='rectangle']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="640" NodesPerElement="2">
+        <DataItem Dimensions="640 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/topology</DataItem>
       </Topology>
-      <Attribute Name="edges" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="82 1" Format="HDF">mesh.h5:/MeshTags/edges/Values</DataItem>
+      <Attribute Name="rectangle_boundaries" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="640 1" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>

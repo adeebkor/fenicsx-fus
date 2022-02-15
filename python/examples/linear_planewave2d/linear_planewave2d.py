@@ -9,9 +9,10 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
+from dolfinx.common import Timer
 from dolfinx.io import XDMFFile
 
-from hifusim import Linear
+from hifusim import LinearGLL
 
 # Material parameters
 c0 = 1  # speed of sound (m/s)
@@ -34,10 +35,10 @@ lmbda = c0/f0  # wavelength (m)
 k = 2 * np.pi / lmbda  # wavenumber (m^-1)
 
 # FE parameters
-degree = 6
+degree = 4
 
 # Mesh parameters
-epw = 4  # number of element per wavelength
+epw = 32  # number of element per wavelength
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = np.sqrt(2 * (L/nx)**2)
@@ -46,23 +47,23 @@ h = np.sqrt(2 * (L/nx)**2)
 CFL = 0.8
 dt = CFL * h / c0 / degree**2
 t0 = 0.0
-tf = L/c0 + 10.0/f0
+tf = L/c0 + 2.0/f0
 
 # Read mesh and meshtags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as xdmf:
     mesh = xdmf.read_mesh(name="rectangle")
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
-    mt = xdmf.read_meshtags(mesh, "rectangle_edge")
+    mt = xdmf.read_meshtags(mesh, "rectangle_boundaries")
 
 # Model
-eqn = Linear(mesh, mt, degree, c0, f0, p0)
+eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
 PETSc.Sys.syncPrint("Degrees of freedom:", eqn.V.dofmap.index_map.size_global)
 
 # Solve
 eqn.init()
-eqn.rk4(t0, tf, dt)
 
-with XDMFFile(MPI.COMM_WORLD, "u.xdmf", "w") as f:
-    f.write_mesh(eqn.mesh)
-    f.write_function(eqn.u_n)
+with Timer() as tsolve:
+    eqn.rk4(t0, tf, dt)
+
+print("Solve time:", tsolve.elapsed()[0])

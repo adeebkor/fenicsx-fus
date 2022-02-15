@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     int degreeOfBasis = 4;
 
     // Mesh parameters
-    int elementPerWavelength = 4;
+    int elementPerWavelength = 32;
     double numberOfWaves = domainLength / wavelength;
     int numberOfElement = elementPerWavelength * numberOfWaves + 1;
     double meshSize = sqrt(2 * pow(domainLength / numberOfElement, 2));
@@ -47,16 +47,16 @@ int main(int argc, char* argv[]) {
     double CFL = 0.8;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = domainLength / speedOfSound + 10.0 / sourceFrequency;
+    double finalTime = 200 * timeStepSize; // domainLength / speedOfSound + 2.0 / sourceFrequency;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
     io::XDMFFile xdmf(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh
-        = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "mesh"));
+        = std::make_shared<mesh::Mesh>(xdmf.read_mesh(element, mesh::GhostMode::none, "rectangle"));
     mesh->topology().create_connectivity(1, 2);
     auto mt = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        xdmf.read_meshtags(mesh, "edges"));
+        xdmf.read_meshtags(mesh, "rectangle_boundaries"));
 
     // Model
     LinearGLL eqn(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency, pressureAmplitude);
@@ -65,7 +65,14 @@ int main(int argc, char* argv[]) {
 
     // RK solve
     eqn.init();
+
+    common::Timer tsolve("Solve time");
+
+    tsolve.start();
     eqn.rk4(startTime, finalTime, timeStepSize);
+    tsolve.stop();
+
+    std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
   }
   common::subsystem::finalize_mpi();
   return 0;
