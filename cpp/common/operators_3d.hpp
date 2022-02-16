@@ -110,8 +110,11 @@ class MassOperator {
 
 namespace {
   template <typename T>
-  inline void skernel(T* A, const T* w, std::map<std::string, double>& c, const xt::xtensor<double, 3>& G, const xt::xtensor<double, 3>& dphi, int nq, int nd){
+  inline void skernel(T* A, const T* w, std::map<std::string, double>& c, const double* G, const xt::xtensor<double, 3>& dphi, int nq, int nd){
+    double c0 = 1482.0;
+    double coeff = -1.0 * c0 * c0;
     for (int iq = 0; iq < nq; iq++){
+      const double* _G = G + iq * 9;
       double w0 = 0.0;
       double w1 = 0.0;
       double w2 = 0.0;
@@ -120,9 +123,9 @@ namespace {
         w1 += w[ic] * dphi(1, iq, ic); // dy
         w2 += w[ic] * dphi(2, iq, ic); // dz
       }
-      const double fw0 = -1.0 * std::pow(c["c0"], 2) * (G(iq, 0, 0) * w0 + G(iq, 0, 1) * w1 + G(iq, 0, 2) * w2);
-      const double fw1 = -1.0 * std::pow(c["c0"], 2) * (G(iq, 1, 0) * w0 + G(iq, 1, 1) * w1 + G(iq, 1, 2) * w2);
-      const double fw2 = -1.0 * std::pow(c["c0"], 2) * (G(iq, 2, 0) * w0 + G(iq, 2, 1) * w1 + G(iq, 2, 2) * w2);
+      const double fw0 = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
+      const double fw1 = coeff * (_G[3] * w0 + _G[4] * w1 + _G[5] * w2);
+      const double fw2 = coeff * (_G[6] * w0 + _G[7] * w1 + _G[8] * w2);
       for (int i = 0; i < nd; i++){
         A[i] += fw0 * dphi(0, iq, i) + fw1 * dphi(1, iq, i) + fw2 * dphi(2, iq, i);
       }
@@ -182,14 +185,13 @@ class StiffnessOperator {
       xtl::span<T> y_array = y.mutable_array();
       int nq = _detJ.shape(1);
       tcb::span<const int> cell_dofs;
-      xt::xtensor<double, 3> G_cell;
       for (std::int32_t cell = 0; cell < _ncells; ++cell){
         cell_dofs = _dofmap.links(cell);
         for (int i = 0; i < _ndofs; i++){
           _x[i] = x_array[cell_dofs[i]];
         }
         std::fill(_y.begin(), _y.end(), 0.0);
-        G_cell = xt::view(G, cell, xt::all(), xt::all(), xt::all());
+        double* G_cell = G.data() + cell * nq * 9;
         skernel<double> (_y.data(), _x.data(), _params, G_cell, _dphi, nq, _ndofs);
         for (int i = 0; i < _ndofs; i++){
           y_array[cell_dofs[i]] += _y[i];

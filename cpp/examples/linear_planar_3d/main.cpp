@@ -44,7 +44,6 @@ int main(int argc, char* argv[]) {
     // FE parameters
     int degreeOfBasis = 4;
     double numberOfWaves = domainLength / wavelength;
-    // std::cout << numberOfWaves << std::endl;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -69,15 +68,18 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(&meshSize, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // Temporal parameters
-    double CFL = 0.8;
+    double CFL = 0.6;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = 20 * timeStepSize; // domainLength / speedOfSound + 2.0 / sourceFrequency;
+    double finalTime = 250 * timeStepSize; // domainLength / speedOfSound + 8.0 / sourceFrequency;
+
+    int nstep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
     LinearGLL eqn(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency, pressureAmplitude);
 
     if (rank == 0) {
+      std::cout << "Number of steps: " << nstep << std::endl;
       std::cout << "Degrees of freedom: " << eqn.V->dofmap()->index_map->size_global() << std::endl;
     }
 
@@ -85,10 +87,12 @@ int main(int argc, char* argv[]) {
     eqn.init();
 
     common::Timer tsolve("Solve time");
+
     tsolve.start();
     eqn.rk4(startTime, finalTime, timeStepSize);
     tsolve.stop();
     std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+
   }
   common::subsystem::finalize_mpi();
   return 0;

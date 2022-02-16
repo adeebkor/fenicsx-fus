@@ -1,14 +1,15 @@
 #include "forms.h"
 
-#include <dolfinx.h>
-#include <dolfinx/la/Vector.h>
 #include <memory>
+#include <dolfinx.h>
+#include <dolfinx/io/XDMFFile.h>
+#include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
 
 namespace kernels {
 // Copy data from a la::Vector in to a la::Vector out, including ghost entries.
-void copy(const la::Vector<double>& in, la::Vector<double>& out){
+void copy(const la::Vector<double>& in, la::Vector<double>& out) {
   xtl::span<const double> _in = in.array();
   xtl::span<double> _out = out.mutable_array();
   std::copy(_in.cbegin(), _in.cend(), _out.begin());
@@ -44,6 +45,7 @@ protected:
   double alpha_;
   double window_, dwindow_;
 
+  std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<fem::Constant<double>> c0, delta, beta, rho0;
   std::shared_ptr<fem::Form<double>> a, L;
   std::shared_ptr<fem::Function<double>> u, v, g, dg, u_n, v_n;
@@ -66,6 +68,7 @@ public:
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
 
@@ -127,28 +130,25 @@ public:
 
   /// Set the initial values of u and v, i.e. u_0 and v_0
   void init() {
-    tcb::span<double> u_0 = u_n->x()->mutable_array();
-    tcb::span<double> v_0 = v_n->x()->mutable_array();
-
-    std::fill(u_0.begin(), u_0.end(), 0.0);
-    std::fill(v_0.begin(), v_0.end(), 0.0);
+    u_n->x()->set(0.0);
+    v_n->x()->set(0.0);
   }
 
   /// Evaluate du/dt = f0(t, u, v)
-  /// @param t Current time, i.e. tn
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result, i.e. dun/dtn
+  /// @param[in] t Current time, i.e. tn
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result, i.e. dun/dtn
   void f0(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
-  /// @param t Current time, i.e. tn
-  /// @param u Current u, i.e. un
-  /// @param v Current v, i.e. vn
-  /// @param result Result, i.e. dvn/dtn
+  /// @param[in] t Current time, i.e. tn
+  /// @param[in] u Current u, i.e. un
+  /// @param[in] v Current v, i.e. vn
+  /// @param[out] result Result, i.e. dvn/dtn
   void f1(double& t, std::shared_ptr<la::Vector<double>> u,
           std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
   
@@ -198,7 +198,11 @@ public:
     }
   }
 
-  void rk4(double& startTime, double& finalTime, double& timeStep) {
+ /// Runge-Kutta 4th order solver
+ /// @param startTime initial time of the solver
+ /// @param finalTime final time of the solver
+ /// @param timeStep  time step size of the solver
+ void rk4(double& startTime, double& finalTime, double& timeStep) {
 
     double t = startTime;
     double tf = finalTime;
@@ -240,8 +244,8 @@ public:
     double tn;
 
     // Write to VTX
-    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
-    file.write(t);
+    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    // file.write(t);
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -276,7 +280,7 @@ public:
 
       if (step % 50 == 0){
         kernels::copy(*u_, *u_n->x());
-        file.write(t);
+        // file.write(t);
         if (rank == 0){
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
@@ -293,7 +297,11 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    file.write(t);
-    file.close();
+    io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
+    file_solution.write_mesh(*mesh);
+    file_solution.write_function(*u_n, t);
+
+    // file.write(t);
+    // file.close();
   }
 };

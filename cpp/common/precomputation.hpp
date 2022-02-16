@@ -4,10 +4,11 @@
 #include <basix/quadrature.h>
 #include <dolfinx.h>
 #include <dolfinx/common/math.h>
-#include <xtensor-blas/xlinalg.hpp>
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xindex_view.hpp>
 #include <xtensor/xio.hpp>
+
+using namespace dolfinx;
 
 std::pair<xt::xtensor<double, 4>, xt::xtensor<double, 2>>
 precompute_geometric_data_quad(std::shared_ptr<const mesh::Mesh> mesh, int p) {

@@ -1,10 +1,13 @@
 #include "forms.h"
-#include "operators_2d.hpp"
+#include "operators_3d.hpp"
+
 #include <algorithm>
-#include <dolfinx.h>
-#include <dolfinx/la/Vector.h>
 #include <iterator>
 #include <memory>
+
+#include <dolfinx.h>
+#include <dolfinx/io/XDMFFile.h>
+#include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
 
@@ -43,6 +46,7 @@ protected:
   double alpha_;
   double window_;
 
+  std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<fem::Constant<double>> c0;
   std::shared_ptr<fem::Form<double>> a, L;
   std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
@@ -67,6 +71,7 @@ public:
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_L, "g", Mesh));
 
@@ -230,8 +235,8 @@ public:
     double tn;
 
     // Write to VTX
-    dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
-    file.write(t);
+    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    // file.write(t);
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -266,7 +271,7 @@ public:
 
       if (step % 50 == 0) {
         kernels::copy(*u_, *u_n->x());
-        file.write(t);
+        // file.write(t);
         if (rank == 0) {
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
@@ -283,7 +288,11 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    file.write(t);
-    file.close();
+    io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
+    file_solution.write_mesh(*mesh);
+    file_solution.write_function(*u_n, t);
+
+    // file.write(t);
+    // file.close();
   }
 };
