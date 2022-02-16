@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     int degreeOfBasis = 4;
 
     // Mesh parameters
-    int elementPerWavelength = 4;
+    int elementPerWavelength = 32;
     double numberOfWaves = domainLength / wavelength;
     int numberOfElement = elementPerWavelength * numberOfWaves + 1;
     double meshSize = sqrt(2 * pow(domainLength / numberOfElement, 2));

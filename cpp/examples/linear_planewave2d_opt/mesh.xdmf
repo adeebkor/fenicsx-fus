@@ -3,20 +3,20 @@
 <Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
   <Domain>
     <Grid Name="rectangle" GridType="Uniform">
-      <Topology TopologyType="Quadrilateral" NumberOfElements="1600" NodesPerElement="4">
-        <DataItem Dimensions="1600 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/rectangle/topology</DataItem>
+      <Topology TopologyType="Quadrilateral" NumberOfElements="102400" NodesPerElement="4">
+        <DataItem Dimensions="102400 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/rectangle/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="1681 2" Format="HDF">mesh.h5:/Mesh/rectangle/geometry</DataItem>
+        <DataItem Dimensions="103041 2" Format="HDF">mesh.h5:/Mesh/rectangle/geometry</DataItem>
       </Geometry>
     </Grid>
     <Grid Name="rectangle_boundaries" GridType="Uniform">
       <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='rectangle']/Geometry)" />
-      <Topology TopologyType="PolyLine" NumberOfElements="80" NodesPerElement="2">
-        <DataItem Dimensions="80 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/topology</DataItem>
+      <Topology TopologyType="PolyLine" NumberOfElements="640" NodesPerElement="2">
+        <DataItem Dimensions="640 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/topology</DataItem>
       </Topology>
       <Attribute Name="rectangle_boundaries" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="80 1" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/Values</DataItem>
+        <DataItem Dimensions="640 1" Format="HDF">mesh.h5:/MeshTags/rectangle_boundaries/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>
