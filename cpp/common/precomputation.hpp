@@ -142,7 +142,7 @@ precompute_geometric_data_hex(std::shared_ptr<const mesh::Mesh> mesh, int p) {
 
   // Create placeholder for geometrical data
   xt::xtensor<double, 4> G({ncells, nq, tdim, gdim});
-  xt::xtensor<double, 2> J({tdim, gdim});
+  xt::xtensor<double, 2> J({tdim, gdim}), J_inv({tdim, gdim});
   xt::xtensor<double, 2> detJ({ncells, nq});
   xt::xtensor<double, 2> coords({num_nodes, gdim});
 
