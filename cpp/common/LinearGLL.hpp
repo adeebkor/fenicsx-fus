@@ -1,9 +1,11 @@
 #include "forms.h"
 
+#include <fstream>
 #include <memory>
 
 #include <dolfinx.h>
 #include <dolfinx/io/XDMFFile.h>
+#include <dolfinx/geometry/utils.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -279,6 +281,64 @@ public:
     io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
     file_solution.write_mesh(*mesh);
     file_solution.write_function(*u_n, t);
+    
+    // --------------------------------------------------------------------- //
+    // Evaluate on a line
+    int N = 20000;
+    double tol = 1e-6;
+    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1-tol, N);
+    zp.reshape({1, N});
+    auto xyp = xt::zeros<double>({2, N});
+    auto points = xt::vstack(xt::xtuple(xyp, zp));
+    auto pointsT = xt::transpose(points);
+
+    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
+    auto cell_candidates = compute_collisions(bb_tree, pointsT);
+
+    auto colliding_cells = geometry::compute_colliding_cells(
+        *mesh, cell_candidates, pointsT);
+
+    std::vector<int> cells;
+    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
+    auto points_on_proc = xt::empty<double>(sh0);
+
+    int local_size = mesh->topology().index_map(2)->size_local();
+
+    for (int i = 0; i < N; i++){
+        auto link = colliding_cells.links(i);
+        if (link.size() > 0){
+            auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
+            points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
+            cells.push_back(link[0]);
+        }
+    }
+
+    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
+    int lsize = points_on_proc.shape(0);
+    xt::xtensor<double, 2> u_eval({lsize, 1});
+
+    u_n->eval(points_on_proc, cells, u_eval);
+
+    double * uval = u_eval.data();
+    double * pval = points_on_proc.data();
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    for (int i = 0; i < size; i++){
+        if (rank == i){
+            std::ofstream outfile("pressure_on_z_axis.txt", std::ios_base::app);
+            for (int i = 0; i < lsize; i++){
+                outfile << *(pval + 3*i + 2) << "," << *(uval + i) << std::endl;
+            }
+            outfile.close();
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    // --------------------------------------------------------------------- //
+
 
     // file.write(t);
     // file.close();

@@ -41,7 +41,6 @@ int main(int argc, char* argv[]){
         double tol = 1e-6;
         xt::xarray<double> xp = xt::linspace<double>(-1.0+tol, 1.0-tol, N);
         xp.reshape({1, N});
-        // auto yp = xt::zeros<double>({1, N}) + 0.00001;
         auto yzp = xt::zeros<double>({2, N});
         auto points = xt::vstack(xt::xtuple(xp, yzp));
         auto pointsT = xt::transpose(points);
