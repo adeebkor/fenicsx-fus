@@ -2,10 +2,11 @@
 
 #include <fstream>
 #include <memory>
+#include <string>
 
 #include <dolfinx.h>
-#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/geometry/utils.h>
+#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -34,7 +35,7 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 class LinearGLL {
 private:
-  int rank;       // MPI rank
+  int rank; // MPI rank
 protected:
   int k_;        // degree of basis function
   double c0_;    // speed of sound (m/s)
@@ -48,7 +49,7 @@ protected:
   std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<fem::Constant<double>> c0;
   std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n, u_n_p2;
   std::shared_ptr<la::Vector<double>> m, b;
 
   xtl::span<double> _g, out;
@@ -59,7 +60,7 @@ protected:
   int bs;
 
 public:
-  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::FunctionSpace> V, V_lower;
 
   LinearGLL(std::shared_ptr<mesh::Mesh> Mesh,
             std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
@@ -70,6 +71,8 @@ public:
     mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
+    V_lower = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_a_lower, "u_n_lower", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -80,6 +83,8 @@ public:
     g = std::make_shared<fem::Function<double>>(V);
     u_n = std::make_shared<fem::Function<double>>(V);
     v_n = std::make_shared<fem::Function<double>>(V);
+
+    u_n_p2 = std::make_shared<fem::Function<double>>(V_lower);
 
     _g = g->x()->mutable_array();
 
@@ -114,6 +119,7 @@ public:
     // Allocate memory for the RHS
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
+
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
@@ -183,13 +189,58 @@ public:
   /// @param startTime initial time of the solver
   /// @param finalTime final time of the solver
   /// @param timeStep  time step size of the solver
-  void rk4(double& startTime, double& finalTime, double& timeStep) {
+  void rk4(double& startTime, double& finalTime, double& timeStep, double& stepPerPeriod) {
+
+    // -------------
+    // Writing to file data
+    int N = 2048;
+    double tol = 1e-6;
+    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1 - tol, N);
+    zp.reshape({1, N});
+    auto xyp = xt::zeros<double>({2, N});
+    auto points = xt::vstack(xt::xtuple(xyp, zp));
+    auto pointsT = xt::transpose(points);
+
+    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
+    auto cell_candidates = compute_collisions(bb_tree, pointsT);
+
+    auto colliding_cells = geometry::compute_colliding_cells(*mesh, cell_candidates, pointsT);
+
+    std::vector<int> cells;
+    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
+    auto points_on_proc = xt::empty<double>(sh0);
+
+    for (int i = 0; i < N; i++){
+        auto link = colliding_cells.links(i);
+        if (link.size() > 0){
+            auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
+            points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
+            cells.push_back(link[0]);
+        }
+    }
+
+    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
+    int lsize = points_on_proc.shape(0);
+    xt::xtensor<double, 2> u_eval({lsize, 1});
+
+    double* uval;
+    double* pval = points_on_proc.data();
+
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    std::string fname;
+
+    // ------------
 
     double t = startTime;
     double tf = finalTime;
     double dt = timeStep;
     int step = 0;
     int nstep = (finalTime - startTime) / timeStep + 1;
+    int numStepPerPeriod = T_ / dt + 1;
+    int nstep_period = 0;
 
     std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
 
@@ -225,7 +276,8 @@ public:
     double tn;
 
     // Write to VTX
-    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
+    // u_n_p2->interpolate(*u_n);
+    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n_p2});
     // file.write(t);
 
     while (t < tf) {
@@ -260,11 +312,34 @@ public:
       step += 1;
 
       if (step % 50 == 0) {
-        kernels::copy(*u_, *u_n->x());
+        // kernels::copy(*u_, *u_n->x());
+        // u_n_p2->interpolate(*u_n);
         // file.write(t);
         if (rank == 0) {
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
+      }
+
+      if (t > (0.1 / c0_) + 4.0 / freq0_ && nstep_period < 4*numStepPerPeriod){
+          kernels::copy(*u_, *u_n->x());
+          u_n->x()->scatter_fwd();
+          u_n->eval(points_on_proc, cells, u_eval);
+          uval = u_eval.data();
+          dt = T_ / numStepPerPeriod;
+          MPI_Barrier(MPI_COMM_WORLD);
+
+          for (int i = 0; i < size; i++){
+              if (rank == i){
+                  fname = "pressure_on_z_axis_" + std::to_string(nstep_period) + ".txt";
+                  std::ofstream outfile(fname, std::ios_base::app);
+                  for (int i = 0; i < lsize; i++){
+                      outfile << *(pval + 3*i + 2) << "," << *(uval + i) << std::endl;
+                  }
+                  outfile.close();
+              }
+              MPI_Barrier(MPI_COMM_WORLD);
+          }
+          nstep_period++;
       }
     }
 
@@ -278,69 +353,71 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
-    file_solution.write_mesh(*mesh);
-    file_solution.write_function(*u_n, t);
-    
-    // --------------------------------------------------------------------- //
-    // Evaluate on a line
-    int N = 20000;
-    double tol = 1e-6;
-    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1-tol, N);
-    zp.reshape({1, N});
-    auto xyp = xt::zeros<double>({2, N});
-    auto points = xt::vstack(xt::xtuple(xyp, zp));
-    auto pointsT = xt::transpose(points);
-
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, pointsT);
-
-    auto colliding_cells = geometry::compute_colliding_cells(
-        *mesh, cell_candidates, pointsT);
-
-    std::vector<int> cells;
-    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
-    auto points_on_proc = xt::empty<double>(sh0);
-
-    int local_size = mesh->topology().index_map(2)->size_local();
-
-    for (int i = 0; i < N; i++){
-        auto link = colliding_cells.links(i);
-        if (link.size() > 0){
-            auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
-            points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
-            cells.push_back(link[0]);
-        }
-    }
-
-    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
-    int lsize = points_on_proc.shape(0);
-    xt::xtensor<double, 2> u_eval({lsize, 1});
-
-    u_n->eval(points_on_proc, cells, u_eval);
-
-    double * uval = u_eval.data();
-    double * pval = points_on_proc.data();
-
-    int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    for (int i = 0; i < size; i++){
-        if (rank == i){
-            std::ofstream outfile("pressure_on_z_axis.txt", std::ios_base::app);
-            for (int i = 0; i < lsize; i++){
-                outfile << *(pval + 3*i + 2) << "," << *(uval + i) << std::endl;
-            }
-            outfile.close();
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-
-    // --------------------------------------------------------------------- //
-
-
+    // VTX Write
+    // u_n_p2->interpolate(*u_n);
     // file.write(t);
     // file.close();
+
+    // XDMF Write
+    // io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
+    // file_solution.write_mesh(*mesh);
+    // file_solution.write_function(*u_n, t);
+
+    // --------------------------------------------------------------------- //
+    // Evaluate on a line
+    // int N = 20000;
+    // double tol = 1e-6;
+    // xt::xarray<double> zp = xt::linspace<double>(tol, 0.1 - tol, N);
+    // zp.reshape({1, N});
+    // auto xyp = xt::zeros<double>({2, N});
+    // auto points = xt::vstack(xt::xtuple(xyp, zp));
+    // auto pointsT = xt::transpose(points);
+
+    // auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
+    // auto cell_candidates = compute_collisions(bb_tree, pointsT);
+
+    // auto colliding_cells = geometry::compute_colliding_cells(*mesh, cell_candidates, pointsT);
+
+    // std::vector<int> cells;
+    // xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
+    // auto points_on_proc = xt::empty<double>(sh0);
+
+    // int local_size = mesh->topology().index_map(2)->size_local();
+
+    // for (int i = 0; i < N; i++) {
+    //   auto link = colliding_cells.links(i);
+    //   if (link.size() > 0) {
+    //     auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
+    //     points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
+    //     cells.push_back(link[0]);
+    //   }
+    // }
+
+    // points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
+    // int lsize = points_on_proc.shape(0);
+    // xt::xtensor<double, 2> u_eval({lsize, 1});
+
+    // u_n->eval(points_on_proc, cells, u_eval);
+
+    // double* uval = u_eval.data();
+    // double* pval = points_on_proc.data();
+
+    // int rank, size;
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // for (int i = 0; i < size; i++) {
+    //   if (rank == i) {
+    //     std::ofstream outfile("pressure_on_z_axis.txt", std::ios_base::app);
+    //     for (int i = 0; i < lsize; i++) {
+    //       outfile << *(pval + 3 * i + 2) << "," << *(uval + i) << std::endl;
+    //     }
+    //     outfile.close();
+    //   }
+    //   MPI_Barrier(MPI_COMM_WORLD);
+    // }
+
+    // --------------------------------------------------------------------- //
+
   }
 };

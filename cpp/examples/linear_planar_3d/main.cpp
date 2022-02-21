@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
     double sourceFrequency = 1e6;                           // (Hz)
     double angularFrequency = 2.0 * M_PI * sourceFrequency; // (rad/s)
     double pressureAmplitude = 3.079e5;                     // (Pa)
+    double period = 1 / sourceFrequency;                    // (s)
 
     // Domain parameters
     double shockFormationDistance = densityOfMedium * pow(speedOfSound, 3) / coeffOfNonlinearity
@@ -71,7 +72,10 @@ int main(int argc, char* argv[]) {
     double CFL = 0.6;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
+    double finalTime = domainLength / speedOfSound + 10.0 / sourceFrequency;
+    double stepPerPeriod = period / timeStepSize;
+    std::cout << "Number of step per period: " << stepPerPeriod << std::endl;
+    std::cout << "dt = " << timeStepSize << std::endl;
 
     int nstep = (finalTime - startTime) / timeStepSize + 1;
 
@@ -89,7 +93,7 @@ int main(int argc, char* argv[]) {
     common::Timer tsolve("Solve time");
 
     tsolve.start();
-    eqn.rk4(startTime, finalTime, timeStepSize);
+    eqn.rk4(startTime, finalTime, timeStepSize, stepPerPeriod);
     tsolve.stop();
     std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
 

@@ -1,8 +1,10 @@
 element = FiniteElement("Lagrange", hexahedron, 4, variant="gll")
+element_lower = FiniteElement("Lagrange", hexahedron, 2, variant="gll")
 
 coord_element = VectorElement("Lagrange", hexahedron, 1)
 mesh = Mesh(coord_element)
 V = FunctionSpace(mesh, element)
+V_lower = FunctionSpace(mesh, element_lower)
 
 c0 = Constant(mesh)
 
@@ -12,9 +14,13 @@ v_n = Coefficient(V)
 g = Coefficient(V)
 v = TestFunction(V)
 
+u_n_lower = Coefficient(V_lower)
+
 md = {"quadrature_rule": "GLL", "quadrature_degree": 6}
 
 a = inner(u, v) * dx(metadata=md)
+
+a_lower = inner(u_n_lower, u_n_lower) * dx(metadata=md)
 
 L = c0**2 * (- inner(grad(u_n), grad(v))
              * dx(metadata=md)
@@ -23,4 +29,4 @@ L = c0**2 * (- inner(grad(u_n), grad(v))
              - 1/c0*inner(v_n, v)
              * ds(2, metadata=md))
 
-forms = [a, L]
+forms = [a, a_lower, L]
