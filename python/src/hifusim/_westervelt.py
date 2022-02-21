@@ -3,8 +3,8 @@ from scipy.integrate import RK45
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.fem import (FunctionSpace, Function, assemble_vector, form,
-                         assemble_matrix)
+from dolfinx.fem import FunctionSpace, Function, form
+from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from ufl import (FiniteElement, TestFunction, TrialFunction, Measure, inner,
                  grad, dx)
 
@@ -286,7 +286,7 @@ class WesterveltGLL:
                       * ds(2, metadata=md)
                       - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n
                       * inner(self.u, self.v) * dx(metadata=md),
-                      jit_parameters=jit_params)
+                      jit_params=jit_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -303,7 +303,7 @@ class WesterveltGLL:
                                       * ds(1, metadata=md))
                       + 2 * self.beta / self.rho0 / self.c0**2
                       * inner(self.v_n*self.v_n, self.v) * dx(metadata=md),
-                      jit_parameters=jit_params)
+                      jit_params=jit_params)
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)

@@ -3,8 +3,8 @@ from scipy.integrate import RK45
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.fem import (FunctionSpace, Function, assemble_vector,
-                         assemble_matrix, form)
+from dolfinx.fem import FunctionSpace, Function, form
+from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities
 from ufl import (FiniteElement, TestFunction, TrialFunction, Measure, inner,
@@ -52,7 +52,7 @@ class LinearGLL:
         # Define variational form
         self.u.x.array[:] = 1.0
         self.a = form(inner(self.u, self.v) * dx(metadata=md),
-                      jit_parameters=jit_params)
+                      jit_params=jit_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -63,7 +63,7 @@ class LinearGLL:
                                   * ds(1, metadata=md)
                                   - 1/self.c0*inner(self.v_n, self.v)
                                   * ds(2, metadata=md)),
-                      jit_parameters=jit_params)
+                      jit_params=jit_params)
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
