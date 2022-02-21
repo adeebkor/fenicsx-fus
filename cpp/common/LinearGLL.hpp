@@ -353,17 +353,6 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-<<<<<<< Updated upstream
-    // VTX Write
-    // u_n_p2->interpolate(*u_n);
-    // file.write(t);
-    // file.close();
-
-    // XDMF Write
-    // io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
-    // file_solution.write_mesh(*mesh);
-    // file_solution.write_function(*u_n, t);
-=======
     io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
     file_solution.write_mesh(*mesh);
     file_solution.write_function(*u_n, t);
@@ -421,7 +410,6 @@ public:
       }
       MPI_Barrier(MPI_COMM_WORLD);
     }
->>>>>>> Stashed changes
 
     // --------------------------------------------------------------------- //
     // Evaluate on a line
