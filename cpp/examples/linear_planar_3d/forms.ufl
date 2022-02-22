@@ -1,4 +1,4 @@
-element = FiniteElement("Lagrange", hexahedron, 4, variant="gll")
+element = FiniteElement("Lagrange", hexahedron, 2, variant="gll")
 element_lower = FiniteElement("Lagrange", hexahedron, 2, variant="gll")
 
 coord_element = VectorElement("Lagrange", hexahedron, 1)
@@ -16,7 +16,7 @@ v = TestFunction(V)
 
 u_n_lower = Coefficient(V_lower)
 
-md = {"quadrature_rule": "GLL", "quadrature_degree": 6}
+md = {"quadrature_rule": "GLL", "quadrature_degree": 3}
 
 a = inner(u, v) * dx(metadata=md)
 
