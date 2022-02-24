@@ -188,13 +188,13 @@ public:
   /// @param startTime initial time of the solver
   /// @param finalTime final time of the solver
   /// @param timeStep  time step size of the solver
-  void rk4(double& startTime, double& finalTime, double& timeStep, double& stepPerPeriod) {
+  void rk4(double& startTime, double& finalTime, double& timeStep, int& stepPerPeriod) {
 
     // -------------
     // Writing to file data
     int N = 2048;
     double tol = 1e-6;
-    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1 - tol, N);
+    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1, N);
     zp.reshape({1, N});
     auto xyp = xt::zeros<double>({2, N});
     auto points = xt::vstack(xt::xtuple(xyp, zp));
@@ -319,17 +319,16 @@ public:
         }
       }
 
-      if (t > (0.1 / c0_) + 4.0 / freq0_ && nstep_period < 4 * numStepPerPeriod) {
+      if (t > (0.1 / c0_ + 4.0 / freq0_) && nstep_period < numStepPerPeriod) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
         u_n->eval(points_on_proc, cells, u_eval);
         uval = u_eval.data();
-        dt = T_ / numStepPerPeriod;
         MPI_Barrier(MPI_COMM_WORLD);
 
         for (int i = 0; i < size; i++) {
           if (rank == i) {
-            fname = "pressure_on_z_axis_" + std::to_string(nstep_period) + ".txt";
+            fname = "/home/mabm4/rds/data/pressure_on_z_axis_" + std::to_string(nstep_period) + ".txt";
             std::ofstream outfile(fname, std::ios_base::app);
             for (int i = 0; i < lsize; i++) {
               outfile << *(pval + 3 * i + 2) << "," << *(uval + i) << std::endl;
@@ -352,7 +351,13 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
+    // Write solution to XDMF
+    io::XDMFFile solution(mesh->comm(), "/home/mabm4/rds/hpc-work/big_solution/u.xdmf", "w");
+    solution.write_mesh(*mesh);
+    solution.write_function(*u_n, t);
+    
     // file.write(t);
     // file.close();
+
   }
 };
