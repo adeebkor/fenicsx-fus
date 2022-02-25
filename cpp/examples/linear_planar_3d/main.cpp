@@ -91,7 +91,10 @@ int main(int argc, char* argv[]) {
     tsolve.start();
     eqn.rk4(startTime, finalTime, timeStepSize);
     tsolve.stop();
-    std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+
+    if (rank == 0){
+        std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+    }
 
   }
   common::subsystem::finalize_mpi();
