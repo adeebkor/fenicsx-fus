@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     // Source parameters
     double sourceFrequency = 0.5e6;                           // (Hz)
     double angularFrequency = 2.0 * M_PI * sourceFrequency; // (rad/s)
-    double pressureAmplitude = 10; // 60000.0;                     // (Pa)
+    double pressureAmplitude = 60000.0;                     // (Pa)
     double period = 1 / sourceFrequency;                    // (s)
 
     // Domain parameters
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
     double CFL = 0.5;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = domainLength / speedOfSound + 8 / sourceFrequency;
+    double finalTime = 1.2 * (domainLength / speedOfSound); // + 8 / sourceFrequency;
     int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     if (rank == 0){

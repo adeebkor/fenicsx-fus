@@ -319,7 +319,7 @@ public:
         }
       }
 
-      if (t > (0.1 / c0_ + 4.0 / freq0_) && nstep_period < numStepPerPeriod) {
+      if (t > 1.1 * (0.1 / c0_) && nstep_period < numStepPerPeriod) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
         u_n->eval(points_on_proc, cells, u_eval);
