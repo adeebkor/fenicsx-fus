@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 
-import dolfinx.fem
+import dolfinx.fem.petsc
 import dolfinx.mesh
 import ufl
 
@@ -63,10 +63,9 @@ def test_diagonal(dimension, p):
 
     # Build element mass matrix
     A = dolfinx.fem.assemble_matrix(a)
-    A.assemble()
 
     # Get nonzero indices
-    idx = np.nonzero(A[:, :])
+    idx = np.nonzero(A.to_dense())
 
     assert(np.allclose(idx[0], np.arange(ndof)) and
            np.allclose(idx[1], np.arange(ndof)))

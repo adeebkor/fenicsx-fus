@@ -2,8 +2,9 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
-from dolfinx.fem import (FunctionSpace, Function, assemble_vector,
-                         dirichletbc, locate_dofs_topological, form, set_bc)
+from dolfinx.fem import (FunctionSpace, Function, dirichletbc, form,
+                         locate_dofs_topological, set_bc)
+from dolfinx.fem.petsc import assemble_vector
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities
 from ufl import (FiniteElement, TestFunction, Measure, inner, grad, dx)
