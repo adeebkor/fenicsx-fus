@@ -1,5 +1,6 @@
-# A simple UFL form
-
+from ufl import (FiniteElement, VectorElement, Mesh, FunctionSpace, Mesh,
+                 Coefficient, TestFunction, hexahedron, inner, dx)
+                 
 element = FiniteElement("Lagrange", hexahedron, 3, variant="gll")
 coord_element = VectorElement("Lagrange", hexahedron, 1)
 mesh = Mesh(coord_element)

@@ -1,3 +1,6 @@
+from ufl import (FiniteElement, hexahedron, VectorElement, Mesh, FunctionSpace,
+                 Constant, Coefficient, TestFunction,  grad, inner, dx, ds)
+
 element = FiniteElement("Lagrange", hexahedron, 4, variant="gll")
 
 coord_element = VectorElement("Lagrange", hexahedron, 1)
@@ -17,10 +20,10 @@ md = {"quadrature_rule": "GLL", "quadrature_degree": 6}
 a = inner(u, v) * dx(metadata=md)
 
 L = c0**2 * (- inner(grad(u_n), grad(v))
-             * dx(metadata=md))
-#              + inner(g, v)
-#              * ds(1, metadata=md)
-#              - 1/c0*inner(v_n, v)
-#              * ds(2, metadata=md))
+             * dx(metadata=md)
+             + inner(g, v)
+             * ds(1, metadata=md)
+             - 1/c0*inner(v_n, v)
+             * ds(2, metadata=md))
 
 forms = [a, L]
