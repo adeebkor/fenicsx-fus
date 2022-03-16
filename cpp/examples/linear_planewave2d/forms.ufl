@@ -1,3 +1,7 @@
+from ufl import (FiniteElement, VectorElement, Mesh, FunctionSpace,
+                 Constant, Coefficient, TestFunction, grad, inner, dx, ds,
+                 quadrilateral)
+
 element = FiniteElement("Lagrange", quadrilateral, 4, variant="gll")
 
 coord_element = VectorElement("Lagrange", quadrilateral, 1)
