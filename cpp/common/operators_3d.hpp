@@ -111,7 +111,7 @@ class MassOperator {
 namespace {
   template <typename T>
   inline void skernel(T* A, const T* w, std::map<std::string, double>& c, const double* G, const xt::xtensor<double, 3>& dphi, int nq, int nd){
-    double c0 = 1482.0;
+    double c0 = 1500.0;
     double coeff = -1.0 * c0 * c0;
     for (int iq = 0; iq < nq; iq++){
       const double* _G = G + iq * 9;
