@@ -1,3 +1,6 @@
+from ufl import (FiniteElement, hexahedron, VectorElement, Mesh, FunctionSpace,
+                 Constant, Coefficient, TestFunction, inner, dx, ds, grad)
+
 element = FiniteElement("Lagrange", hexahedron, 4, variant="gll")
 element_interp = FiniteElement("Lagrange", hexahedron, 2, variant="gll")
 

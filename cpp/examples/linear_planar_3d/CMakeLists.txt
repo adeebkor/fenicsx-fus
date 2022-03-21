@@ -11,8 +11,8 @@ set(CMAKE_C_FLAGS "-Ofast -march=native  -mprefer-vector-width=512 ${CMAKE_C_FLA
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
-  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.ufl -o ${CMAKE_CURRENT_SOURCE_DIR}/
-  DEPENDS forms.ufl
+  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.py -o ${CMAKE_CURRENT_SOURCE_DIR}/
+  DEPENDS forms.py
 )
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)

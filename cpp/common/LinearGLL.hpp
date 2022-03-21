@@ -7,6 +7,7 @@
 #include <dolfinx.h>
 #include <dolfinx/geometry/utils.h>
 #include <dolfinx/io/XDMFFile.h>
+#include <dolfinx/io/ADIOS2Writers.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -72,8 +73,8 @@ public:
     mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
-    V_interp = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_a_interp, "u_interp", Mesh));
+    // V_interp = std::make_shared<fem::FunctionSpace>(
+        // fem::create_functionspace(functionspace_form_forms_a_interp, "u_interp", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -85,7 +86,7 @@ public:
     u_n = std::make_shared<fem::Function<double>>(V);
     v_n = std::make_shared<fem::Function<double>>(V);
 
-    u_interp = std::make_shared<fem::Function<double>>(V_interp);
+    // u_interp = std::make_shared<fem::Function<double>>(V_interp);
 
     _g = g->x()->mutable_array();
 
