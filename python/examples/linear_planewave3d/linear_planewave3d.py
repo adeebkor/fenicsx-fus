@@ -10,7 +10,7 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 from dolfinx.io import XDMFFile
-from dolfinx.mesh import (MeshTags, CellType, create_box,
+from dolfinx.mesh import (meshtags, CellType, create_box,
                           locate_entities_boundary)
 
 from hifusim import Linear
@@ -63,7 +63,7 @@ facets1 = locate_entities_boundary(mesh, 2, lambda x: np.isclose(x[0], L))
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
 values = np.hstack((np.full(facets0.shape, 1, np.intc),
                     np.full(facets1.shape, 2, np.intc)))
-mt = MeshTags(mesh, 2, indices, values[pos])
+mt = meshtags(mesh, 2, indices, values[pos])
 
 # Model
 eqn = Linear(mesh, mt, degree, c0, f0, p0)

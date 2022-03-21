@@ -4,7 +4,7 @@ from scipy.special import jv
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
-from dolfinx.mesh import create_interval, locate_entities_boundary, MeshTags
+from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
 from hifusim import Westervelt
@@ -46,7 +46,7 @@ def test_westervelt_L2(degree, epw):
     indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
     values = np.hstack((np.full(facets0.shape, 1, np.intc),
                         np.full(facets1.shape, 2, np.intc)))
-    mt = MeshTags(mesh, tdim-1, indices, values[pos])
+    mt = meshtags(mesh, tdim-1, indices, values[pos])
 
     # Temporal parameters
     tstart = 0.0  # simulation start time (s)
