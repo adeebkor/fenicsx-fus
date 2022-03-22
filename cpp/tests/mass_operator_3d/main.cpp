@@ -1,6 +1,5 @@
 #include "form.h"
 #include "operators_3d.hpp"
-#include "precomputation.hpp"
 #include <cmath>
 #include <dolfinx.h>
 
@@ -43,7 +42,7 @@ int main(int argc, char* argv[]){
 
     auto _m = m.array();
     auto _m_ref = m_ref.array();
-    for (std::size_t i = 0; i < _m.size(); ++i) {
+    for (std::size_t i = 0; i < 10; ++i) {
       std::cout << _m[i] << "\t " << _m_ref[i] << "\t " << std::abs(_m[i] - _m_ref[i]) << std::endl;
 	}
   }

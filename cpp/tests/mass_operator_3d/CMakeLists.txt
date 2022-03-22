@@ -11,8 +11,8 @@ set(CMAKE_C_FLAGS "-O3 -march=native  ${CMAKE_C_FLAGS} -Wall")
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/form.c
-  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/form.ufl -o ${CMAKE_CURRENT_SOURCE_DIR}/
-  DEPENDS form.ufl
+  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/form.py -o ${CMAKE_CURRENT_SOURCE_DIR}/
+  DEPENDS form.py
 )
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)

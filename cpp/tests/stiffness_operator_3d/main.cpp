@@ -32,8 +32,9 @@ int main(int argc, char* argv[]){
 
 	// Create stiffness operator
 	std::map<std::string, double> params;
-	params["c0"] = 1486.0;
-	StiffnessOperator<double> stiffness_operator(V, 3, params);
+	params["c0"] = 1.0;
+	StiffnessOperatorSF<double, 3, 4> stiffness_operator(V);
+    // StiffnessOperator<double> stiffness_operator(V, 3, params);
 	la::Vector<double> s(index_map, bs);
 	stiffness_operator(*u->x(), s);
     s.scatter_rev(common::IndexMap::Mode::add);
@@ -48,7 +49,8 @@ int main(int argc, char* argv[]){
 
     auto _s = s.array();
     auto _s_ref = s_ref.array();
-    for (std::size_t i = 0; i < _s.size(); ++i) {
+    std::cout << "Comparison!" << std::endl;
+    for (std::size_t i = 0; i < 4; ++i) {
       std::cout << _s[i] << "\t " << _s_ref[i] << "\t " << std::abs(_s[i] - _s_ref[i]) << std::endl;
     }
   }
