@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME test_mass_operator_3d)
+set(PROJECT_NAME test_mass_3d)
 project(${PROJECT_NAME})
 
 # Set C++17 standard

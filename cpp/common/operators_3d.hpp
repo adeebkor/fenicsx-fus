@@ -96,11 +96,6 @@ class MassOperator {
       tcb::span<const int> cell_dofs;
       for (std::size_t cell = 0; cell < _num_cells; cell++){
         cell_dofs = _dofmap.links(cell);
-        // int _xdof = 0;
-        // for (auto& idx : _perm){
-        //   _x[_xdof] = x_array[cell_dofs[idx]];
-        //   _xdof++;
-        // }
         for (std::size_t i = 0; i < _num_dofs; i++) {
             _x[i] = x_array[cell_dofs[_perm[i]]];
         }
@@ -108,11 +103,6 @@ class MassOperator {
         std::fill(_y.begin(), _y.end(), 0.0);
         double* detJ_ptr = _detJ.data() + cell * _num_quads;
         mkernel<double>(_y.data(), _x.data(), nullptr, detJ_ptr, _num_quads, _num_dofs);
-        // int _ydof = 0;
-        // for (auto& idx : _perm){
-        //   y_array[cell_dofs[idx]] += _y[_ydof];
-        //   _ydof++;
-        // }
         for (std::size_t i = 0; i < _num_dofs; i++) {
             y_array[cell_dofs[_perm[i]]] += _y[i];
         }
@@ -240,7 +230,7 @@ template <typename T, int Q>
 static inline void transform_coefficients(T* __restrict__ G, T* __restrict__ fw0,
                                           T* __restrict__ fw1, T* __restrict__ fw2) {
   double c0 = 1.0;
-  double coeff = 1.0 * c0 * c0;
+  double coeff = - 1.0 * (c0 * c0);
   constexpr int nquad = Q * Q * Q;
   for (int q = 0; q < nquad; q++) {
     const double* _G = G + q * 9;
@@ -319,6 +309,11 @@ class StiffnessOperatorSF {
 
       const T* phi = _phi.data();
       const T* dphi = _dphi.data();
+      
+      _fw0.fill(0.0);
+      _fw1.fill(0.0);
+      _fw2.fill(0.0);
+      
       T* fw0 = _fw0.data();
       T* fw1 = _fw1.data();
       T* fw2 = _fw2.data();
@@ -339,22 +334,44 @@ class StiffnessOperatorSF {
         // three successive tensor contractions
         // fw0 = \sum_i dphix_qi * u_i
         // fw1 = \sum_i dphiy_qi * u_i
-        // fw1 = \sum_i dphiz_qi * u_i
-        apply_contractions<T, Nq, Nd, true>(dphi, phi, phi, _x.data(), fw0, buffer0);
-        apply_contractions<T, Nq, Nd, true>(phi, dphi, phi, _x.data(), fw1, buffer0);
-        apply_contractions<T, Nq, Nd, true>(phi, phi, dphi, _x.data(), fw2, buffer0);
+        // fw2 = \sum_i dphiz_qi * u_i
+        // apply_contractions<T, Nq, Nd, true>(dphi, phi, phi, _x.data(), fw0, buffer0);
+        // apply_contractions<T, Nq, Nd, true>(phi, dphi, phi, _x.data(), fw1, buffer0);
+        // apply_contractions<T, Nq, Nd, true>(phi, phi, dphi, _x.data(), fw2, buffer0);
 
-        double* G_cell = G.data() + cell * _num_quads * 9;
-        transform_coefficients<T, P>(G_cell, fw0, fw1, fw2);
+        // double* G_cell = G.data() + cell * _num_quads * 9;
+        // transform_coefficients<T, Q>(G_cell, fw0, fw1, fw2);
 
         // Accumulate contributions points by applying
         // three successive tensor contractions
         // y_i += \sum_i dphix_qi * fw0_q
         // y_i += \sum_i dphiy_qi * fw1_q
         // y_i += \sum_i dphiz_qi * fw2_q
-        apply_contractions<T, Nd, Nq, false>(dphi, phi, phi, fw0, _y0.data(), buffer1);
-        apply_contractions<T, Nd, Nq, false>(phi, dphi, phi, fw1, _y1.data(), buffer1);
-        apply_contractions<T, Nd, Nq, false>(phi, phi, dphi, fw2, _y2.data(), buffer1);
+        // apply_contractions<T, Nd, Nq, false>(dphi, phi, phi, fw0, _y0.data(), buffer1);
+        // apply_contractions<T, Nd, Nq, false>(phi, dphi, phi, fw1, _y1.data(), buffer1);
+        // apply_contractions<T, Nd, Nq, false>(phi, phi, dphi, fw2, _y2.data(), buffer1);
+
+        common::Timer tadeeb("Adeeb time");
+
+        tadeeb.start();
+        apply_contraction_x<T, Nq, Nd, true>(dphi, _x.data(), fw0, buffer0);
+        apply_contraction_y<T, Nq, Nd, true>(dphi, _x.data(), fw1, buffer0);
+        apply_contraction_z<T, Nq, Nd, true>(dphi, _x.data(), fw2, buffer0);
+
+        double* G_cell = G.data() + cell * _num_quads * 9;
+        transform_coefficients<T, Q>(G_cell, fw0, fw1, fw2);
+
+        apply_contraction_x<T, Nq, Nd, false>(dphi, fw0, _y0.data(), buffer1);
+        apply_contraction_y<T, Nq, Nd, false>(dphi, fw1, _y1.data(), buffer1);
+        apply_contraction_z<T, Nq, Nd, false>(dphi, fw2, _y2.data(), buffer1);
+        for (int i = 0; i < 10; i++) {
+            std::cout << _y2[i] << std::endl;
+        }
+        return;
+
+        tadeeb.stop();
+
+        std::cout << "Adeeb time: " << tadeeb.elapsed()[0] << std::endl;
 
         for (std::size_t i = 0; i < _num_dofs; i++) {
           y_array[cell_dofs[_perm[i]]] += _y0[i] + _y1[i] + _y2[i];

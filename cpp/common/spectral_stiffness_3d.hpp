@@ -1,0 +1,210 @@
+#pragma once
+
+#include "precompute.hpp"
+#include "Fastor/Fastor.h"
+
+#include "precompute.hpp"
+#include <map>
+#include <basix/finite-element.h>
+#include <basix/quadrature.h>
+#include <xtensor/xindex_view.hpp>
+#include <xtensor/xadapt.hpp>
+#include <xtensor/xio.hpp>
+
+using namespace Fastor;
+
+namespace {
+  template <typename T, int Q>
+  static inline void transform(T* __restrict__ G, T* __restrict__ fw0, 
+                               T* __restrict__ fw1, T* __restrict__ fw2) {
+    double c0 = 1500.0;
+    double coeff = - 1.0 * (c0 * c0);
+    constexpr int nq = Q * Q * Q;
+    for (int iq = 0; iq < nq; iq++) {
+      const double* _G = G + iq * 9;
+      const T w0 = fw0[iq];
+      const T w1 = fw1[iq];
+      const T w2 = fw2[iq];
+      fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
+      fw1[iq] = coeff * (_G[3] * w0 + _G[4] * w1 + _G[5] * w2);
+      fw2[iq] = coeff * (_G[6] * w0 + _G[7] * w1 + _G[8] * w2);
+    }
+  }
+}
+
+enum
+{
+  a0,
+  b0,
+  a1,
+  b1,
+  a2,
+  b2
+};
+
+template <typename T, int P, int Q>
+class SpectralStiffness {
+public:
+  SpectralStiffness(std::shared_ptr<fem::FunctionSpace>& V) : _dofmap(0) {
+    // Create map between basis degree and quadrature degree
+    std::map<int, int> qdegree;
+    qdegree[2] = 3;
+    qdegree[3] = 4;
+    qdegree[4] = 6;
+    qdegree[5] = 8;
+    qdegree[6] = 10;
+    qdegree[7] = 12;
+    qdegree[8] = 14;
+    qdegree[9] = 16;
+    qdegree[10] = 18;
+
+    // Get mesh and mesh attributes
+    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
+    int tdim = mesh->topology().dim();
+    _num_cells = mesh->topology().index_map(tdim)->size_local();
+
+    // Get dofmap
+    _dofmap = V->dofmap()->list();
+
+    // Get tensor product order
+    auto family = basix::element::family::P;
+    auto cell_type = basix::cell::type::hexahedron;
+    auto variant = basix::element::lagrange_variant::gll_warped;
+    auto element = basix::create_element(family, cell_type, P, variant);
+    auto perm = std::get<1>(element.get_tensor_product_representation()[0]);
+    std::copy(perm.begin(), perm.end(), _perm.begin());
+
+    // Tabulate quadrature points and weights
+    auto quad_type = basix::quadrature::type::gll;
+    auto [points, weights]
+      = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
+
+    // Compute the scaled of the geometrical factor
+    auto J = compute_jacobian(mesh, points);
+    auto _detJ = compute_jacobian_determinant(J);
+    _G = compute_geometrical_factor(J, _detJ, weights);
+
+    // Tabulate the basis functions and clamped values
+    auto dphi = tabulate_1d(P, qdegree[P], 1);
+    std::copy_n(dphi.data(), dphi.size(), _dphi.data());
+  }
+
+  template <typename Alloc>
+  void operator()(const la::Vector<T, Alloc>& x, la::Vector<T, Alloc>& y) {
+    xtl::span<const T> x_array = x.array();
+    xtl::span<T> y_array = y.mutable_array();
+
+    Fastor::Tensor<T, Nd, Nd, Nd> xi;
+    Fastor::Tensor<T, Nd, Nd, Nd> _y0;
+    Fastor::Tensor<T, Nd, Nd, Nd> _y1;
+    Fastor::Tensor<T, Nd, Nd, Nd> _y2;
+    Fastor::Tensor<T, Nq, Nd, Nd> _fw0;
+    Fastor::Tensor<T, Nq, Nd, Nd> _fw1;
+    Fastor::Tensor<T, Nq, Nd, Nd> _fw2;
+
+    // Transpose dphi
+    Fastor::Tensor<double, Nd, Nq> _dphiT = permute<Index<1, 0>>(_dphi);
+
+    for (std::int32_t cell = 0; cell < _num_cells; cell++) {
+      auto cell_dofs = _dofmap.links(cell);
+
+      // Pack coefficients
+      T* _x = xi.data();
+      for (std::int32_t i = 0; i < _num_dofs; i++) {
+        _x[i] = x_array[cell_dofs[_perm[i]]];
+      }
+
+      // Apply contraction in the x-direction
+      _fw0 = einsum<Index<a0, b0>, Index<b0, b1, b2>>(_dphi, xi);
+
+      // Apply contraction in the y-direction
+      _fw1 = permute<Index<1, 0, 2>>(xi);
+      _fw1 = einsum<Index<a1, b1>, Index<b1, a0, b2>>(_dphi, _fw1);
+      _fw1 = permute<Index<1, 0, 2>>(_fw1);
+
+      // Apply contraction in the z-direction
+      _fw2 = permute<Index<2, 0, 1>>(xi);
+      _fw2 = einsum<Index<a2, b2>, Index<b2, a0, a1>>(_dphi, _fw2);
+      _fw2 = permute<Index<1, 2, 0>>(_fw2);
+
+      // Apply transform
+      T* G = _G.data() + cell * _num_quads * 9;
+      T* fw0 = _fw0.data();
+      T* fw1 = _fw1.data();
+      T* fw2 = _fw2.data(); 
+      transform<T, Q>(G, fw0, fw1, fw2);
+
+      // Apply contraction in the x-direction
+      _y0 = einsum<Index<a0, b0>, Index<b0, b1, b2>>(_dphiT, _fw0);
+
+      // Apply contraction in the y-direction
+      _y1 = permute<Index<1, 0, 2>>(_fw1);
+      _y1 = einsum<Index<a1, b1>, Index<b1, a0, b2>>(_dphiT, _y1);
+      _y1 = permute<Index<1, 0, 2>>(_y1);
+
+      // Apply contraction in the z-direction
+      _y2 = permute<Index<2, 0, 1>>(_fw2);
+      _y2 = einsum<Index<a2, b2>, Index<b2, a0, a1>>(_dphi, _y2);
+      _y2 = permute<Index<1, 2, 0>>(_y2);
+
+      T* y0 = _y0.data();
+      T* y1 = _y1.data();
+      T* y2 = _y2.data();
+      for (std::size_t i = 0; i < _num_dofs; i++) {
+          y_array[cell_dofs[_perm[i]]] += y0[i] + y1[i] + y2[i];
+      }
+    }
+  }
+
+private:
+  // Number of dofs in each direction
+  static constexpr int Nd = P + 1;
+
+  // Number of degrees of freedom per element
+  static constexpr int _num_dofs = (P + 1) * (P + 1) * (P + 1);
+
+  // Number of quadrature points in each direction
+  static constexpr int Nq = Q;
+
+  // Number of quadrature points per element
+  static constexpr int _num_quads = Q * Q * Q;
+
+  // Number of cells in the mesh
+  std::int32_t _num_cells;
+
+  // Geometrical factor
+  xt::xtensor<T, 4> _G;
+
+  // Permutations: from basix order to tensor product order
+  std::array<int, _num_dofs> _perm;
+
+  // Basis functions in 1D
+  Fastor::Tensor<T, Q, P + 1> _dphi;
+
+  // Dofmap
+  graph::AdjacencyList<std::int32_t> _dofmap;
+};
+
+/*
+fw0 = 
+[0,:,:]
+[-0.000144705763040, -0.000144705763040, -0.000723528815200, -0.000723528815200]
+[-0.000144705763040, -0.000144705763040, -0.000723528815200, -0.000723528815200]
+[-0.000723528815200, -0.000723528815200, -0.003617644075999, -0.003617644075999]
+[-0.000723528815200, -0.000723528815200, -0.003617644075999, -0.003617644075999]
+[1,:,:]
+[-0.000126920678436, -0.000126920678436, -0.000634603392182, -0.000634603392182]
+[-0.000126920678436, -0.000126920678436, -0.000634603392182, -0.000634603392182]
+[-0.000634603392182, -0.000634603392182, -0.003173016960912, -0.003173016960912]
+[-0.000634603392182, -0.000634603392182, -0.003173016960912, -0.003173016960912]
+[2,:,:]
+[-0.000716407112862, -0.000716407112862, -0.003582035564312, -0.003582035564312]
+[-0.000716407112862, -0.000716407112862, -0.003582035564312, -0.003582035564312]
+[-0.003582035564312, -0.003582035564312, -0.017910177821561, -0.017910177821561]
+[-0.003582035564312, -0.003582035564312, -0.017910177821561, -0.017910177821561]
+[3,:,:]
+[-0.000676638454703, -0.000676638454703, -0.003383192273517, -0.003383192273517]
+[-0.000676638454703, -0.000676638454703, -0.003383192273517, -0.003383192273517]
+[-0.003383192273517, -0.003383192273517, -0.016915961367587, -0.016915961367587]
+[-0.003383192273517, -0.003383192273517, -0.016915961367587, -0.016915961367587]
+*/

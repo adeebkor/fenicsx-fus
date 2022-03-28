@@ -13,7 +13,9 @@ struct Buffer {
 
   void zero() {
     T0 = {0};
+    T0_t = {0};
     T1 = {0};
+    T1_t = {0};
     T2 = {0};
   }
 };
@@ -86,3 +88,40 @@ static inline void apply_contractions(const T* I0, const T* I1, const T* I2,
   transpose<T, Na, Na, Na, 1, Na * Na, Na>(buffer.T2.data(), A);
 }
 // --------------------------------------------------------------------//
+/// Compute A = [I0 x I1 x I2] B by successive tensor contractions in the
+/// x-direction
+template <typename T, int Na, int Nb, bool Tr>
+static inline void apply_contraction_x(const T* I, T* __restrict__ B, 
+                                       T* __restrict__ A,
+                                       Buffer<T, Na, Nb>& buffer) {
+  buffer.zero();
+  contract<T, Nb, Na, Nb, Nb, Tr>(I, B, buffer.T0.data());
+  std::copy(buffer.T0.begin(), buffer.T0.end(), A);
+}
+// --------------------------------------------------------------------//
+/// Compute A = [I0 x I1 x I2] B by successive tensor contractions in the
+/// y-direction
+template <typename T, int Na, int Nb, bool Tr>
+static inline void apply_contraction_y(const T* I, T* __restrict__ B, 
+                                       T* __restrict__ A,
+                                       Buffer<T, Na, Nb>& buffer) {
+  buffer.zero();
+  transpose<T, Na, Nb, Nb, Nb, Nb * Na, 1>(B, buffer.T0.data());
+  contract<T, Nb, Na, Na, Nb, Tr>(I, buffer.T0.data(), buffer.T1.data());
+  transpose<T, Na, Na, Na, Nb, Nb * Na, 1>(buffer.T1.data(), buffer.T2.data());
+  std::copy(buffer.T2.begin(), buffer.T2.end(), A);
+}
+// --------------------------------------------------------------------//
+/// Compute A = [I0 x I1 x I2] B by successive tensor contractions in the
+/// z-direction
+template <typename T, int Na, int Nb, bool Tr>
+static inline void apply_contraction_z(const T* I, T* __restrict__ B, 
+                                       T* __restrict__ A,
+                                       Buffer<T, Na, Nb>& buffer) {
+  buffer.zero();
+  transpose<T, Na, Nb, Nb, 1, Nb * Na, Na>(B, buffer.T0.data());
+  contract<T, Nb, Na, Na, Nb, Tr>(I, buffer.T0.data(), buffer.T1.data());
+  transpose<T, Na, Na, Na, 1, Na * Nb, Na>(buffer.T1.data(), buffer.T2.data());
+  std::copy(buffer.T2.begin(), buffer.T2.end(), A);
+}
+
