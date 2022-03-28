@@ -1,11 +1,14 @@
 #include "forms.h"
 #include "operators_2d.hpp"
 
+#include <fstream>
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <string>
 
 #include <dolfinx.h>
+#include <dolfinx/geometry/utils.h>
 #include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
@@ -35,7 +38,7 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 class LinearGLLOpt {
 private:
-  int rank; // MPI rank
+  int rank, size; // MPI rank and size
 protected:
   int k_;        // degree of basis function
   double c0_;    // speed of sound (m/s)
@@ -49,7 +52,7 @@ protected:
   std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<fem::Constant<double>> c0;
   std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n, u_interp;
   std::shared_ptr<la::Vector<double>> m, b;
 
   xtl::span<double> _g, out;
@@ -63,17 +66,20 @@ protected:
   std::shared_ptr<StiffnessOperator<double>> stiff_op;
 
 public:
-  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::FunctionSpace> V, V_interp;
 
   LinearGLLOpt(std::shared_ptr<mesh::Mesh> Mesh,
                std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
                double& speedOfSound, double& sourceFrequency, double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_L, "g", Mesh));
+    V_interp = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_a_interp, "u_interp", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -84,6 +90,8 @@ public:
     g = std::make_shared<fem::Function<double>>(V);
     u_n = std::make_shared<fem::Function<double>>(V);
     v_n = std::make_shared<fem::Function<double>>(V);
+
+    u_interp = std::make_shared<fem::Function<double>>(V_interp);
 
     _g = g->x()->mutable_array();
 
@@ -132,10 +140,10 @@ public:
   }
 
   /// Evaluate du/dt = f0(t, u, v)
-  /// @param[in] t Current time
+  /// @param[in] t Current time, i.e. tn
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
-  /// @param[out] result Result
+  /// @param[out] result Result, i.e. dun/dtn
   void f0(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
           std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
@@ -195,12 +203,57 @@ public:
   /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
 
+    // ------------------------------------------------------------------------
+    // Computing function evaluation parameters
+
+    std::string fname;
+
+    // Grid parameters
+    int N = 2048;
+    double tol = 1e-6;
+
+    // Generate evaluate points
+    xt::xarray<double> zp = xt::linspace<double>(tol, 0.1, N);
+    zp.reshape({1, N});
+    auto xyp = xt::zeros<double>({2, N});
+    auto points = xt::vstack(xt::xtuple(xyp, zp));
+    auto pointsT = xt::transpose(points);
+
+    // Compute evaluation parameters
+    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
+    auto cell_candidates = compute_collisions(bb_tree, pointsT);
+    auto colliding_cells = geometry::compute_colliding_cells(
+        *mesh, cell_candidates, pointsT);
+
+    std::vector<int> cells;
+    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
+    auto points_on_proc = xt::empty<double>(sh0);
+    for (int i = 0; i < N; i++) {
+      auto link = colliding_cells.links(i);
+      if (link.size() > 0) {
+        auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
+        points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
+        cells.push_back(link[0]);
+      }
+    }
+
+    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
+    int lsize = points_on_proc.shape(0);
+    xt::xtensor<double, 2> u_eval({lsize, 1});
+
+    double* uval;
+    double* pval = points_on_proc.data();
+
+    // Time-stepping parameters
     double t = startTime;
     double tf = finalTime;
     double dt = timeStep;
     int step = 0;
     int nstep = (finalTime - startTime) / timeStep + 1;
+    int numStepPerPeriod = T_ / dt + 1;
+    int nstep_period = 0;
 
+    // Time-stepping vectors
     std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
 
     // Placeholder vectors at time step n
@@ -234,9 +287,12 @@ public:
     // RK variables
     double tn;
 
+    // ------------------------------------------------------------------------
     // Write to VTX
-    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
-    // file.write(t);
+    // dolfinx::io::VTXWriter vtx_file(
+    //     MPI_COMM_WORLD,
+    //     "/home/mabm4/rds/hpc-work/big_solution/u.pvd",
+    //     {u_interp});
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
@@ -270,17 +326,46 @@ public:
       step += 1;
 
       if (step % 50 == 0) {
-        kernels::copy(*u_, *u_n->x());
-        // file.write(t);
         if (rank == 0) {
-          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+          std::cout << "t: " << t 
+                    << ",\t Steps: " << step 
+                    << "/" << nstep << std::endl;
         }
       }
-    }
 
-    if (rank == 0) {
-      std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+
+      // Collect data for one period
+      if (t > 0.1 / c0_ + 6 / freq0_ && nstep_period < numStepPerPeriod) {
+        kernels::copy(*u_, *u_n->x());
+        u_n->x()->scatter_fwd();
+        
+        // Write to VTX
+        // u_interp->interpolate(*u_n);
+        // vtx_file.write(t);
+
+        // Function evaluation
+        u_n->eval(points_on_proc, cells, u_eval);
+        uval = u_eval.data();
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // Write evaluation from each process to a single text file
+        for (int i = 0; i < size; i++) {
+          if (rank == i) {
+            fname = "/home/mabm4/rds/data/pressure_on_z_axis_" + 
+                    std::to_string(nstep_period) + ".txt";
+            std::ofstream txt_file(fname, std::ios_base::app);
+            for (int i = 0; i < lsize; i++) {
+              txt_file << *(pval + 3 * i + 2) << "," 
+                      << *(uval + i) << std::endl;
+            }
+            txt_file.close();
+          }
+          MPI_Barrier(MPI_COMM_WORLD);
+        }
+        nstep_period++;
+      }
     }
+    // vtx_file.close();
 
     // Prepare solution at final time
     kernels::copy(*u_, *u_n->x());
@@ -288,11 +373,5 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
-    file_solution.write_mesh(*mesh);
-    file_solution.write_function(*u_n, t);
-
-    // file.write(t);
-    // file.close();
   }
 };

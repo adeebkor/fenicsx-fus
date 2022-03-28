@@ -1,5 +1,6 @@
 .vscode/
-FEniCSx/
+fenicsx/
+cpp/Fastor/
 *__pycache__/
 
 mesh/*.py
