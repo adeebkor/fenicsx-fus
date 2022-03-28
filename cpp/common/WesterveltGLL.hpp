@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <dolfinx.h>
-#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -243,10 +242,6 @@ public:
     // RK variables
     double tn;
 
-    // Write to VTX
-    // dolfinx::io::VTXWriter file(MPI_COMM_WORLD, "u.pvd", {u_n});
-    // file.write(t);
-
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
@@ -279,16 +274,12 @@ public:
       step += 1;
 
       if (step % 50 == 0){
-        kernels::copy(*u_, *u_n->x());
-        // file.write(t);
         if (rank == 0){
-          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
+          std::cout << "t: " << t 
+                    << ",\t Steps: " << step 
+                    << "/" << nstep << std::endl;
         }
       }
-    }
-
-    if (rank == 0){
-      std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
     }
 
     // Prepare solution at final time
@@ -297,11 +288,5 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    io::XDMFFile file_solution(mesh->comm(), "u.xdmf", "w");
-    file_solution.write_mesh(*mesh);
-    file_solution.write_function(*u_n, t);
-
-    // file.write(t);
-    // file.close();
   }
 };
