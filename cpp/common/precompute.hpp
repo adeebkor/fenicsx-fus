@@ -49,8 +49,6 @@ void dot(const U& A, const V& B, P& C, bool transpose = false) {
 /// @return The jacobian for all cells in the computed at quadrature points
 xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
                                         xt::xtensor<double, 2> points) {
-  common::Timer t("~Precompute Jacobian");
-
   // Number of quadrature points
   const std::size_t nq = points.shape(0);
 
@@ -74,15 +72,17 @@ xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
   // FIXME: Assumes one cell type
   const std::size_t num_nodes = x_dofmap.num_links(0);
 
-  xt::xtensor<double, 4> J = xt::zeros<double>({ncells, nq, tdim, gdim});
-  xt::xtensor<double, 2> coords = xt::zeros<double>({num_nodes, gdim});
-  xt::xtensor<double, 2> dphi_q = xt::zeros<double>({tdim, num_nodes});
+  xt::xtensor<double, 4> J({ncells, nq, tdim, gdim});
+  xt::xtensor<double, 2> coords({num_nodes, gdim});
+  xt::xtensor<double, 2> dphi_q({tdim, num_nodes});
 
   // Compute Jacobian at quadratre points for all cells in the mesh
   for (std::size_t c = 0; c < ncells; c++) {
     // Get cell coordinates/geometry
     auto x_dofs = x_dofmap.links(c);
-    for (std::size_t i = 0; i < x_dofs.size(); ++i)
+
+    // Copying x to coords
+    for (std::size_t i = 0; i < x_dofs.size(); i++)
       common::impl::copy_N<3>(std::next(x.begin(), 3 * x_dofs[i]),
                               std::next(coords.begin(), 3 * i));
 
