@@ -58,13 +58,25 @@ public:
       = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
 
     // Compute the scaled of the Jacobian
+    common::Timer tJ0("~Precompute scaled of the Jacobian determinant");
+    tJ0.start();
     auto J = compute_jacobian(mesh, points);
+    tJ0.stop();
+
+    common::Timer tJ1("~ Compute Jacobian determinant");
+    tJ1.start();
     _detJ = compute_jacobian_determinant(J);
+    tJ1.stop();
+
+    common::Timer tJ2("~ Scaled Jacobian determinant");
+    tJ2.start();
     for (std::size_t i = 0; i < _detJ.shape(0); i++) {
       for (std::size_t j = 0; j < _detJ.shape(1); j++) {
         _detJ(i, j) = _detJ(i, j) * weights[j];
       }
     }
+    tJ2.stop();
+
   }
 
   template <typename Alloc>
