@@ -101,7 +101,6 @@ xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
 /// @param[in] J The jacobian
 /// @return The determinant of the jacobian [ncells]x[npoints]
 xt::xtensor<double, 2> compute_jacobian_determinant(xt::xtensor<double, 4>& J) {
-  common::Timer t("~Precompute Jacobian Determinant");
   const std::size_t ncells = J.shape(0);
   const std::size_t npoints = J.shape(1);
 
@@ -121,8 +120,6 @@ xt::xtensor<double, 2> compute_jacobian_determinant(xt::xtensor<double, 4>& J) {
 /// @param[in] J The jacobian
 /// @return The inverse of the jacobian [ncells]x[npoints]x[gdim]x[tdim]
 xt::xtensor<double, 4> compute_jacobian_inverse(xt::xtensor<double, 4>& J) {
-  common::Timer t("~Precompute Jacobian Inverse");
-
   const std::size_t ncells = J.shape(0);
   const std::size_t npoints = J.shape(1);
   const std::size_t tdim = J.shape(2);

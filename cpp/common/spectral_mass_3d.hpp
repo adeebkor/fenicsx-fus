@@ -58,7 +58,7 @@ public:
       = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
 
     // Compute the scaled of the Jacobian
-    common::Timer tJ0("~Precompute scaled of the Jacobian determinant");
+    common::Timer tJ0("~ Compute Jacobian");
     tJ0.start();
     auto J = compute_jacobian(mesh, points);
     tJ0.stop();
