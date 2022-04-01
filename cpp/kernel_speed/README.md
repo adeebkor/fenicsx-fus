@@ -1,6 +1,6 @@
 # Instructions for compilation
 
-## Prequisites
+## Prerequisites
 - The spectral stiffness operator requires the Fastor library. 
 This can be download from this [repository](https://github.com/romeric/Fastor).
 - Download the repository into the cpp/ folder.
