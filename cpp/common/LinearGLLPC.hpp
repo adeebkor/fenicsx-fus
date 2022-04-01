@@ -1,5 +1,5 @@
 #include "forms.h"
-#include "operators_2d.hpp"
+#include "stiffness_3d.hpp"
 
 #include <fstream>
 #include <algorithm>
@@ -35,7 +35,7 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 } // namespace kernels
 
-class LinearGLLOpt {
+class LinearGLLPC {
 private:
   int rank, size; // MPI rank and size
 protected:
@@ -67,7 +67,7 @@ protected:
 public:
   std::shared_ptr<fem::FunctionSpace> V;
 
-  LinearGLLOpt(std::shared_ptr<mesh::Mesh> Mesh,
+  LinearGLLPC(std::shared_ptr<mesh::Mesh> Mesh,
                std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
                double& speedOfSound, double& sourceFrequency, double& pressureAmplitude) {
 

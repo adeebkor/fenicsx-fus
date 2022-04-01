@@ -23,16 +23,13 @@ namespace {
     double coeff = - 1.0 * (c0 * c0);
     constexpr int nq = Q * Q * Q;
     for (int iq = 0; iq < nq; iq++) {
-    const double* _G = G + iq * 9;
-    //   const T w0 = fw0[iq];
-    //   const T w1 = fw1[iq];
-    //   const T w2 = fw2[iq];
-    //   fw0[iq] = coeff * (_G[0] * fw0[iq] + _G[1] * fw1[iq] + _G[2] * fw2[iq]);
-    //   fw1[iq] = coeff * (_G[3] * fw0[iq] + _G[4] * fw1[iq] + _G[5] * fw2[iq]);
-    //   fw2[iq] = coeff * (_G[6] * fw0[iq] + _G[7] * fw1[iq] + _G[8] * fw2[iq]);
-      out0[iq] = coeff * (_G[0] * in0[iq] + _G[1] * in1[iq] + _G[2] * in2[iq]);
-      out1[iq] = coeff * (_G[3] * in0[iq] + _G[4] * in1[iq] + _G[5] * in2[iq]);
-      out2[iq] = coeff * (_G[6] * in0[iq] + _G[7] * in1[iq] + _G[8] * in2[iq]);
+      const double* _G = G + iq * 9;
+      const T w0 = in0[iq];
+      const T w1 = in1[iq];
+      const T w2 = in2[iq];
+      out0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
+      out1[iq] = coeff * (_G[3] * w0 + _G[4] * w1 + _G[5] * w2);
+      out2[iq] = coeff * (_G[6] * w0 + _G[7] * w1 + _G[8] * w2);
     }
   }
 }
@@ -159,9 +156,6 @@ public:
       _y2 = einsum<Index<a2, b2>, Index<b2, a0, a1>>(_dphiT, _y2);
       _y2 = permute<Index<1, 2, 0>>(_y2);
 
-    //   T* y0 = _y0.data();
-    //   T* y1 = _y1.data();
-    //   T* y2 = _y2.data();
       for (std::size_t i = 0; i < _num_dofs; i++) {
           y_array[cell_dofs[_perm[i]]] += y0[i] + y1[i] + y2[i];
       }

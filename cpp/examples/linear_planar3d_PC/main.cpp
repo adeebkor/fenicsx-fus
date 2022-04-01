@@ -1,9 +1,9 @@
 //
-// Linear solver (optimize) for the 3D planar problem
-// ==================================================
+// Linear solver (precompute) for the 3D planar problem
+// ====================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
-#include "LinearGLLOpt.hpp"
+#include "LinearGLLPC.hpp"
 
 #include <cmath>
 #include <dolfinx.h>
@@ -83,7 +83,8 @@ int main(int argc, char* argv[]) {
     int nstep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
-    LinearGLLOpt eqn(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency, pressureAmplitude);
+    auto eqn = LinearGLLPC(mesh, mt, degreeOfBasis, speedOfSound,
+                           sourceFrequency, pressureAmplitude);
 
     if (rank == 0) {
       std::cout << "Number of steps: " << nstep << std::endl;
