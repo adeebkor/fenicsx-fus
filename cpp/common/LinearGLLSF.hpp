@@ -10,6 +10,7 @@
 
 #include <dolfinx.h>
 #include <dolfinx/geometry/utils.h>
+#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -254,6 +255,11 @@ public:
     kernels::copy(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
+
+    // Save solution
+    io::XDMFFile soln(mesh->comm(), "u.xdmf", "w");
+    soln.write_mesh(*mesh);
+    soln.write_function(*u_n, t);
 
   }
 

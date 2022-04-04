@@ -6,6 +6,7 @@
 
 #include <dolfinx.h>
 #include <dolfinx/geometry/utils.h>
+#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -32,38 +33,13 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 } // namespace kernels
 
+template <int P>
 class LinearGLL {
-private:
-  int rank, size; // MPI rank and size
-protected:
-  int k_;        // degree of basis function
-  double c0_;    // speed of sound (m/s)
-  double freq0_; // source frequency (Hz)
-  double p0_;    // pressure amplitude (Pa)
-  double w0_;    // angular frequency (rad/s)
-  double T_;     // period (s)
-  double alpha_;
-  double window_;
-
-  std::shared_ptr<mesh::Mesh> mesh;
-  std::shared_ptr<fem::Constant<double>> c0;
-  std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
-  std::shared_ptr<la::Vector<double>> m, b;
-
-  xtl::span<double> _g, out;
-  xtl::span<const double> m_, b_;
-  tcb::span<double> _m, _b;
-
-  std::shared_ptr<const common::IndexMap> index_map;
-  int bs;
-
 public:
-  std::shared_ptr<fem::FunctionSpace> V;
-
   LinearGLL(std::shared_ptr<mesh::Mesh> Mesh,
-            std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
-            double& speedOfSound, double& sourceFrequency, double& pressureAmplitude) {
+            std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags,
+            double& speedOfSound, double& sourceFrequency,
+            double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -85,7 +61,6 @@ public:
     _g = g->x()->mutable_array();
 
     // Physical parameters
-    k_ = degreeOfBasis;
     c0_ = speedOfSound;
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
@@ -100,19 +75,18 @@ public:
     a = std::make_shared<fem::Form<double>>(
         fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
 
-    // TODO: Add comments about this operation. Is this the Mass matrix diagonal?
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
-    std::fill(_m.begin(), _m.end(), 0);
+    std::fill(_m.begin(), _m.end(), 0.0);
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
-    L = std::make_shared<fem::Form<double>>(fem::create_form<double>(
-        *form_forms_L, {V}, {{"u_n", u_n}, {"g", g}, {"v_n", v_n}}, {{"c0", c0}},
+    L = std::make_shared<fem::Form<double>>(
+        fem::create_form<double>(*form_forms_L, {V}, {{"u_n", u_n}, {"g", g},
+        {"v_n", v_n}}, {{"c0", c0}},
         {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
-    // Allocate memory for the RHS
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
   }
@@ -156,8 +130,6 @@ public:
 
     v->scatter_fwd();
     kernels::copy(*v, *v_n->x());
-
-    // TODO: Compute coefficients
 
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
@@ -274,5 +246,40 @@ public:
     kernels::copy(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
+
+    // Save solution
+    io::XDMFFile soln(mesh->comm(), "u.xdmf", "w");
+    soln.write_mesh(*mesh);
+    soln.write_function(*u_n, t);
+
   }
+
+  std::size_t num_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
+private:
+  int rank, size; // MPI rank and size
+  double c0_;    // speed of sound (m/s)
+  double freq0_; // source frequency (Hz)
+  double p0_;    // pressure amplitude (Pa)
+  double w0_;    // angular frequency (rad/s)
+  double T_;     // period (s)
+  double alpha_;
+  double window_;
+
+  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::Constant<double>> c0;
+  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Form<double>> a, L;
+  std::shared_ptr<la::Vector<double>> m, b;
+
+  xtl::span<double> _g, out;
+  xtl::span<const double> m_, b_;
+  xtl::span<double> _m, _b;
+
+  std::shared_ptr<const common::IndexMap> index_map;
+  int bs;
+
 };

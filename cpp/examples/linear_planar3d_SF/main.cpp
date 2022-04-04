@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
   common::subsystem::init_logging(argc, argv);
   common::subsystem::init_mpi(argc, argv);
   {
-    std::cout.precision(15);
+    std::cout.precision(15); // Set print precision
 
     // MPI
     int rank;
@@ -25,21 +25,18 @@ int main(int argc, char* argv[]) {
     double speedOfSound = 1500.0;  // (m/s)
 
     // Source parameters
-    double sourceFrequency = 0.5e6;                         // (Hz)
-    double angularFrequency = 2.0 * M_PI * sourceFrequency; // (rad/s)
-    double pressureAmplitude = 60000;                       // (Pa)
-    double period = 1 / sourceFrequency;                    // (s)
+    double sourceFrequency = 0.5e6;      // (Hz)
+    double pressureAmplitude = 60000;    // (Pa)
+    double period = 1 / sourceFrequency; // (s)
 
     // Domain parameters
-    double domainLength = 0.1;
+    double domainLength = 0.12; // (m)
     
     // Physical parameters
     double wavelength = speedOfSound / sourceFrequency; // (m)
-    double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 4;
-    double numberOfWaves = domainLength / wavelength;
+    const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -67,7 +64,7 @@ int main(int argc, char* argv[]) {
     double CFL = 0.5;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
+    double finalTime = 200 * timeStepSize; // domainLength / speedOfSound + 8.0 / sourceFrequency;
     int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     int numberOfStep = finalTime / timeStepSize + 1;
@@ -84,8 +81,21 @@ int main(int argc, char* argv[]) {
       std::cout << "Number of steps: " << numberOfStep << std::endl;
       std::cout << "Degrees of freedom: " << eqn.num_dofs() << std::endl;
     }
-    
-    
 
+    // Solve
+    eqn.init();
+
+    common::Timer tsolve("Solve time");
+
+    tsolve.start();
+    eqn.rk4(startTime, finalTime, timeStepSize);
+    tsolve.stop();
+
+    if (rank == 0) {
+      std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+      std::cout << "Time per step: " << tsolve.elapsed()[0] / numberOfStep << std::endl;
+    }
   }
+  common::subsystem::finalize_mpi();
+  return 0;
 }

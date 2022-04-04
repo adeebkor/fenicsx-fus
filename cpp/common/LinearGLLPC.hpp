@@ -1,4 +1,5 @@
 #include "forms.h"
+#include "spectral_mass_3d.hpp"
 #include "stiffness_3d.hpp"
 
 #include <fstream>
@@ -9,6 +10,7 @@
 
 #include <dolfinx.h>
 #include <dolfinx/geometry/utils.h>
+#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -35,41 +37,13 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 } // namespace kernels
 
+template <int P>
 class LinearGLLPC {
-private:
-  int rank, size; // MPI rank and size
-protected:
-  int k_;        // degree of basis function
-  double c0_;    // speed of sound (m/s)
-  double freq0_; // source frequency (Hz)
-  double p0_;    // pressure amplitude (Pa)
-  double w0_;    // angular frequency (rad/s)
-  double T_;     // period (s)
-  double alpha_;
-  double window_;
-
-  std::shared_ptr<mesh::Mesh> mesh;
-  std::shared_ptr<fem::Constant<double>> c0;
-  std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
-  std::shared_ptr<la::Vector<double>> m, b;
-
-  xtl::span<double> _g, out;
-  xtl::span<const double> m_, b_;
-  tcb::span<double> _m, _b;
-
-  std::shared_ptr<const common::IndexMap> index_map;
-  int bs;
-
-  std::shared_ptr<MassOperator<double>> mass_op;
-  std::shared_ptr<StiffnessOperator<double>> stiff_op;
-
 public:
-  std::shared_ptr<fem::FunctionSpace> V;
-
   LinearGLLPC(std::shared_ptr<mesh::Mesh> Mesh,
-               std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
-               double& speedOfSound, double& sourceFrequency, double& pressureAmplitude) {
+               std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags,
+               double& speedOfSound, double& sourceFrequency,
+               double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -91,7 +65,6 @@ public:
     _g = g->x()->mutable_array();
 
     // Physical parameters
-    k_ = degreeOfBasis;
     c0_ = speedOfSound;
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
@@ -103,11 +76,11 @@ public:
     xtl::span<double> _u = u->x()->mutable_array();
     std::fill(_u.begin(), _u.end(), 1.0);
 
-    mass_op = std::make_shared<MassOperator<double>>(V, k_);
+    mass = std::make_shared<SpectralMass<double, P, P+1>>(V);
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0.0);
-    mass_op->operator()(*u->x(), *m);
+    mass->operator()(*u->x(), *m);
     m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
@@ -115,17 +88,9 @@ public:
         fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}}, {{"c0", c0}},
                                  {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
-    xtl::span<double> _un = u_n->x()->mutable_array();
-    std::fill(_un.begin(), _un.end(), 0.0);
-
-    std::map<std::string, double> params;
-    params["c0"] = c0_;
-    stiff_op = std::make_shared<StiffnessOperator<double>>(V, k_, params);
+    stiff = std::make_shared<Stiffness<double, P, P+1>>(V);
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
-    std::fill(_b.begin(), _b.end(), 0.0);
-    stiff_op->operator()(*u_n->x(), *b);
-    b->scatter_rev(common::IndexMap::Mode::add);
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
@@ -168,11 +133,9 @@ public:
     v->scatter_fwd();
     kernels::copy(*v, *v_n->x());
 
-    // TODO: Compute coefficients
-
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
-    stiff_op->operator()(*u_n->x(), *b);
+    stiff->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
 
@@ -287,5 +250,41 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
+    // Save solution
+    io::XDMFFile soln(mesh->comm(), "u.xdmf", "w");
+    soln.write_mesh(*mesh);
+    soln.write_function(*u_n, t);
+
   }
+
+  std::size_t num_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
+private:
+  int rank, size; // MPI rank and size
+  double c0_;    // speed of sound (m/s)
+  double freq0_; // source frequency (Hz)
+  double p0_;    // pressure amplitude (Pa)
+  double w0_;    // angular frequency (rad/s)
+  double T_;     // period (s)
+  double alpha_;
+  double window_;
+
+  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::Constant<double>> c0;
+  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Form<double>> a, L;
+  std::shared_ptr<la::Vector<double>> m, b;
+
+  xtl::span<double> _g, out;
+  xtl::span<const double> m_, b_;
+  xtl::span<double> _m, _b;
+
+  std::shared_ptr<const common::IndexMap> index_map;
+  int bs;
+
+  std::shared_ptr<SpectralMass<double, P, P+1>> mass;
+  std::shared_ptr<Stiffness<double, P, P+1>> stiff;
 };
