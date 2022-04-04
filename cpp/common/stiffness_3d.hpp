@@ -114,7 +114,7 @@ private:
   static constexpr int _num_dofs = (P + 1) * (P + 1) * (P + 1);
 
   // Number of quadrature points in each direction
-  static constexpr int Nq = 0;
+  static constexpr int Nq = Q;
 
   // Number of quadrature points per element
   static constexpr int _num_quads = Q * Q * Q;
