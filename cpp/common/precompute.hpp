@@ -72,9 +72,9 @@ xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
   // FIXME: Assumes one cell type
   const std::size_t num_nodes = x_dofmap.num_links(0);
 
-  xt::xtensor<double, 4> J({ncells, nq, tdim, gdim});
-  xt::xtensor<double, 2> coords({num_nodes, gdim});
-  xt::xtensor<double, 2> dphi_q({tdim, num_nodes});
+  xt::xtensor<double, 4> J = xt::zeros<double>({ncells, nq, tdim, gdim});
+  xt::xtensor<double, 2> coords = xt::zeros<double>({num_nodes, gdim});
+  xt::xtensor<double, 2> dphi_q = xt::zeros<double>({tdim, num_nodes});
 
   // Compute Jacobian at quadratre points for all cells in the mesh
   for (std::size_t c = 0; c < ncells; c++) {

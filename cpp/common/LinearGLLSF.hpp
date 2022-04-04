@@ -88,15 +88,9 @@ public:
         fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}}, {{"c0", c0}},
                                  {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
     
-    xtl::span<double> _un = u_n->x()->mutable_array();
-    std::fill(_un.begin(), _un.end(), 0.0);
-
     stiff = std::make_shared<SpectralStiffness<double, P, P+1>>(V);
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
-    std::fill(_b.begin(), _b.end(), 0.0);
-    stiff->operator()(*u_n->x(), *b);
-    b->scatter_rev(common::IndexMap::Mode::add);
   }
 
   // Set the initial values of u and v, i.e. u_0 and v_0
