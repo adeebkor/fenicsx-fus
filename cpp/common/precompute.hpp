@@ -8,6 +8,7 @@
 #include <dolfinx.h>
 #include <dolfinx/common/math.h>
 #include <xtensor/xindex_view.hpp>
+#include <xtensor/xio.hpp>
 
 using namespace dolfinx;
 
@@ -49,8 +50,6 @@ void dot(const U& A, const V& B, P& C, bool transpose = false) {
 /// @return The jacobian for all cells in the computed at quadrature points
 xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
                                         xt::xtensor<double, 2> points) {
-  common::Timer t("~Precompute Jacobian");
-
   // Number of quadrature points
   const std::size_t nq = points.shape(0);
 
@@ -82,7 +81,9 @@ xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
   for (std::size_t c = 0; c < ncells; c++) {
     // Get cell coordinates/geometry
     auto x_dofs = x_dofmap.links(c);
-    for (std::size_t i = 0; i < x_dofs.size(); ++i)
+
+    // Copying x to coords
+    for (std::size_t i = 0; i < x_dofs.size(); i++)
       common::impl::copy_N<3>(std::next(x.begin(), 3 * x_dofs[i]),
                               std::next(coords.begin(), 3 * i));
 
@@ -101,7 +102,6 @@ xt::xtensor<double, 4> compute_jacobian(std::shared_ptr<const mesh::Mesh> mesh,
 /// @param[in] J The jacobian
 /// @return The determinant of the jacobian [ncells]x[npoints]
 xt::xtensor<double, 2> compute_jacobian_determinant(xt::xtensor<double, 4>& J) {
-  common::Timer t("~Precompute Jacobian Determinant");
   const std::size_t ncells = J.shape(0);
   const std::size_t npoints = J.shape(1);
 
@@ -121,8 +121,6 @@ xt::xtensor<double, 2> compute_jacobian_determinant(xt::xtensor<double, 4>& J) {
 /// @param[in] J The jacobian
 /// @return The inverse of the jacobian [ncells]x[npoints]x[gdim]x[tdim]
 xt::xtensor<double, 4> compute_jacobian_inverse(xt::xtensor<double, 4>& J) {
-  common::Timer t("~Precompute Jacobian Inverse");
-
   const std::size_t ncells = J.shape(0);
   const std::size_t npoints = J.shape(1);
   const std::size_t tdim = J.shape(2);
@@ -146,7 +144,7 @@ xt::xtensor<double, 4> compute_jacobian_inverse(xt::xtensor<double, 4>& J) {
 /// Compute the inverse of the geometrical factor (4d x [cell][point][tdim][gdim])
 /// @param[in] J The jacobian
 /// @return The inverse of the jacobian [ncells]x[npoints]x[gdim]x[tdim]
-xt::xtensor<double, 4> compute_geometrical_factor(xt::xtensor<double, 4>& J,
+xt::xtensor<double, 3> compute_geometrical_factor(xt::xtensor<double, 4>& J,
                                                   xt::xtensor<double, 2>& detJ,
                                                   std::vector<double>& weights) {
 
@@ -154,8 +152,10 @@ xt::xtensor<double, 4> compute_geometrical_factor(xt::xtensor<double, 4>& J,
   const std::size_t npoints = J.shape(1);
   const std::size_t tdim = J.shape(2);
   const std::size_t gdim = J.shape(3);
+  const std::size_t dim = 6;
 
-  xt::xtensor<double, 4> G = xt::zeros<double>({ncells, npoints, gdim, tdim});
+  xt::xtensor<double, 4> G_ = xt::zeros<double>({ncells, npoints, gdim, tdim});
+  xt::xtensor<double, 3> G = xt::zeros<double>({ncells, npoints, dim});
   xt::xtensor<double, 2> K = xt::empty<double>({gdim, tdim});
   xt::xtensor<double, 2> KT = xt::empty<double>({gdim, tdim});
 
@@ -165,11 +165,21 @@ xt::xtensor<double, 4> compute_geometrical_factor(xt::xtensor<double, 4>& J,
       double _detJ = detJ(c, q) * weights[q];
       K.fill(0);
       auto _J = xt::view(J, c, q, xt::all(), xt::all());
-      auto _G = xt::view(G, c, q, xt::all(), xt::all());
+      auto _G = xt::view(G_, c, q, xt::all(), xt::all());
+      auto g = xt::view(G, c, q, xt::all());
       dolfinx::math::inv(_J, K);
       KT = xt::transpose(K);
       dot(K, KT, _G);
       _G = _G * _detJ;
+
+      // Only store the upper triangular values since G is symmetric
+      g[0] = xt::view(_G, 0, 0); // G[0, 0]
+      g[1] = xt::view(_G, 0, 1); // G[0, 1] = G[1, 0]
+      g[2] = xt::view(_G, 0, 2); // G[0, 2] = G[2, 0]
+      g[3] = xt::view(_G, 1, 1); // G[1, 1]
+      g[4] = xt::view(_G, 1, 2); // G[1, 2] = G[2, 1]
+      g[5] = xt::view(_G, 2, 2); // G[2, 2]
+
     }
   }
   return G;

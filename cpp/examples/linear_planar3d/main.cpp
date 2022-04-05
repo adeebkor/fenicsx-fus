@@ -6,10 +6,10 @@
 #include "LinearGLL.hpp"
 
 #include <cmath>
+#include <iostream>
 #include <dolfinx.h>
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
-#include <iostream>
 
 int main(int argc, char* argv[]) {
   common::subsystem::init_logging(argc, argv);
@@ -22,29 +22,22 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // Material parameters
-    double speedOfSound = 1500.0;    // (m/s)
-    double densityOfMedium = 1000.0; // (kg/m^3)
-    double coeffOfNonlinearity = 3.5;
-    double diffusivityOfSound = 4.33e-6;
+    double speedOfSound = 1500.0;  // (m/s)
 
     // Source parameters
-    double sourceFrequency = 0.5e6;                           // (Hz)
-    double angularFrequency = 2.0 * M_PI * sourceFrequency; // (rad/s)
-    double pressureAmplitude = 60000;                     // (Pa)
-    double period = 1 / sourceFrequency;                    // (s)
+    double sourceFrequency = 0.5e6;      // (Hz)
+    double pressureAmplitude = 60000;    // (Pa)
+    double period = 1 / sourceFrequency; // (s)
 
     // Domain parameters
-    double shockFormationDistance = densityOfMedium * pow(speedOfSound, 3) / coeffOfNonlinearity
-                                    / pressureAmplitude / angularFrequency; // (m)
-    double domainLength = 0.1;                                              // (m)
+    double domainLength = 0.12; // (m)
 
     // Physical parameters
     double wavelength = speedOfSound / sourceFrequency; // (m)
     double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
 
     // FE parameters
-    int degreeOfBasis = 4;
-    double numberOfWaves = domainLength / wavelength;
+    const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -75,19 +68,19 @@ int main(int argc, char* argv[]) {
     double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
     int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
+    int numberOfStep = finalTime / timeStepSize + 1;
     if (rank == 0){
         std::cout << "Number of step per period: " << stepPerPeriod << std::endl;
         std::cout << "dt = " << timeStepSize << std::endl;
     }
 
-    int nstep = (finalTime - startTime) / timeStepSize + 1;
-
     // Model
-    LinearGLL eqn(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency, pressureAmplitude);
+    auto eqn = LinearGLL<degreeOfBasis>(
+        mesh, mt, speedOfSound, sourceFrequency, pressureAmplitude);
 
     if (rank == 0) {
-      std::cout << "Number of steps: " << nstep << std::endl;
-      std::cout << "Degrees of freedom: " << eqn.V->dofmap()->index_map->size_global() << std::endl;
+      std::cout << "Number of steps: " << numberOfStep << std::endl;
+      std::cout << "Degrees of freedom: " << eqn.num_dofs() << std::endl;
     }
 
     // Solve
@@ -99,10 +92,10 @@ int main(int argc, char* argv[]) {
     eqn.rk4(startTime, finalTime, timeStepSize);
     tsolve.stop();
 
-    if (rank == 0){
+    if (rank == 0) {
       std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+      std::cout << "Time per step: " << tsolve.elapsed()[0] / numberOfStep << std::endl;
     }
-
   }
   common::subsystem::finalize_mpi();
   return 0;

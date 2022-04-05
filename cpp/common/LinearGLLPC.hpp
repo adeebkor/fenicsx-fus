@@ -1,6 +1,10 @@
 #include "forms.h"
+#include "spectral_mass_3d.hpp"
+#include "stiffness_3d.hpp"
 
 #include <fstream>
+#include <algorithm>
+#include <iterator>
 #include <memory>
 #include <string>
 
@@ -34,19 +38,19 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 } // namespace kernels
 
 template <int P>
-class LinearGLL {
+class LinearGLLPC {
 public:
-  LinearGLL(std::shared_ptr<mesh::Mesh> Mesh,
-            std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags,
-            double& speedOfSound, double& sourceFrequency,
-            double& pressureAmplitude) {
+  LinearGLLPC(std::shared_ptr<mesh::Mesh> Mesh,
+               std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags,
+               double& speedOfSound, double& sourceFrequency,
+               double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
+        fem::create_functionspace(functionspace_form_forms_L, "g", Mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -72,21 +76,19 @@ public:
     xtl::span<double> _u = u->x()->mutable_array();
     std::fill(_u.begin(), _u.end(), 1.0);
 
-    a = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_a, {V}, {{"u", u}}, {}, {}));
-
+    mass = std::make_shared<SpectralMass<double, P, P+1>>(V);
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0.0);
-    fem::assemble_vector(_m, *a);
+    mass->operator()(*u->x(), *m);
     m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_L, {V}, {{"u_n", u_n}, {"g", g},
-        {"v_n", v_n}}, {{"c0", c0}},
-        {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
+        fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}}, {{"c0", c0}},
+                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
 
+    stiff = std::make_shared<Stiffness<double, P, P+1>>(V);
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
   }
@@ -133,6 +135,7 @@ public:
 
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
+    stiff->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
 
@@ -282,4 +285,6 @@ private:
   std::shared_ptr<const common::IndexMap> index_map;
   int bs;
 
+  std::shared_ptr<SpectralMass<double, P, P+1>> mass;
+  std::shared_ptr<Stiffness<double, P, P+1>> stiff;
 };

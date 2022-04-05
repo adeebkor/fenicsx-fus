@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME linear_planar3d_opt)
+set(PROJECT_NAME linear_planar3d_SF)
 project(${PROJECT_NAME})
 
 # Set C++17 standard
@@ -11,15 +11,15 @@ set(CMAKE_C_FLAGS "-Ofast -march=native  -mprefer-vector-width=512 ${CMAKE_C_FLA
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
-  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.ufl -o ${CMAKE_CURRENT_SOURCE_DIR}/
-  DEPENDS forms.ufl
+  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.py -o ${CMAKE_CURRENT_SOURCE_DIR}/
+  DEPENDS forms.py
 )
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 find_package(DOLFINX REQUIRED)
 
-include_directories("../../common" ".")
+include_directories("../../common" "../../Fastor" ".")
 
 # Executable
 add_executable(${PROJECT_NAME} forms.c main.cpp)
