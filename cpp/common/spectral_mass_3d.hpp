@@ -1,6 +1,7 @@
 #pragma once
 
 #include "precompute.hpp"
+#include "permute.hpp"
 
 #include <cstdint>
 #include <map>
@@ -41,8 +42,10 @@ public:
     int tdim = mesh->topology().dim();
     _num_cells = mesh->topology().index_map(tdim)->size_local();
 
-    // Get dofmap
-    _dofmap = V->dofmap()->list();
+    // Get dofmap and permute
+    auto _dofmap = V->dofmap()->list().array();
+    _perm_dofmap.reserve(_dofmap.size());
+    reorder_dofmap(_perm_dofmap, _dofmap, P);
 
     // Get tensor product order
     auto family = basix::element::family::P;
@@ -85,11 +88,10 @@ public:
     xtl::span<T> y_array = y.mutable_array();
 
     for (std::int32_t cell = 0; cell < _num_cells; cell++) {
-      auto cell_dofs = _dofmap.links(cell);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < _num_dofs; i++) {
-        _x[i] = x_array[cell_dofs[_perm[i]]];
+        _x[i] = x_array[_perm_dofmap[cell * _num_dofs + i]];
       }
 
       std::fill(_y.begin(), _y.end(), 0.0);
@@ -97,7 +99,7 @@ public:
       transform<T, Q>(detJ, _x.data(), _y.data());
 
       for (std::int32_t i = 0; i < _num_dofs; i++) {
-        y_array[cell_dofs[_perm[i]]] += _y[i];
+        y_array[_perm_dofmap[cell * _num_dofs + i]] += _y[i];
       }
     }
   }
@@ -125,7 +127,8 @@ private:
   std::array<int, _num_dofs> _perm;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> _dofmap;
+  std::vector<std::int32_t> _dofmap;
+  std::vector<int> _perm_dofmap;
 
   // Local input array
   std::array<T, _num_dofs> _x;

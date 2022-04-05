@@ -1,6 +1,8 @@
 #pragma once
 
 #include "precompute.hpp"
+#include "permute.hpp"
+
 #include <map>
 #include <basix/finite-element.h>
 #include <basix/quadrature.h>
@@ -16,7 +18,7 @@ namespace {
     double c0 = 1500.0;
     double coeff = - 1.0 * (c0 * c0);
     for (int iq = 0; iq < nq; iq++) {
-      const double* _G = G + iq * 9;
+      const double* _G = G + iq * 6;
       T w0 = 0.0;
       T w1 = 0.0;
       T w2 = 0.0;
@@ -26,8 +28,8 @@ namespace {
         w2 += in[id] * dphi[2*nd*nq + iq*nd + id]; // dz
       }
       const double fw0 = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
-      const double fw1 = coeff * (_G[3] * w0 + _G[4] * w1 + _G[5] * w2);
-      const double fw2 = coeff * (_G[6] * w0 + _G[7] * w1 + _G[8] * w2);
+      const double fw1 = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
+      const double fw2 = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
       for (int i = 0; i < nd; i++){
         out[i] += fw0 * dphi[iq*nd + i] + fw1 * dphi[nd*nq + iq*nd + i] 
                 + fw2 * dphi[2*nd*nq + iq*nd + i];
@@ -57,7 +59,7 @@ public:
     int tdim = mesh->topology().dim();
     _num_cells = mesh->topology().index_map(tdim)->size_local();
     
-    // Get dofmap
+    // Get dofmap and permute
     _dofmap = V->dofmap()->list();
 
     // Tabulate quadrature points and weights
@@ -96,7 +98,7 @@ public:
       }
 
       std::fill(_y.begin(), _y.end(), 0.0);
-      double* G = _G.data() + cell * _num_quads * 9;
+      double* G = _G.data() + cell * _num_quads * 6;
       double* dphi = _dphi.data();
       transform<T, P, Q>(G, dphi, _x.data(), _y.data());
 
@@ -110,7 +112,7 @@ private:
   // Number of dofs in each direction
   static constexpr int Nd = P + 1;
 
-  // Number of dofs per element
+  // Number of degrees of freedom per element
   static constexpr int _num_dofs = (P + 1) * (P + 1) * (P + 1);
 
   // Number of quadrature points in each direction
@@ -123,7 +125,7 @@ private:
   std::int32_t _num_cells;
 
   // Scaled geometrical factor
-  xt::xtensor<T, 4> _G;
+  xt::xtensor<T, 3> _G;
 
   // Local input array
   std::array<T, _num_dofs> _x;

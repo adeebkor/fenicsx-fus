@@ -1,9 +1,9 @@
 #pragma once
 
 #include "precompute.hpp"
+#include "permute.hpp"
 #include "Fastor/Fastor.h"
 
-#include "precompute.hpp"
 #include <map>
 #include <basix/finite-element.h>
 #include <basix/quadrature.h>
@@ -23,13 +23,13 @@ namespace {
     double coeff = - 1.0 * (c0 * c0);
     constexpr int nq = Q * Q * Q;
     for (int iq = 0; iq < nq; iq++) {
-      const double* _G = G + iq * 9;
+      const double* _G = G + iq * 6;
       const T w0 = in0[iq];
       const T w1 = in1[iq];
       const T w2 = in2[iq];
       out0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
-      out1[iq] = coeff * (_G[3] * w0 + _G[4] * w1 + _G[5] * w2);
-      out2[iq] = coeff * (_G[6] * w0 + _G[7] * w1 + _G[8] * w2);
+      out1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
+      out2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
     }
   }
 }
@@ -65,18 +65,13 @@ public:
     int tdim = mesh->topology().dim();
     _num_cells = mesh->topology().index_map(tdim)->size_local();
 
-    // Get dofmap
-    _dofmap = V->dofmap()->list();
-
-    // Get tensor product order
-    auto family = basix::element::family::P;
-    auto cell_type = basix::cell::type::hexahedron;
-    auto variant = basix::element::lagrange_variant::gll_warped;
-    auto element = basix::create_element(family, cell_type, P, variant);
-    auto perm = std::get<1>(element.get_tensor_product_representation()[0]);
-    std::copy(perm.begin(), perm.end(), _perm.begin());
+    // Get dofmap and permute
+    auto _dofmap = V->dofmap()->list().array();
+    _perm_dofmap.reserve(_dofmap.size());
+    reorder_dofmap(_perm_dofmap, _dofmap, P);
 
     // Tabulate quadrature points and weights
+    auto cell_type = basix::cell::type::hexahedron;
     auto quad_type = basix::quadrature::type::gll;
     auto [points, weights]
       = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
@@ -112,12 +107,11 @@ public:
     xtl::span<T> y_array = y.mutable_array();
 
     for (std::int32_t cell = 0; cell < _num_cells; cell++) {
-      auto cell_dofs = _dofmap.links(cell);
 
       // Pack coefficients
       T* _x = xi.data();
       for (std::int32_t i = 0; i < _num_dofs; i++) {
-        _x[i] = x_array[cell_dofs[_perm[i]]];
+        _x[i] = x_array[_perm_dofmap[cell * _num_dofs + i]];
       }
 
       // Apply contraction in the x-direction
@@ -134,7 +128,7 @@ public:
       _fw2 = permute<Index<1, 2, 0>>(_fw2);
 
       // Apply transform
-      T* G = _G.data() + cell * _num_quads * 9;
+      T* G = _G.data() + cell * _num_quads * 6;
       T* fw0 = _fw0.data();
       T* fw1 = _fw1.data();
       T* fw2 = _fw2.data(); 
@@ -157,7 +151,7 @@ public:
       _y2 = permute<Index<1, 2, 0>>(_y2);
 
       for (std::size_t i = 0; i < _num_dofs; i++) {
-          y_array[cell_dofs[_perm[i]]] += y0[i] + y1[i] + y2[i];
+        y_array[_perm_dofmap[cell * _num_dofs + i]] += y0[i] + y1[i] + y2[i];
       }
     }
   }
@@ -178,11 +172,9 @@ private:
   // Number of cells in the mesh
   std::int32_t _num_cells;
 
-  // Geometrical factor
-  xt::xtensor<T, 4> _G;
-
-  // Permutations: from basix order to tensor product order
-  std::array<int, _num_dofs> _perm;
+  // Scaled geometrical factor
+  // xt::xtensor<T, 4> _G;
+  xt::xtensor<T, 3> _G;
 
   // Basis functions in 1D
   Fastor::Tensor<T, Q, P + 1> _dphi;
@@ -198,5 +190,6 @@ private:
   Fastor::Tensor<T, Nq, Nd, Nd> _fw2;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> _dofmap;
+  std::vector<std::int32_t> _dofmap;
+  std::vector<std::int32_t> _perm_dofmap;
 };
