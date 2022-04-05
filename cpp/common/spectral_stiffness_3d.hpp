@@ -77,20 +77,9 @@ public:
       = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
 
     // Compute the scaled of the geometrical factor
-    common::Timer tJ0("~ Compute Jacobian");
-    tJ0.start();
     auto J = compute_jacobian(mesh, points);
-    tJ0.stop();
-
-    common::Timer tJ1("~ Compute Jacobian determinant");
-    tJ1.start();
     auto _detJ = compute_jacobian_determinant(J);
-    tJ1.stop();
-
-    common::Timer tJ2("~ Compute geometrical factor");
-    tJ2.start();
     _G = compute_geometrical_factor(J, _detJ, weights);
-    tJ2.stop();
 
     // Tabulate the basis functions and clamped values
     auto dphi = tabulate_1d(P, qdegree[P], 1);
