@@ -10,7 +10,6 @@
 
 #include <dolfinx.h>
 #include <dolfinx/geometry/utils.h>
-#include <dolfinx/io/XDMFFile.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
