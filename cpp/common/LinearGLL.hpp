@@ -247,11 +247,6 @@ public:
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
-    // Save solution
-    io::XDMFFile soln(mesh->comm(), "u.xdmf", "w");
-    soln.write_mesh(*mesh);
-    soln.write_function(*u_n, t);
-
   }
 
   std::size_t num_dofs() const {
