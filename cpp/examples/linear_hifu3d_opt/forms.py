@@ -1,10 +1,9 @@
-from ufl import (FiniteElement, VectorElement, Mesh, FunctionSpace,
-                 Constant, Coefficient, TestFunction, grad, inner, dx, ds,
-                 quadrilateral)
+from ufl import (FiniteElement, hexahedron, VectorElement, Mesh, FunctionSpace,
+                 Constant, Coefficient, TestFunction,  grad, inner, dx, ds)
 
-element = FiniteElement("Lagrange", quadrilateral, 4, variant="gll")
+element = FiniteElement("Lagrange", hexahedron, 4, variant="gll")
 
-coord_element = VectorElement("Lagrange", quadrilateral, 1)
+coord_element = VectorElement("Lagrange", hexahedron, 1)
 mesh = Mesh(coord_element)
 V = FunctionSpace(mesh, element)
 

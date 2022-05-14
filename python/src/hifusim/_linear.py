@@ -5,7 +5,6 @@ from petsc4py import PETSc
 
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
-from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities
 from ufl import (FiniteElement, TestFunction, TrialFunction, Measure, inner,
                  grad, dx)
@@ -152,9 +151,6 @@ class LinearGLL:
         t : final time
         step : number of RK steps
         """
-        file = XDMFFile(MPI.COMM_WORLD, "u_t.xdmf", "w")
-        file.write_mesh(self.mesh)
-        file.write_function(self.u_n, t=t0)
 
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
@@ -212,7 +208,6 @@ class LinearGLL:
             step += 1
 
             if step % 100 == 0:
-                file.write_function(self.u_n, t=t)
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                     t, step, nstep))
 
@@ -222,7 +217,6 @@ class LinearGLL:
                        mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
-        file.close()
 
         return self.u_n, self.v_n, t, step
 
@@ -714,7 +708,7 @@ class LinearInhomogenousGLL:
         # Solve
         result.pointwiseDivide(self.b, self.m)
 
-    def rk4(self, t0: float, tf: float, dt: float, outfile=False):
+    def rk4(self, t0: float, tf: float, dt: float):
         """
         Runge-Kutta 4th order solver
 
@@ -731,10 +725,6 @@ class LinearInhomogenousGLL:
         t : final time
         step : number of RK steps
         """
-        if outfile:
-            file = XDMFFile(MPI.COMM_WORLD, "u_t.xdmf", "w")
-            file.write_mesh(self.mesh)
-            file.write_function(self.u_n, t=t0)
 
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
@@ -794,8 +784,6 @@ class LinearInhomogenousGLL:
             if step % 100 == 0:
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                     t, step, nstep))
-                if outfile:
-                    file.write_function(self.u_n, t=t)
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                        mode=PETSc.ScatterMode.FORWARD)
@@ -803,8 +791,5 @@ class LinearInhomogenousGLL:
                        mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
-
-        if outfile:
-            file.close()
 
         return self.u_n, self.v_n, t, step

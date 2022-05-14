@@ -1,7 +1,15 @@
 #include "forms.h"
+#include "spectral_mass_3d.hpp"
+#include "spectral_stiffness_3d.hpp"
 
+#include <fstream>
+#include <algorithm>
+#include <iterator>
 #include <memory>
+#include <string>
+
 #include <dolfinx.h>
+#include <dolfinx/geometry/utils.h>
 #include <dolfinx/la/Vector.h>
 
 using namespace dolfinx;
@@ -28,118 +36,75 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 
 } // namespace kernels
 
-class WesterveltGLL {
-private:
-  int rank;      // MPI rank
-protected:
-  int k_;        // degree of basis function
-  double c0_;    // speed of sound (m/s)
-  double freq0_; // source frequency (Hz)
-  double p0_;    // pressure amplitude (Pa)
-  double w0_;    // angular frequency (rad/s)
-  double delta_; // diffusivity of sound
-  double beta_;  // coefficient of nonlinearity
-  double rho0_;  // density of medium (kg/m^3)
-  double T_;     // period (s)
-  double alpha_;
-  double window_, dwindow_;
-
-  std::shared_ptr<mesh::Mesh> mesh;
-  std::shared_ptr<fem::Constant<double>> c0, delta, beta, rho0;
-  std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<fem::Function<double>> u, v, g, dg, u_n, v_n;
-  std::shared_ptr<la::Vector<double>> m, b;
-
-  xtl::span<double> _g, _dg, out;
-  xtl::span<const double> m_, b_;
-  tcb::span<double> _m, _b;
-
-  std::shared_ptr<const common::IndexMap> index_map;
-  int bs;
-
+template <int P>
+class LinearGLLSF {
 public:
-  std::shared_ptr<fem::FunctionSpace> V;
-
-  WesterveltGLL(std::shared_ptr<mesh::Mesh> Mesh,
-                std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, int& degreeOfBasis,
-                double& speedOfSound, double& sourceFrequency, double& pressureAmplitude,
-                double& diffusivityOfSound, double& coeffOfNonlinearity, double& densityOfMedium) {
-
+  LinearGLLSF(std::shared_ptr<mesh::Mesh> Mesh,
+              std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags,
+              double& speedOfSound, double& sourceFrequency,
+              double& pressureAmplitude) {
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     mesh = Mesh;
     V = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
-
+        fem::create_functionspace(functionspace_form_forms_L, "g", Mesh));
+    
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
 
     c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
-    delta = std::make_shared<fem::Constant<double>>(diffusivityOfSound);
-    beta = std::make_shared<fem::Constant<double>>(coeffOfNonlinearity);
-    rho0 = std::make_shared<fem::Constant<double>>(densityOfMedium);
-
     u = std::make_shared<fem::Function<double>>(V);
     v = std::make_shared<fem::Function<double>>(V);
     g = std::make_shared<fem::Function<double>>(V);
-    dg = std::make_shared<fem::Function<double>>(V);
     u_n = std::make_shared<fem::Function<double>>(V);
     v_n = std::make_shared<fem::Function<double>>(V);
 
     _g = g->x()->mutable_array();
-    _dg = dg->x()->mutable_array();
 
     // Physical parameters
-    k_ = degreeOfBasis;
     c0_ = speedOfSound;
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
     w0_ = 2.0 * M_PI * freq0_;
-    delta_ = diffusivityOfSound;
-    beta_ = coeffOfNonlinearity;
-    rho0_ = densityOfMedium;
-    T_ = 1 / freq0_;
+    T_ = 1.0 / freq0_;
     alpha_ = 4.0;
 
     // Create LHS form
     xtl::span<double> _u = u->x()->mutable_array();
     std::fill(_u.begin(), _u.end(), 1.0);
 
-    a = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_a, {V},
-                                 {{"u", u}, {"u_n", u_n}},
-                                 {{"c0", c0}, {"rho0", rho0}, {"beta", beta}, {"delta", delta}},
-                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
-
-    // Allocate memory for the LHS
+    mass = std::make_shared<SpectralMass<double, P, P+1>>(V);
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
+    std::fill(_m.begin(), _m.end(), 0.0);
+    mass->operator()(*u->x(), *m);
+    m->scatter_rev(common::IndexMap::Mode::add);
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_L, {V}, 
-                                 {{"u_n", u_n}, {"g", g}, {"v_n", v_n}, {"dg", dg}},
-                                 {{"c0", c0}, {"rho0", rho0}, {"beta", beta}, {"delta", delta}},
+        fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}}, {{"c0", c0}},
                                  {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
-
-    // Allocate memory for the RHS
+    
+    stiff = std::make_shared<SpectralStiffness<double, P, P+1>>(V);
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
   }
 
-  /// Set the initial values of u and v, i.e. u_0 and v_0
+  // Set the initial values of u and v, i.e. u_0 and v_0
   void init() {
     u_n->x()->set(0.0);
     v_n->x()->set(0.0);
   }
-
+  
   /// Evaluate du/dt = f0(t, u, v)
   /// @param[in] t Current time, i.e. tn
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result, i.e. dun/dtn
-  void f0(double& t, std::shared_ptr<la::Vector<double>> u,
-          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
+  void f0(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
+          std::shared_ptr<la::Vector<double>> result) {
     kernels::copy(*v, *result);
   }
 
@@ -148,22 +113,18 @@ public:
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result, i.e. dvn/dtn
-  void f1(double& t, std::shared_ptr<la::Vector<double>> u,
-          std::shared_ptr<la::Vector<double>> v, std::shared_ptr<la::Vector<double>> result) {
-  
+  void f1(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
+          std::shared_ptr<la::Vector<double>> result) {
+
     // Apply windowing
     if (t < T_ * alpha_) {
-        window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
-        dwindow_ = 0.5 * M_PI * freq0_ / alpha_ * sin(freq0_ * M_PI * t / alpha_);
+      window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
     } else {
-        window_ = 1.0;
-        dwindow_ = 0.0;
+      window_ = 1.0;
     }
 
     // Update boundary condition
     std::fill(_g.begin(), _g.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
-    std::fill(_dg.begin(), _dg.end(), dwindow_ * p0_ * w0_ / c0_ * cos(w0_ * t)
-                                      - window_ * p0_ * w0_ * w0_ / c0_ * sin(w0_ * t));
 
     u->scatter_fwd();
     kernels::copy(*u, *u_n->x());
@@ -171,19 +132,16 @@ public:
     v->scatter_fwd();
     kernels::copy(*v, *v_n->x());
 
-    // TODO: Compute coefficients
-
-    // Assemble LHS
-    std::fill(_m.begin(), _m.end(), 0.0);
-    fem::assemble_vector(_m, *a);
-    m->scatter_rev(common::IndexMap::Mode::add);
-
     // Assemble RHS
     std::fill(_b.begin(), _b.end(), 0.0);
+    stiff->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
 
     // Solve
+    // TODO: Divide is more expensive than multiply.
+    // We should store the result of 1/m in a vector and apply and element wise vector
+    // multiplication, since m doesn't change for linear wave propagation.
     {
       out = result->mutable_array();
       b_ = b->array();
@@ -192,29 +150,32 @@ public:
       // Element wise division
       // out[i] = b[i]/m[i]
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
-                     [](const double& bi, const double& mi) { return bi/mi; });
-
+                     [](const double& bi, const double& mi) { return bi / mi; });
     }
   }
 
- /// Runge-Kutta 4th order solver
- /// @param startTime initial time of the solver
- /// @param finalTime final time of the solver
- /// @param timeStep  time step size of the solver
- void rk4(double& startTime, double& finalTime, double& timeStep) {
+  /// Runge-Kutta 4th order solver
+  /// @param[in] startTime initial time of the solver
+  /// @param[in] finalTime final time of the solver
+  /// @param[in] timeStep  time step size of the solver
+  void rk4(double& startTime, double& finalTime, double& timeStep) {
 
+    // Time-stepping parameters
     double t = startTime;
     double tf = finalTime;
     double dt = timeStep;
     int step = 0;
     int nstep = (finalTime - startTime) / timeStep + 1;
+    int numStepPerPeriod = T_ / dt + 1;
+    int nstep_period = 0;
 
+    // Time-stepping vectors
     std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
 
     // Placeholder vectors at time step n
     u_ = std::make_shared<la::Vector<double>>(index_map, bs);
     v_ = std::make_shared<la::Vector<double>>(index_map, bs);
-    
+
     kernels::copy(*u_n->x(), *u_);
     kernels::copy(*v_n->x(), *v_);
 
@@ -253,9 +214,9 @@ public:
       for (int i = 0; i < n_RK; i++) {
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
-      
-        kernels::axpy(*un, dt*a_runge(i), *ku, *un);
-        kernels::axpy(*vn, dt*a_runge(i), *kv, *vn);
+
+        kernels::axpy(*un, dt * a_runge(i), *ku, *un);
+        kernels::axpy(*vn, dt * a_runge(i), *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;
@@ -273,8 +234,8 @@ public:
       t += dt;
       step += 1;
 
-      if (step % 50 == 0){
-        if (rank == 0){
+      if (step % 50 == 0) {
+        if (rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
                     << "/" << nstep << std::endl;
@@ -289,4 +250,35 @@ public:
     v_n->x()->scatter_fwd();
 
   }
+
+  std::size_t num_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
+private:
+  int rank, size; // MPI rank and size
+  double c0_;    // speed of sound (m/s)
+  double freq0_; // source frequency (Hz)
+  double p0_;    // pressure amplitude (Pa)
+  double w0_;    // angular frequency (rad/s)
+  double T_;     // period (s)
+  double alpha_;
+  double window_;
+
+  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::Constant<double>> c0;
+  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Form<double>> a, L;
+  std::shared_ptr<la::Vector<double>> m, b;
+
+  xtl::span<double> _g, out;
+  xtl::span<const double> m_, b_;
+  tcb::span<double> _m, _b;
+
+  std::shared_ptr<const common::IndexMap> index_map;
+  int bs;
+
+  std::shared_ptr<SpectralMass<double, P, P+1>> mass;
+  std::shared_ptr<SpectralStiffness<double, P, P+1>> stiff;
 };
