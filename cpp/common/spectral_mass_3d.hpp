@@ -7,24 +7,25 @@
 #include <map>
 #include <basix/finite-element.h>
 #include <basix/quadrature.h>
+#include <dolfinx.h>
 #include <xtensor/xindex_view.hpp>
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xio.hpp>
 
 namespace {
-  template <typename T, int Q>
-  inline void transform(T* __restrict__ detJ, T* __restrict__ in, T* __restrict__ out) {
-    constexpr int nq = Q * Q * Q;
+  template <typename T, int P>
+  inline void scale_coefficients_spectral(T* __restrict__ detJ, T* __restrict__ fw) {
+    constexpr int nq = (P + 1) * (P + 1) * (P + 1);
     for (int iq = 0; iq < nq; iq++) {
-        out[iq] = in[iq] * detJ[iq];
+        fw[iq] = fw[iq] * detJ[iq];
     }
   }
 } // namespace
 
-template <typename T, int P, int Q>
-class SpectralMass {
+template <typename T, int P>
+class MassSpectral {
 public:
-  SpectralMass(std::shared_ptr<fem::FunctionSpace>& V) : _dofmap(0) {
+  MassSpectral(std::shared_ptr<fem::FunctionSpace>& V) : _dofmap(0) {
     // Create a map between basis degree and quadrature degree
     std::map<int, int> qdegree;
     qdegree[2] = 3;
@@ -47,15 +48,8 @@ public:
     _perm_dofmap.reserve(_dofmap.size());
     reorder_dofmap(_perm_dofmap, _dofmap, P);
 
-    // Get tensor product order
-    auto family = basix::element::family::P;
-    auto cell_type = basix::cell::type::hexahedron;
-    auto variant = basix::element::lagrange_variant::gll_warped;
-    auto element = basix::create_element(family, cell_type, P, variant);
-    auto perm = std::get<1>(element.get_tensor_product_representation()[0]);
-    std::copy(perm.begin(), perm.end(), _perm.begin());
-
     // Tabulate quadrature points and weights
+    auto cell_type = basix::cell::type::hexahedron;
     auto quad_type = basix::quadrature::type::gll;
     auto [points, weights]
       = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
@@ -68,7 +62,6 @@ public:
         _detJ(i, j) = _detJ(i, j) * weights[j];
       }
     }
-
   }
 
   template <typename Alloc>
@@ -83,28 +76,21 @@ public:
         _x[i] = x_array[_perm_dofmap[cell * _num_dofs + i]];
       }
 
-      std::fill(_y.begin(), _y.end(), 0.0);
       double* detJ = _detJ.data() + cell * _num_quads;
-      transform<T, Q>(detJ, _x.data(), _y.data());
+      scale_coefficients_spectral<T, P>(detJ, _x.data());
 
       for (std::int32_t i = 0; i < _num_dofs; i++) {
-        y_array[_perm_dofmap[cell * _num_dofs + i]] += _y[i];
+        y_array[_perm_dofmap[cell * _num_dofs + i]] += _x[i];
       }
     }
   }
 
 private:
-  // Number of dofs in each direction
-  static constexpr int Nd = P + 1;
-
   // Number of dofs per element
   static constexpr int _num_dofs = (P + 1) * (P + 1) * (P + 1);
 
-  // Number of quadrature points in each direction
-  static constexpr int Nq = Q;
-
   // Number of quadrature points per element
-  static constexpr int _num_quads = Q * Q * Q;
+  static constexpr int _num_quads = (P + 1) * (P + 1) * (P + 1);
 
   // Number of cells in the mesh
   std::int32_t _num_cells;
@@ -112,16 +98,11 @@ private:
   // Determinant of the Jacobian scaled by the quadrature weights
   xt::xtensor<T, 2> _detJ;
 
-  // Permutations: from basix to tensor product order
-  std::array<int, _num_dofs> _perm;
-
   // Dofmap
   std::vector<std::int32_t> _dofmap;
-  std::vector<int> _perm_dofmap;
+  std::vector<std::int32_t> _perm_dofmap;
 
   // Local input array
   std::array<T, _num_dofs> _x;
 
-  // Local output array
-  std::array<T, _num_dofs> _y;
 };
