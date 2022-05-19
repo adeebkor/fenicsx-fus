@@ -1,5 +1,5 @@
 #include "forms.h"
-#include "spectral_mass_3d.hpp"
+#include "mass_3d.hpp"
 #include "stiffness_3d.hpp"
 
 #include <fstream>
@@ -75,7 +75,7 @@ public:
     xtl::span<double> _u = u->x()->mutable_array();
     std::fill(_u.begin(), _u.end(), 1.0);
 
-    mass = std::make_shared<SpectralMass<double, P, P+1>>(V);
+    mass = std::make_shared<Mass<double, P, P+1>>(V);
     m = std::make_shared<la::Vector<double>>(index_map, bs);
     _m = m->mutable_array();
     std::fill(_m.begin(), _m.end(), 0.0);
@@ -347,6 +347,6 @@ private:
   std::shared_ptr<const common::IndexMap> index_map;
   int bs;
 
-  std::shared_ptr<SpectralMass<double, P, P+1>> mass;
+  std::shared_ptr<Mass<double, P, P+1>> mass;
   std::shared_ptr<Stiffness<double, P, P+1>> stiff;
 };
