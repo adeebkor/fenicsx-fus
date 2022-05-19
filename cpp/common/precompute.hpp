@@ -114,7 +114,7 @@ xt::xtensor<double, 2> compute_jacobian_determinant(xt::xtensor<double, 4>& J) {
     }
   }
   return detJ;
-};
+}
 
 /// ------------------------------------------------
 /// Compute the inverse of the Jacobian (4d x [cell][point][tdim][gdim])
@@ -139,7 +139,7 @@ xt::xtensor<double, 4> compute_jacobian_inverse(xt::xtensor<double, 4>& J) {
     }
   }
   return K;
-};
+}
 /// ------------------------------------------------
 /// Compute the inverse of the geometrical factor (4d x [cell][point][tdim][gdim])
 /// @param[in] J The jacobian
@@ -183,7 +183,7 @@ xt::xtensor<double, 3> compute_geometrical_factor(xt::xtensor<double, 4>& J,
     }
   }
   return G;
-};
+}
 /// ------------------------------------------------
 // Tabulate order P basis functions on an interval
 xt::xtensor<double, 2> tabulate_1d(int p, int q, int derivative) {
