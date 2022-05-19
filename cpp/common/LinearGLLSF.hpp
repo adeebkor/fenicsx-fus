@@ -1,3 +1,5 @@
+#pragma once
+
 #include "forms.h"
 #include "spectral_mass_3d.hpp"
 #include "spectral_stiffness_3d.hpp"

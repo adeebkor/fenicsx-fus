@@ -1,3 +1,5 @@
+#pragma once
+
 #include "forms.h"
 
 #include <memory>

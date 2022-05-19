@@ -1,3 +1,5 @@
+#pragma once
+
 #include "forms.h"
 #include "mass_3d.hpp"
 #include "stiffness_3d.hpp"
