@@ -9,7 +9,7 @@ from dolfinx.fem import (FunctionSpace, Function, dirichletbc, form,
 from dolfinx.fem.petsc import assemble_vector
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities
-from ufl import (FiniteElement, TestFunction, Measure, inner, grad, dx)
+from ufl import TestFunction, Measure, inner, grad, dx
 
 
 class LinearSoundSoftGLL:

@@ -8,8 +8,7 @@ import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from dolfinx.mesh import locate_entities
-from ufl import (FiniteElement, TestFunction, TrialFunction, Measure, inner,
-                 grad, dx)
+from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
 
 class LinearGLL:
