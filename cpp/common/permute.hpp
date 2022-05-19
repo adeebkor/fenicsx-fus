@@ -1,3 +1,6 @@
+// Copyright (C) 2022 Adeeb Arif Kor
+// SPDX-License-Identifier:    MIT
+
 #pragma once
 
 #include <basix/finite-element.h>
