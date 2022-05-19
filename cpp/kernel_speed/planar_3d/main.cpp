@@ -75,10 +75,6 @@ int main(int argc, char* argv[]) {
     std::vector<std::int32_t> dof_facets2
       = fem::locate_dofs_topological(*V, 2, facets2);
 
-    if (rank == 0) {
-      std::cout << "Number of degrees of freedom: " << ndofs << std::endl;
-    }
-
     //-------------------------------------------------------------------------
     // Assemble forms
 
@@ -183,7 +179,7 @@ int main(int argc, char* argv[]) {
           {{dolfinx::fem::IntegralType::exterior_facet, &(*mt)}}));
     la::Vector<double> l1(index_map, bs);
 
-    common::Timer t_l1("~ dolfinx L1 assembly");
+    common::Timer t_l1("~ L1 assembly");
     t_l1.start();
     fem::assemble_vector(l1.mutable_array(), *L1);
     t_l1.stop();
@@ -199,7 +195,7 @@ int main(int argc, char* argv[]) {
           {{dolfinx::fem::IntegralType::exterior_facet, &(*mt)}}));
     la::Vector<double> l2(index_map, bs);
 
-    common::Timer t_l2("~ dolfinx L2 assembly");
+    common::Timer t_l2("~ L2 assembly");
     t_l2.start();
     fem::assemble_vector(l2.mutable_array(), *L2);
     t_l2.stop();
