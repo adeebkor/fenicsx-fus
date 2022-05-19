@@ -2,12 +2,14 @@ import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 
+import basix
+import basix.ufl_wrapper
 from dolfinx.fem import (FunctionSpace, Function, dirichletbc, form,
                          locate_dofs_topological, set_bc)
 from dolfinx.fem.petsc import assemble_vector
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import locate_entities
-from ufl import (FiniteElement, TestFunction, Measure, inner, grad, dx)
+from ufl import TestFunction, Measure, inner, grad, dx
 
 
 class LinearSoundSoftGLL:
@@ -20,7 +22,11 @@ class LinearSoundSoftGLL:
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
         self.mesh = mesh
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
@@ -244,7 +250,11 @@ class LinearSoundHardGLL:
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
         self.mesh = mesh
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
@@ -461,7 +471,11 @@ class LinearPenetrableGLL:
         self.mesh = mesh
         self.scatterer_radius = r0
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)

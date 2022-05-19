@@ -3,11 +3,12 @@ from scipy.integrate import RK45
 from mpi4py import MPI
 from petsc4py import PETSc
 
+import basix
+import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from dolfinx.mesh import locate_entities
-from ufl import (FiniteElement, TestFunction, TrialFunction, Measure, inner,
-                 grad, dx)
+from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
 
 class LinearGLL:
@@ -20,7 +21,11 @@ class LinearGLL:
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
         self.mesh = mesh
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
@@ -232,7 +237,11 @@ class LinearGLLSciPy:
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
         self.mesh = mesh
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
@@ -384,7 +393,11 @@ class Linear:
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
         self.mesh = mesh
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = TrialFunction(self.V)
@@ -587,7 +600,11 @@ class LinearInhomogenousGLL:
         self.mesh = mesh
         tdim = mesh.topology.dim
 
-        FE = FiniteElement("Lagrange", mesh.ufl_cell(), k, variant="gll")
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
         self.V = FunctionSpace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)

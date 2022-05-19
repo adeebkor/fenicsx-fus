@@ -2,6 +2,8 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 
+import basix
+import basix.ufl_wrapper
 import dolfinx.fem.petsc
 import dolfinx.mesh
 import ufl
@@ -45,7 +47,11 @@ def test_diagonal(dimension, p):
                         dimension!".format(dimension))
 
     # Create function space
-    FE = ufl.FiniteElement("Lagrange", cell_type, p, variant="gll")
+    cell_type = basix.cell.string_to_type(cell_type.cellname())
+    element = basix.create_element(
+        basix.ElementFamily.P, cell_type, p,
+        basix.LagrangeVariant.gll_warped)
+    FE = basix.ufl_wrapper.BasixElement(element)
     V = dolfinx.fem.FunctionSpace(mesh, FE)
     ndof = V.dofmap.index_map.size_global
 
