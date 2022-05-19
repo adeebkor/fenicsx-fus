@@ -32,10 +32,6 @@ int main(int argc, char* argv[]) {
     // Domain parameters
     double domainLength = 0.12; // (m)
 
-    // Physical parameters
-    double wavelength = speedOfSound / sourceFrequency; // (m)
-    double wavenumber = 2.0 * M_PI / wavelength;        // (m^-1)
-
     // FE parameters
     const int degreeOfBasis = 4;
 

@@ -42,31 +42,30 @@ template <typename T, int P, int Q>
 class Stiffness {
 public:
   Stiffness(std::shared_ptr<fem::FunctionSpace>& V) : _dofmap(0) {
-    // Create map between basis degree and quadrature degree
+    // Create map between quadrature points to basix quadrature degree
     std::map<int, int> qdegree;
-    qdegree[2] = 3;
     qdegree[3] = 4;
-    qdegree[4] = 6;
-    qdegree[5] = 8;
-    qdegree[6] = 10;
-    qdegree[7] = 12;
-    qdegree[8] = 14;
-    qdegree[9] = 16;
-    qdegree[10] = 18;
+    qdegree[4] = 5;
+    qdegree[5] = 6;
+    qdegree[6] = 8;
+    qdegree[7] = 10;
+    qdegree[8] = 12;
+    qdegree[9] = 14;
+    qdegree[10] = 16;
 
     // Get mesh and mesh attributes
     std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
     int tdim = mesh->topology().dim();
     _num_cells = mesh->topology().index_map(tdim)->size_local();
     
-    // Get dofmap and permute
+    // Get dofmap
     _dofmap = V->dofmap()->list();
 
     // Tabulate quadrature points and weights
     auto cell_type = basix::cell::type::hexahedron;
     auto quad_type = basix::quadrature::type::gll;
     auto [points, weights]
-      = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[P]);
+      = basix::quadrature::make_quadrature(quad_type, cell_type, qdegree[Q]);
 
     // Get basis functions and clamp values
     auto family = basix::element::family::P;
@@ -74,14 +73,12 @@ public:
     auto element = basix::create_element(family, cell_type, P, variant);
     xt::xtensor<double, 4> table = element.tabulate(1, points);
     _dphi = xt::view(table, xt::range(1, tdim+1), xt::all(), xt::all(), 0);
-    xt::filtration(_dphi, xt::isclose(_dphi, -1.0)) = -1.0;
-    xt::filtration(_dphi, xt::isclose(_dphi, 0.0)) = 0.0;
-    xt::filtration(_dphi, xt::isclose(_dphi, 1.0)) = 1.0;
 
     // Compute the scaled of the geometrical factor
     auto J = compute_jacobian(mesh, points);
     auto _detJ = compute_jacobian_determinant(J);
     _G = compute_geometrical_factor(J, _detJ, weights);
+    
   }
 
   template <typename Alloc>
