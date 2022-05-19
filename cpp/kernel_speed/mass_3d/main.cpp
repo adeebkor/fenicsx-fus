@@ -1,4 +1,5 @@
 #include "form.h"
+#include "mass_3d.hpp"
 #include "spectral_mass_3d.hpp"
 
 #include <cmath>
@@ -58,19 +59,34 @@ int main(int argc, char* argv[]){
 	m0.scatter_rev(common::IndexMap::Mode::add);
 
     // ------------------------------------------------------------------------
+    // Create precompute mass operator
+    common::Timer t_precompute_construct("~ construct precompute");
+    t_precompute_construct.start();
+    Mass<double, 4, 5, 6> mass_pc(V);
+    t_precompute_construct.stop();
+    la::Vector<double> m1(index_map, bs);
+
+    common::Timer t_precompute_assembly("~ precompute vector assembly");
+    t_precompute_assembly.start();
+    mass_pc(*u->x(), m1);
+    t_precompute_assembly.stop();
+
+    m1.scatter_rev(common::IndexMap::mode::add);
+
+    // ------------------------------------------------------------------------
 	// Create mass operator
     common::Timer t_spectral_construct("~ construct spectral");
     t_spectral_construct.start();
 	SpectralMass<double, 4, 5> mass(V);
     t_spectral_construct.stop();
-	la::Vector<double> m1(index_map, bs);
+	la::Vector<double> m2(index_map, bs);
 
     common::Timer t_spectral_assembly("~ spectral vector assembly");
     t_spectral_assembly.start();
-	mass(*u->x(), m1);
+	mass(*u->x(), m2);
     t_spectral_assembly.stop();
 
-	m1.scatter_rev(common::IndexMap::Mode::add);
+	m2.scatter_rev(common::IndexMap::Mode::add);
 
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
@@ -78,8 +94,10 @@ int main(int argc, char* argv[]){
     // Check equality
     std::size_t local_size = m0.mutable_array().size();
     auto m_dolfinx = xt::adapt(m0.mutable_array().data(), {local_size});
-    auto m_spectral = xt::adapt(m1.mutable_array().data(), {local_size});
+    auto m_precompute = xt::adapt(m1.mutable_array().data(), {local_size});
+    auto m_spectral = xt::adapt(m2.mutable_array().data(), {local_size});
 
+    assert(xt::allclose(m_dolfinx, m_precompute));
     assert(xt::allclose(m_dolfinx, m_spectral));
   }
   common::subsystem::finalize_mpi();
