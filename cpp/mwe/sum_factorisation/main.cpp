@@ -12,15 +12,15 @@ int main(int argc, char* argv[]) {
 
   std::array<double, N*N*N> _x;
   std::array<double, M*N> _dphi;
-//   std::array<double, M*N> _phi = {1, 0, 0, 1};
 
   // Fill the tensor with values from 0 to N*N*N
   for (int i = 0; i < N*N*N; i++) {
-    _x[i] = i + 1;
+    _x[i] = i;
   }
 
   // Print the tensor
   double* xi = _x.data();
+  std::cout << "x = ";
   for (int i = 0; i < N*N*N; i++) {
     std::cout << *(xi + i) << " ";
   }
@@ -33,47 +33,33 @@ int main(int argc, char* argv[]) {
 
   // Print the matrix
   double* dphi = _dphi.data();
+  std::cout << "dphi = ";
   for (int i = 0; i < M*N; i++) {
     std::cout << *(dphi + i) << " ";
   }
   std::cout << "\n";
 
-//   double* phi = _phi.data();
-//   for (int i = 0; i < M*N; i++) {
-//     std::cout << *(phi + i) << " ";
-//   }
-//   std::cout << "\n";
+  // Perform contraction
+  std::array<double, M*N*N> _out{0};
+  contract<double, N, M, N, N, true>(dphi, xi, _out.data());
 
-
-//   Buffer<double, M, N> buffer;
-//   buffer.zero();
-
-  std::array<double, M*N*N> out{0}, outT{0};
-  contract<double, N, M, N, N, true>(dphi, xi, out.data());
-  transpose<double, N, M, N, M*N, N, 1>(out.data(), outT.data());
-//   apply_contractions<double, M, N, true>(dphi, phi, phi, xi, out.data(), buffer);
-
+  // Print output of contraction
+  std::cout << "out = ";
   for (int i = 0; i < M*N*N; i++) {
-    std::cout << outT[i] << " ";
+    std::cout << _out[i] << " ";
   }
   std::cout << "\n";
 
-//   buffer.zero();
-//   std::array<double, M*M*M> out0;
+  // Perform transpose (ijk => kji)
+  std::array<double, M*N*N> _out_t{0};
+  transpose<double, M, N, N, 1, M, M*N>(_out.data(), _out_t.data());
 
-  // x-contraction
-//   contract<double, N, M, N, N, true>(dphi, xi, buffer.T0.data());
-//   transpose<double, M, N, N, M*N, N, 1>(buffer.T0.data(), out0.data());
-
-  // y-contraction
-//   transpose<double, N, N, N, N, N*N, 1>(xi, buffer.T0.data());
-//   contract<double, N, M, N, N, true>(dphi, buffer.T0.data(), buffer.T1.data());
-//   transpose<double, N, N, N, N, N*N, 1>(buffer.T1.data(), out0.data());
-
-//   for (int i = 0; i < M*M*M; i++) {
-//     std::cout << out0[i] << " ";
-//   }
-//   std::cout << "\n";
+  // Print transpose of output
+  std::cout << "out^{T} = ";
+  for (int i = 0; i < N*N*M; i++) {
+    std::cout << _out_t[i] << " ";
+  }
+  std::cout << "\n";
 
   return 0;
 }
