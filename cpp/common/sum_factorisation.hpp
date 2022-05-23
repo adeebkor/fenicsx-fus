@@ -60,10 +60,10 @@ static inline void apply_contractions(const T* I0, const T* I1, const T* I2,
   buffer.zero();
   // First tensor contraction
   // T0[Na, Nb, Nb] <- I0[Na, Nb] B[Nb, Nb, Nb]
-  // [a0, b1, b2] <- I0[a0, i0] B[b0, b1, b2]
+  // [a0, b1, b2] <- I0[a0, b0] B[b0, b1, b2]
   contract<T, Nb, Na, Nb, Nb, Tr>(I0, B, buffer.T0.data());
 
-  // Transpose tensor, so the contraction iNbex appears first (ik = b1)
+  // Transpose tensor, so the index of contraction appears first (ik = b1)
   // [b1, a0, b2] <- [a0, b1, b2]
   transpose<T, Na, Nb, Nb, Nb, Nb * Na, 1>(buffer.T0.data(), buffer.T0_t.data());
 
