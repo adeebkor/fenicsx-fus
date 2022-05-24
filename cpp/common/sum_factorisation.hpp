@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Igor A. Baratta
+// Copyright (C) 2022 Igor A. Baratta, Adeeb Arif Kor
 // SPDX-License-Identifier:    MIT
 
 #pragma once
@@ -41,6 +41,14 @@ static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
 }
 
 // --------------------------------------------------------------------//
+// Perform transpose of tensor A and store in B
+// A[Na, Nb, Nc]
+// Permutations:
+// ijk => jik <Na, Nb, Nc, Nb, Na*Nb, 1> => B[Nb, Na, Nc]
+// ijk => ikj <Na, Nb, Nc, Nb*Nb, 1, Nb>
+// ijk => kji <Na, Nb, Nc, 1, Nb, Na*Nb>
+// ijk => jki <Na, Nb, Nc, 1, Na*Nb, Na>
+// ijk => kij <Na, Nb, Nc, Nb, 1, Na*Nb>
 template <typename T, int Na, int Nb, int Nc, int offa, int offb, int offc>
 static inline void transpose(T* __restrict__ A, T* __restrict__ B) {
   for (int a = 0; a < Na; a++)
