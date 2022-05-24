@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
   // Perform transpose (ijk => kji)
   std::array<double, M*N*N> _out_t{0};
-  transpose<double, M, N, N, 1, M, M*N>(_out.data(), _out_t.data());
+  transpose<double, M, N, N, N, 1, M*N>(_out.data(), _out_t.data());
 
   // Print transpose of output
   std::cout << "out^{T} = ";
