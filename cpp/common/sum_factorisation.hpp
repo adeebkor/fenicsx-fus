@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Igor A. Baratta
+// Copyright (C) 2022 Igor A. Baratta, Adeeb Arif Kor
 // SPDX-License-Identifier:    MIT
 
 #pragma once
@@ -41,6 +41,14 @@ static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
 }
 
 // --------------------------------------------------------------------//
+// Perform transpose of tensor A and store in B
+// A[Na, Nb, Nc]
+// Permutations:
+// ijk => jik <Na, Nb, Nc, Nb, Na*Nb, 1> => B[Nb, Na, Nc]
+// ijk => ikj <Na, Nb, Nc, Nb*Nb, 1, Nb>
+// ijk => kji <Na, Nb, Nc, 1, Nb, Na*Nb>
+// ijk => jki <Na, Nb, Nc, 1, Na*Nb, Na>
+// ijk => kij <Na, Nb, Nc, Nb, 1, Na*Nb>
 template <typename T, int Na, int Nb, int Nc, int offa, int offb, int offc>
 static inline void transpose(T* __restrict__ A, T* __restrict__ B) {
   for (int a = 0; a < Na; a++)
@@ -60,10 +68,10 @@ static inline void apply_contractions(const T* I0, const T* I1, const T* I2,
   buffer.zero();
   // First tensor contraction
   // T0[Na, Nb, Nb] <- I0[Na, Nb] B[Nb, Nb, Nb]
-  // [a0, b1, b2] <- I0[a0, i0] B[b0, b1, b2]
+  // [a0, b1, b2] <- I0[a0, b0] B[b0, b1, b2]
   contract<T, Nb, Na, Nb, Nb, Tr>(I0, B, buffer.T0.data());
 
-  // Transpose tensor, so the contraction iNbex appears first (ik = b1)
+  // Transpose tensor, so the index of contraction appears first (ik = b1)
   // [b1, a0, b2] <- [a0, b1, b2]
   transpose<T, Na, Nb, Nb, Nb, Nb * Na, 1>(buffer.T0.data(), buffer.T0_t.data());
 

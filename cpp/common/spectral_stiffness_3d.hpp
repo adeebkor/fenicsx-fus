@@ -85,6 +85,7 @@ public:
     Buffer<T, N, N> buffer;
     buffer.zero();
 
+
     for (std::int32_t cell = 0; cell < _num_cells; cell++) {
       
       // Pack coefficients
