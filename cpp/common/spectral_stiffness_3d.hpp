@@ -94,20 +94,22 @@ public:
 
       // Apply contraction in the x-direction
       buffer.zero();
-      contract<T, N, N, N, N, true>(dphi, _x.data(), buffer.T0.data());
-      transpose<T, N, N, N, N*N, 1, N>(buffer.T0.data(), fw0);
+      _fw0.fill(0.0);
+      contract<T, N, N, N, N, true>(dphi, _x.data(), fw0);
 
       // Apply contraction in the y-direction
       buffer.zero();
+      _fw1.fill(0.0);
       transpose<T, N, N, N, N, N*N, 1>(_x.data(), buffer.T0.data());
       contract<T, N, N, N, N, true>(dphi, buffer.T0.data(), buffer.T1.data());
       transpose<T, N, N, N, N, N*N, 1>(buffer.T1.data(), fw1);
 
       // Apply contraction in the z-direction
       buffer.zero();
-      transpose<T, N, N, N, 1, N*N, N>(_x.data(), buffer.T0.data());
+      _fw2.fill(0.0);
+      transpose<T, N, N, N, 1, N, N*N>(_x.data(), buffer.T0.data());
       contract<T, N, N, N, N, true>(dphi, buffer.T0.data(), buffer.T1.data());
-      transpose<T, N, N, N, 1, N*N, N>(buffer.T1.data(), fw2);
+      transpose<T, N, N, N, 1, N, N*N>(buffer.T1.data(), fw2);
 
       // Apply transform
       T* G = _G.data() + cell * _num_quads * 6;
@@ -115,20 +117,22 @@ public:
 
       // Apply contraction in the x-direction
       buffer.zero();
-      contract<T, N, N, N, N, false>(dphi, fw0, buffer.T0.data());
-      transpose<T, N, N, N, N*N, 1, N>(buffer.T0.data(), _y0.data());
-
+      _y0.fill(0.0);
+      contract<T, N, N, N, N, false>(dphi, fw0, _y0.data());
+      
       // Apply contraction in the y-direction
       buffer.zero();
+      _y1.fill(0.0);
       transpose<T, N, N, N, N, N*N, 1>(fw1, buffer.T0.data());
       contract<T, N, N, N, N, false>(dphi, buffer.T0.data(), buffer.T1.data());
       transpose<T, N, N, N, N, N*N, 1>(buffer.T1.data(), _y1.data());
 
       // Apply contraction in the z-direction
       buffer.zero();
-      transpose<T, N, N, N, 1, N*N, N>(fw2, buffer.T0.data());
+      _y2.fill(0.0);
+      transpose<T, N, N, N, 1, N, N*N>(fw2, buffer.T0.data());
       contract<T, N, N, N, N, false>(dphi, buffer.T0.data(), buffer.T1.data());
-      transpose<T, N, N, N, 1, N*N, N>(buffer.T1.data(), _y2.data());
+      transpose<T, N, N, N, 1, N, N*N>(buffer.T1.data(), _y2.data());
 
       for (std::int32_t i = 0; i < _num_dofs; i++) {
         y_array[_perm_dofmap[cell * _num_dofs + i]] += _y0[i] + _y1[i] + _y2[i];
