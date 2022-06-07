@@ -6,8 +6,8 @@ project(${PROJECT_NAME})
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-O2 -march=native ${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_C_FLAGS "-O2 -march=native ${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_C_FLAGS} -Wall")
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
