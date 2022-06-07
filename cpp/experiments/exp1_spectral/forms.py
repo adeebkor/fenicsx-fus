@@ -25,7 +25,9 @@ v = TestFunction(V)
 qdegree = {3: 4, 4: 5, 5: 6, 6: 8, 7: 10, 8: 12, 9: 14, 10: 16}
 md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 
+a = inner(u, v) * dx(metadata=md)
+
 L = c0**2 * (inner(g, v) * ds(1, metadata=md) 
              - 1/c0*inner(v_n, v) * ds(2, metadata=md))
 
-forms = [L]
+forms = [a, L]
