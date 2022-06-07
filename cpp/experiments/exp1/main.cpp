@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     double CFL = 0.62;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
+    double finalTime = 20 * timeStepSize; // domainLength / speedOfSound + 8.0 / sourceFrequency;
     int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     int numberOfStep = finalTime / timeStepSize + 1;
@@ -77,7 +77,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Model
+    common::Timer instantiation("~ Instantiate model");
+    instantiation.start();
     auto eqn = LinearGLL<degreeOfBasis>(mesh, mt, speedOfSound, sourceFrequency, pressureAmplitude);
+    instantiation.stop();
 
     if (rank == 0) {
       std::cout << "CFL number: " << CFL << std::endl;
@@ -88,16 +91,17 @@ int main(int argc, char* argv[]) {
     // Solve
     eqn.init();
 
-    common::Timer tsolve("Solve time");
-
-    tsolve.start();
+    common::Timer rksolve("~ RK solve time");
+    rksolve.start();
     eqn.rk4(startTime, finalTime, timeStepSize);
-    tsolve.stop();
+    rksolve.stop();
 
     if (rank == 0) {
-      std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
-      std::cout << "Time per step: " << tsolve.elapsed()[0] / numberOfStep << std::endl;
+      std::cout << "Solve time: " << rksolve.elapsed()[0] << std::endl;
+      std::cout << "Time per step: " << rksolve.elapsed()[0] / numberOfStep << std::endl;
     }
+
+    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
   }
   PetscFinalize();
   return 0;
