@@ -13,8 +13,8 @@
 using namespace dolfinx;
 
 int main(int argc, char* argv[]){
-    common::subsystem::init_logging(argc, argv);
-    common::subsystem::init_mpi(argc, argv);
+    dolfinx::init_logging(argc, argv);
+    PetscInitialize(&argc, &argv, nullptr, nullptr);
     {
         std::cout.precision(10);
         std::cout << std::fixed;
@@ -30,11 +30,6 @@ int main(int argc, char* argv[]){
         std::shared_ptr<fem::Function<double>> u = std::make_shared<fem::Function<double>>(V);
         u->interpolate([](auto& x) { return xt::sin(2.0 * M_PI * xt::row(x, 0)) * xt::cos(2.0 * M_PI * xt::row(x, 1)); });
         u->x()->scatter_fwd();
-
-        // Output to XDMF
-        // io::XDMFFile outfile(mesh->comm(), "u.xdmf", "w");
-        // outfile.write_mesh(*mesh);
-        // outfile.write_function(*u, 0.0);
 
         // Evaluate on a line
         int N = 100;
@@ -55,25 +50,19 @@ int main(int argc, char* argv[]){
         xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
         auto points_on_proc = xt::empty<double>(sh0);
 
-        std::cout << colliding_cells.str() << std::endl;
         int local_size = mesh->topology().index_map(2)->size_local();
-        std::cout << local_size << std::endl;
-
 
         for (int i = 0; i < N; i++){
             auto link = colliding_cells.links(i);
             if (link.size() > 0){
                 auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
                 points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
-                // for (auto c : link){
-                //     cells.push_back(c);
-                // }
                 cells.push_back(link[0]);
             }
         }
 
         points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
-        int lsize = points_on_proc.shape(0);
+        std::size_t lsize = points_on_proc.shape(0);
         xt::xtensor<double, 2> u_eval({lsize, 1});
 
         u->eval(points_on_proc, cells, u_eval);
@@ -86,43 +75,18 @@ int main(int argc, char* argv[]){
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
         auto shape = points_on_proc.shape();
-        std::cout << rank << " " << xt::adapt(shape) << std::endl;
 
         for (int i = 0; i < size; i++){
             if (rank == i){
                 std::ofstream MyFile("filename.txt", std::ios_base::app);
-                for (int i = 0; i < lsize; i++){
+                for (std::size_t i = 0; i < lsize; i++){
                     MyFile << *(pval + 3*i) << "," << *(uval + i) << std::endl;
                 }
                 MyFile.close();
             }
             MPI_Barrier(MPI_COMM_WORLD);
         }
-
-        // double* pval = points_on_proc.data();
-        // double* uval = u_eval.data();
-
-        // for (int i = 0; i < points_on_proc.shape(0); i++){
-        //     std::cout << *(pval + 3*i) << std::endl;
-        // }
-
-        // double *rbuf0;
-        // double *rbuf1;
-
-        // if (rank == 0){
-        //     rbuf0 = (double *)malloc(N*sizeof(double));
-        //     rbuf1 = (double *)malloc(N*sizeof(double));
-        // }
-
-        // MPI_Gather(pval, lsize, MPI_DOUBLE, rbuf0, lsize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        // MPI_Gather(uval, lsize, MPI_DOUBLE, rbuf1, lsize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-        // if (rank == 0){
-        //     std::ofstream MyFile("filename.txt");
-        //     for (int i = 0; i < N; i++){
-        //         MyFile << *(rbuf0 + 3*i) << "," << *(rbuf1 + i) << std::endl;
-        //     }
-        //     MyFile.close();
-        // }
     }
+    PetscFinalize();
+    return 0;
 }
