@@ -40,9 +40,8 @@ template <int P>
 class LinearGLLSpectral {
 public:
   LinearGLLSpectral(std::shared_ptr<mesh::Mesh> Mesh,
-                    std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, 
-                    double& speedOfSound, double& sourceFrequency,
-                    double& pressureAmplitude) {
+                    std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, double& speedOfSound,
+                    double& sourceFrequency, double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -107,10 +106,7 @@ public:
   /// @param[out] result Result, i.e. dun/dtn
   void f0(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
           std::shared_ptr<la::Vector<double>> result) {
-    common::Timer copy_vector("~ F0 (Copy vector)");
-    copy_vector.start();
     kernels::copy(*v, *result);
-    copy_vector.stop();
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
@@ -122,18 +118,13 @@ public:
           std::shared_ptr<la::Vector<double>> result) {
 
     // Apply windowing
-    common::Timer apply_windowing("~ F1 (Apply Window)");
-    apply_windowing.start();
     if (t < T_ * alpha_) {
       window_ = 0.5 * (1.0 - cos(freq0_ * M_PI * t / alpha_));
     } else {
       window_ = 1.0;
     }
-    apply_windowing.stop();
 
     // Update boundary condition
-    common::Timer update_BC("~ F1 (Update BCs)");
-    update_BC.start();
     std::fill(_g.begin(), _g.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
 
     u->scatter_fwd();
@@ -141,16 +132,12 @@ public:
 
     v->scatter_fwd();
     kernels::copy(*v, *v_n->x());
-    update_BC.stop();
 
     // Assemble RHS
-    common::Timer assemble_L("~ F1 (Assemble LHS)");
-    assemble_L.start();
     std::fill(_b.begin(), _b.end(), 0.0);
     stiff->operator()(*u_n->x(), *b);
     fem::assemble_vector(_b, *L);
     b->scatter_rev(common::IndexMap::Mode::add);
-    assemble_L.stop();
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -163,11 +150,8 @@ public:
 
       // Element wise division
       // out[i] = b[i]/m[i]
-      common::Timer division_time("~ F1 (Solve b/m)");
-      division_time.start();
       std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
                      [](const double& bi, const double& mi) { return bi / mi; });
-      division_time.stop();
     }
   }
 
@@ -176,6 +160,52 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
+    
+    // ------------------------------------------------------------------------
+    // Computing function evaluation parameters
+
+    std::string fname;
+
+    // Grid parameters
+    int Nx = 141;
+    int Nz = 241;
+    double tol = 1e-6;
+
+    // Generate evaluate points
+    xt::xarray<double> px = xt::linspace<double>(-0.035+tol, 0.035-tol, Nx);
+    xt::xarray<double> pz = xt::linspace<double>(tol, 0.12-tol, Nz);
+    auto [X, Z] = xt::meshgrid(px, pz);
+    xt::xarray<double> x = xt::ravel(X);
+    x.reshape({-1, 1});
+    xt::xarray<double> y = xt::zeros<double>({Nx*Nz, 1});
+    xt::xarray<double> z = xt::ravel(Z);
+    z.reshape({-1, 1});
+    auto pointsT = xt::hstack(xt::xtuple(x, y, z));
+
+    // Compute evaluation parameters
+    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
+    auto cell_candidates = compute_collisions(bb_tree, pointsT);
+    auto colliding_cells = geometry::compute_colliding_cells(
+        *mesh, cell_candidates, pointsT);
+
+    std::vector<int> cells;
+    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
+    auto points_on_proc = xt::empty<double>(sh0);
+    for (int i = 0; i < Nx*Nz; i++) {
+      auto link = colliding_cells.links(i);
+      if (link.size() > 0) {
+        auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
+        points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
+        cells.push_back(link[0]);
+      }
+    }
+
+    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
+    std::size_t lsize = points_on_proc.shape(0);
+    xt::xtensor<double, 2> u_eval({lsize, 1});
+
+    double* uval;
+    double* pval = points_on_proc.data();
 
     // Time-stepping parameters
     double t = startTime;
@@ -229,17 +259,11 @@ public:
 
       // Runge-Kutta step
       for (int i = 0; i < n_RK; i++) {
-        common::Timer RKCOPY("~ RK step (Copy vector)");
-        RKCOPY.start();
         kernels::copy(*u0, *un);
         kernels::copy(*v0, *vn);
-        RKCOPY.stop();
 
-        common::Timer RKAXPY_1("~ RK step (AXPY Input)");
-        RKAXPY_1.start();
         kernels::axpy(*un, dt * a_runge(i), *ku, *un);
         kernels::axpy(*vn, dt * a_runge(i), *kv, *vn);
-        RKAXPY_1.stop();
 
         // RK time evaluation
         tn = t + c_runge(i) * dt;
@@ -249,11 +273,8 @@ public:
         f1(tn, un, vn, kv);
 
         // Update solution
-        common::Timer RKAXPY_2("~ RK step (AXPY Output)");
-        RKAXPY_2.start();
         kernels::axpy(*u_, dt * b_runge(i), *ku, *u_);
         kernels::axpy(*v_, dt * b_runge(i), *kv, *v_);
-        RKAXPY_2.stop();
       }
 
       // Update time
@@ -262,10 +283,36 @@ public:
 
       if (step % 200 == 0) {
         if (rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << nstep << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
+      }
+
+      // Collect data for one period
+      if (t > 0.12 / c0_ + 6.0 / freq0_ && nstep_period < numStepPerPeriod) {
+        kernels::copy(*u_, *u_n->x());
+        u_n->x()->scatter_fwd();
+
+        // Function evaluation
+        u_n->eval(points_on_proc, cells, u_eval);
+        uval = u_eval.data();
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // Write evaluation from each process to a single text file
+        for (int i = 0; i < size; i++) {
+          if (rank == i) {
+            fname = "/home/mabm4/rds/data/pressure_on_plane_" + 
+                    std::to_string(nstep_period) + ".txt";
+            std::ofstream txt_file(fname, std::ios_base::app);
+            for (std::size_t i = 0; i < lsize; i++) {
+              txt_file << *(pval + 3 * i) << ","
+                       << *(pval + 3 * i + 2) << ","
+                       << *(uval + i) << std::endl;
+            }
+            txt_file.close();
+          }
+          MPI_Barrier(MPI_COMM_WORLD);
+        }
+        nstep_period++;
       }
     }
 
@@ -274,12 +321,9 @@ public:
     kernels::copy(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::size_t num_dofs() const { 
-    return V->dofmap()->index_map->size_global(); 
-  }
+  std::size_t num_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
   int rank, size; // MPI rank and size

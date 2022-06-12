@@ -18,8 +18,13 @@ int main(int argc, char* argv[]) {
     std::cout.precision(15); // Set print precision
 
     // MPI
-    int rank;
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (rank == 0) {
+      std::cout << "Number of MPI ranks: " << size << std::endl;
+    }
 
     // Material parameters
     double speedOfSound = 1500.0; // (m/s)
@@ -64,10 +69,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Temporal parameters
-    double CFL = 0.62;
+    double CFL = 0.64;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
-    double finalTime = 20 * timeStepSize; // domainLength / speedOfSound + 8.0 / sourceFrequency;
+    double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
     int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     int numberOfStep = finalTime / timeStepSize + 1;
@@ -102,7 +107,7 @@ int main(int argc, char* argv[]) {
       std::cout << "Time per step: " << rksolve.elapsed()[0] / numberOfStep << std::endl;
     }
 
-    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
+    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::average);
   }
   PetscFinalize();
   return 0;
