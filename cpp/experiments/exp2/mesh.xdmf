@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="planar3d" GridType="Uniform">
+      <Topology TopologyType="Hexahedron" NumberOfElements="233260" NodesPerElement="8">
+        <DataItem Dimensions="233260 8" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planar3d/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="237710 3" Format="HDF">mesh.h5:/Mesh/planar3d/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="planar3d_boundaries" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planar3d']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="8640" NodesPerElement="4">
+        <DataItem Dimensions="8640 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planar3d_boundaries/topology</DataItem>
+      </Topology>
+      <Attribute Name="planar3d_boundaries" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="8640 1" Format="HDF">mesh.h5:/MeshTags/planar3d_boundaries/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
