@@ -161,52 +161,6 @@ public:
   /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
     
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    int Nx = 141;
-    int Nz = 241;
-    double tol = 1e-6;
-
-    // Generate evaluate points
-    xt::xarray<double> px = xt::linspace<double>(-0.035+tol, 0.035-tol, Nx);
-    xt::xarray<double> pz = xt::linspace<double>(tol, 0.12-tol, Nz);
-    auto [X, Z] = xt::meshgrid(px, pz);
-    xt::xarray<double> x = xt::ravel(X);
-    x.reshape({-1, 1});
-    xt::xarray<double> y = xt::zeros<double>({Nx*Nz, 1});
-    xt::xarray<double> z = xt::ravel(Z);
-    z.reshape({-1, 1});
-    auto pointsT = xt::hstack(xt::xtuple(x, y, z));
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, pointsT);
-    auto colliding_cells = geometry::compute_colliding_cells(
-        *mesh, cell_candidates, pointsT);
-
-    std::vector<int> cells;
-    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
-    auto points_on_proc = xt::empty<double>(sh0);
-    for (int i = 0; i < Nx*Nz; i++) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
-        points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
-        cells.push_back(link[0]);
-      }
-    }
-
-    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
-    std::size_t lsize = points_on_proc.shape(0);
-    xt::xtensor<double, 2> u_eval({lsize, 1});
-
-    double* uval;
-    double* pval = points_on_proc.data();
-
     // Time-stepping parameters
     double t = startTime;
     double tf = finalTime;
@@ -285,34 +239,6 @@ public:
         if (rank == 0) {
           std::cout << "t: " << t << ",\t Steps: " << step << "/" << nstep << std::endl;
         }
-      }
-
-      // Collect data for one period
-      if (t > 0.12 / c0_ + 6.0 / freq0_ && nstep_period < numStepPerPeriod) {
-        kernels::copy(*u_, *u_n->x());
-        u_n->x()->scatter_fwd();
-
-        // Function evaluation
-        u_n->eval(points_on_proc, cells, u_eval);
-        uval = u_eval.data();
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        // Write evaluation from each process to a single text file
-        for (int i = 0; i < size; i++) {
-          if (rank == i) {
-            fname = "/home/mabm4/rds/data/pressure_on_plane_" + 
-                    std::to_string(nstep_period) + ".txt";
-            std::ofstream txt_file(fname, std::ios_base::app);
-            for (std::size_t i = 0; i < lsize; i++) {
-              txt_file << *(pval + 3 * i) << ","
-                       << *(pval + 3 * i + 2) << ","
-                       << *(uval + i) << std::endl;
-            }
-            txt_file.close();
-          }
-          MPI_Barrier(MPI_COMM_WORLD);
-        }
-        nstep_period++;
       }
     }
 
