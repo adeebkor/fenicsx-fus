@@ -64,12 +64,16 @@ int main(int argc, char* argv[]) {
 
     if (rank == 0) {
       std::cout << "Problem type: planar" << std::endl;
+      std::cout << "Speed of sound: " << speedOfSound << std::endl;
+      std::cout << "Source frequency: " << sourceFrequency << std::endl;
+      std::cout << "Pressure amplitude: " << pressureAmplitude << std::endl;
+      std::cout << "Domain length: " << domainLength << std::endl;
       std::cout << "Polynomial basis degree: " << degreeOfBasis << std::endl;
       std::cout << "Minimum mesh size: " << meshSize << std::endl;
     }
 
     // Temporal parameters
-    double CFL = 0.64;
+    double CFL = 0.62;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
     double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
