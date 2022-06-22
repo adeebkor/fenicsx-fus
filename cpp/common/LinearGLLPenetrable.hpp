@@ -50,9 +50,9 @@ public:
     mt_cells = MTcells;
     mt_facets = MTfacets;
     V = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_a, "u", Mesh));
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
     V_DG = std::make_shared<fem::FunctionSpace>(
-        fem::create_functionspace(functionspace_form_forms_L, "c0", Mesh));
+        fem::create_functionspace(functionspace_form_forms_L, "c0", mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -78,6 +78,20 @@ public:
     T_ = 1.0 / freq0_;
     alpha_ = 4.0;
 
+    // Fill the speed of sound DG function with the appropriate values
+    auto cells_1 = mt_cells->find(1);
+    auto cells_2 = mt_cells->find(2);
+    _c0 = c0->x()->mutable_array();
+    std::for_each(cells_1.begin(), cells_1.end(),
+        [&](std::int32_t &i) { _c0[i] = c0_; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+        [&](std::int32_t &i) { _c0[i] = c1_; });
+    c0->x()->scatter_fwd();
+
+    io::XDMFFile file(MPI_COMM_WORLD, "domain.xdmf", "w");
+    file.write_mesh(*mesh);
+    file.write_function(*c0);
+
     // Create LHS form
     xtl::span<double> _u = u->x()->mutable_array();
     std::fill(_u.begin(), _u.end(), 1.0);
@@ -90,16 +104,6 @@ public:
     std::fill(_m.begin(), _m.end(), 0.0);
     fem::assemble_vector(_m, *a);
     m->scatter_rev(common::IndexMap::Mode::add);
-
-    // Fill the speed of sound DG function with the appropriate values
-    auto cells_1 = mt_cells->find(1);
-    auto cells_2 = mt_cells->find(2);
-    _c0 = c0->x()->mutable_array();
-    std::for_each(cells_1.begin(), cells_1.end(),
-        [&](std::int32_t &i) { _c0[i] = speedOfSound_0; });
-    std::for_each(cells_2.begin(), cells_2.end(),
-        [&](std::int32_t &i) { _c0[i] = speedOfSound_1; });
-    c0->x()->scatter_fwd();
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(
@@ -179,47 +183,6 @@ public:
   /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
     
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    int N = 2048;
-    double tol = 1e-6;
-
-    // Generate evaluate points
-    xt::xarray<double> zp = xt::linspace<double>(tol, 0.12, N);
-    zp.reshape({1, N});
-    auto xyp = xt::zeros<double>({2, N});
-    auto points = xt::vstack(xt::xtuple(xyp, zp));
-    auto pointsT = xt::transpose(points);
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, pointsT);
-    auto colliding_cells = geometry::compute_colliding_cells(
-        *mesh, cell_candidates, pointsT);
-
-    std::vector<int> cells;
-    xt::xtensor<double, 2>::shape_type sh0 = {1, 3};
-    auto points_on_proc = xt::empty<double>(sh0);
-    for (int i = 0; i < N; i++) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        auto p = xt::view(pointsT, i, xt::newaxis(), xt::all());
-        points_on_proc = xt::vstack(xt::xtuple(points_on_proc, p));
-        cells.push_back(link[0]);
-      }
-    }
-
-    points_on_proc = xt::view(points_on_proc, xt::drop(0), xt::all());
-    std::size_t lsize = points_on_proc.shape(0);
-    xt::xtensor<double, 2> u_eval({lsize, 1});
-
-    double* uval;
-    double* pval = points_on_proc.data();
-
     // Time-stepping parameters
     double t = startTime;
     double tf = finalTime;
@@ -294,39 +257,12 @@ public:
       t += dt;
       step += 1;
 
-      if (step % 10 == 0) {
+      if (step % 200 == 0) {
         if (rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
                     << "/" << nstep << std::endl;
         }
-      }
-
-      // Collect data for one period
-      if (t > 0.12 / c0_ + 6.0 / freq0_ && nstep_period < numStepPerPeriod) {
-        kernels::copy(*u_, *u_n->x());
-        u_n->x()->scatter_fwd();
-
-        // Function evaluation
-        u_n->eval(points_on_proc, cells, u_eval);
-        uval = u_eval.data();
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        // Write evaluation from each process to a single text file
-        for (int i = 0; i < size; i++) {
-          if (rank == i) {
-            fname = "/home/mabm4/rds/data/pressure_on_z_axis_" + 
-                    std::to_string(nstep_period) + ".txt";
-            std::ofstream txt_file(fname, std::ios_base::app);
-            for (std::size_t i = 0; i < lsize; i++) {
-              txt_file << *(pval + 3 * i + 2) << "," 
-                      << *(uval + i) << std::endl;
-            }
-            txt_file.close();
-          }
-          MPI_Barrier(MPI_COMM_WORLD);
-        }
-        nstep_period++;
       }
     }
 
@@ -356,8 +292,7 @@ private:
   std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<mesh::MeshTags<std::int32_t>> mt_cells, mt_facets;
   std::shared_ptr<fem::FunctionSpace> V, V_DG;
-  std::shared_ptr<fem::Function<double>> c0;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<fem::Function<double>> u, v, c0, g, u_n, v_n;
   std::shared_ptr<fem::Form<double>> a, L;
   std::shared_ptr<la::Vector<double>> m, b, c_0;
 

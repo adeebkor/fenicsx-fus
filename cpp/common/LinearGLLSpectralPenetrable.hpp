@@ -1,8 +1,7 @@
 #pragma once
 
 #include "forms.h"
-#include "spectral_mass_3d.hpp"
-#include "spectral_stiffness_3d.hpp"
+#include "spectral_stiffness_3d_inhomogenous.hpp"
 
 #include <fstream>
 #include <memory>
@@ -37,23 +36,33 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 } // namespace kernels
 
 template <int P>
-class LinearGLLSpectral {
+class LinearGLLSpectralPenetrable {
 public:
-  LinearGLLSpectral(std::shared_ptr<mesh::Mesh> Mesh,
-                    std::shared_ptr<mesh::MeshTags<std::int32_t>> Meshtags, double& speedOfSound,
-                    double& sourceFrequency, double& pressureAmplitude) {
+  LinearGLLSpectralPenetrable(std::shared_ptr<mesh::Mesh> Mesh,
+                              std::shared_ptr<mesh::MeshTags<std::int32_t>> MTcells,
+                              std::shared_ptr<mesh::MeshTags<std::int32_t>> MTfacets,
+                              double& speedOfSound_0, double& speedOfSound_1, double& speedOfSound_2,
+                              double& speedOfSound_3, double& speedOfSound_4,
+                              double& sourceFrequency, double& pressureAmplitude) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     mesh = Mesh;
+    mt_cells = MTcells;
+    mt_facets = MTfacets;
     V = std::make_shared<fem::FunctionSpace>(
         fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+    V_DG = std::make_shared<fem::FunctionSpace>(
+        fem::create_functionspace(functionspace_form_forms_L, "c0", mesh));
 
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
 
-    c0 = std::make_shared<fem::Constant<double>>(speedOfSound);
+    index_map_DG = V_DG->dofmap()->index_map;
+    bs_DG = V_DG->dofmap()->index_map_bs();
+
+    c0 = std::make_shared<fem::Function<double>>(V_DG);
     u = std::make_shared<fem::Function<double>>(V);
     v = std::make_shared<fem::Function<double>>(V);
     g = std::make_shared<fem::Function<double>>(V);
@@ -63,12 +72,32 @@ public:
     _g = g->x()->mutable_array();
 
     // Physical parameters
-    c0_ = speedOfSound;
+    c0_ = speedOfSound_0;
+    c1_ = speedOfSound_1;
+    c2_ = speedOfSound_2;
+    c3_ = speedOfSound_3;
+    c4_ = speedOfSound_4;
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
     w0_ = 2.0 * M_PI * freq0_;
     T_ = 1.0 / freq0_;
     alpha_ = 4.0;
+
+    // Fill the speed of sound DG function with the appropriate values
+    auto cells_1 = mt_cells->find(1);
+    auto cells_2 = mt_cells->find(2);
+    auto cells_3 = mt_cells->find(3);
+    auto cells_4 = mt_cells->find(4);
+    auto cells_5 = mt_cells->find(5);
+    auto cells_6 = mt_cells->find(6);
+    _c0 = c0->x()->mutable_array();
+    std::for_each(cells_1.begin(), cells_1.end(), [&](std::int32_t& i) { _c0[i] = c0_; });
+    std::for_each(cells_2.begin(), cells_2.end(), [&](std::int32_t& i) { _c0[i] = c1_; });
+    std::for_each(cells_3.begin(), cells_3.end(), [&](std::int32_t& i) { _c0[i] = c2_; });
+    std::for_each(cells_4.begin(), cells_4.end(), [&](std::int32_t& i) { _c0[i] = c3_; });
+    std::for_each(cells_5.begin(), cells_5.end(), [&](std::int32_t& i) { _c0[i] = c2_; });
+    std::for_each(cells_6.begin(), cells_6.end(), [&](std::int32_t& i) { _c0[i] = c4_; });
+    c0->x()->scatter_fwd();
 
     // Create LHS form
     xtl::span<double> _u = u->x()->mutable_array();
@@ -85,10 +114,10 @@ public:
 
     // Create RHS form
     L = std::make_shared<fem::Form<double>>(
-        fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}}, {{"c0", c0}},
-                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*Meshtags)}}));
+        fem::create_form<double>(*form_forms_L, {V}, {{"g", g}, {"v_n", v_n}, {"c0", c0}}, {},
+                                 {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facets)}}));
 
-    stiff = std::make_shared<StiffnessSpectral<double, P>>(V);
+    stiff = std::make_shared<StiffnessSpectralInhomogenous<double, P>>(V, c0);
     b = std::make_shared<la::Vector<double>>(index_map, bs);
     _b = b->mutable_array();
   }
@@ -160,7 +189,7 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(double& startTime, double& finalTime, double& timeStep) {
-    
+
     // Time-stepping parameters
     double t = startTime;
     double tf = finalTime;
@@ -252,29 +281,27 @@ public:
   std::size_t num_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int rank, size; // MPI rank and size
-  double c0_;     // speed of sound (m/s)
-  double freq0_;  // source frequency (Hz)
-  double p0_;     // pressure amplitude (Pa)
-  double w0_;     // angular frequency (rad/s)
-  double T_;      // period (s)
+  int rank, size;  // MPI rank and size
+  int bs, bs_DG;   // block size
+  double c0_, c1_, c2_, c3_, c4_; // speed of sound (m/s)
+  double freq0_;   // source frequency (Hz)
+  double p0_;      // source amplitude (Pa)
+  double w0_;      // angular frequency (rad/s)
+  double T_;       // period (s)
   double alpha_;
   double window_;
 
   std::shared_ptr<mesh::Mesh> mesh;
-  std::shared_ptr<fem::FunctionSpace> V;
-  std::shared_ptr<fem::Constant<double>> c0;
-  std::shared_ptr<fem::Function<double>> u, v, g, u_n, v_n;
+  std::shared_ptr<mesh::MeshTags<std::int32_t>> mt_cells, mt_facets;
+  std::shared_ptr<const common::IndexMap> index_map, index_map_DG;
+  std::shared_ptr<fem::FunctionSpace> V, V_DG;
+  std::shared_ptr<fem::Function<double>> u, v, c0, g, u_n, v_n;
   std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<la::Vector<double>> m, b;
+  std::shared_ptr<la::Vector<double>> m, b, c_0;
 
-  xtl::span<double> _g, out;
+  xtl::span<double> _c0, _g, out;
   xtl::span<const double> m_, b_;
   xtl::span<double> _m, _b;
 
-  std::shared_ptr<const common::IndexMap> index_map;
-  int bs;
-
-  std::shared_ptr<MassSpectral<double, P>> mass;
-  std::shared_ptr<StiffnessSpectral<double, P>> stiff;
+  std::shared_ptr<StiffnessSpectralInhomogenous<double, P>> stiff;
 };
