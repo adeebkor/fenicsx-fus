@@ -66,6 +66,7 @@ public:
 
     // Physical parameters
     c0_ = speedOfSound;
+    delta_ = diffusivityOfSound;
     freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
     w0_ = 2.0 * M_PI * freq0_;
