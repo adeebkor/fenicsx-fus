@@ -66,7 +66,7 @@ public:
 
     // Physical parameters
     c0_ = speedOfSound;
-    freq0_ = sourceFrequecy;
+    freq0_ = sourceFrequency;
     p0_ = pressureAmplitude;
     w0_ = 2.0 * M_PI * freq0_;
     T_ = 1.0 / freq0_;
@@ -131,8 +131,164 @@ public:
       window_ = 1.0;
       dwindow_ = 0.0;
     }
+
+    // Update boundary condition
+    std::fill(_g.begin(), _g.end(), window_ * p0_ * w0_ / c0_ * cos(w0_ * t));
+    std::fill(_dg.begin(), _dg.end(), dwindow_ * p0_ * w0_ / c0_ * cos(w0_ * t) 
+                                      - window_ * p0_ * w0_*w0_ / c0_ * sin(w0_ * t));
+
+    // Update fields    
+    u->scatter_fwd();
+    kernels::copy(*u, *u_n->x());
+
+    v->scatter_fwd();
+    kernels::copy(*v, *v_n->x());
+
+    // Assemble RHS
+    std::fill(_b.begin(), _b.end(), 0.0);
+    fem::assemble_vector(_b, *L);
+    b->scatter_rev(common::IndexMap::Mode::add);
+
+    // Solve
+    // TODO: Divide is more expensive than multiply.
+    // We should store the result of 1/m in a vector and apply and element wise vector
+    // multiplication, since m doesn't change for linear wave propagation.
+    {
+      out = result->mutable_array();
+      b_ = b->array();
+      m_ = m->array();
+
+      // Element wise division
+      // out[i] = b[i]/m[i]
+      std::transform(b_.begin(), b_.end(), m_.begin(), out.begin(),
+                     [](const double& bi, const double& mi) { return bi / mi; });
+    }
   }
+
+  /// Runge-Kutta 4th order solver
+  /// @param[in] startTime initial time of the solver
+  /// @param[in] finalTime final time of the solver
+  /// @param[in] timeStep  time step size of the solver
+  void rk4(double& startTime, double& finalTime, double& timeStep) {
+
+    // Time-stepping parameters
+    double t = startTime;
+    double tf = finalTime;
+    double dt = timeStep;
+    int step = 0;
+    int nstep = (finalTime - startTime) / timeStep + 1;
+    int numStepPerPeriod = T_ / dt + 1;
+    int nstep_period = 0;
+
+    // Time-stepping vectors
+    std::shared_ptr<la::Vector<double>> u_, v_, un, vn, u0, v0, ku, kv;
+
+    // Placeholder vectors at time step n
+    u_ = std::make_shared<la::Vector<double>>(index_map, bs);
+    v_ = std::make_shared<la::Vector<double>>(index_map, bs);
+
+    kernels::copy(*u_n->x(), *u_);
+    kernels::copy(*v_n->x(), *v_);
+
+    // Placeholder vectors at intermediate time step n
+    un = std::make_shared<la::Vector<double>>(index_map, bs);
+    vn = std::make_shared<la::Vector<double>>(index_map, bs);
+
+    // Placeholder vectors at start of time step
+    u0 = std::make_shared<la::Vector<double>>(index_map, bs);
+    v0 = std::make_shared<la::Vector<double>>(index_map, bs);
+
+    // Placeholder at k intermediate time step
+    ku = std::make_shared<la::Vector<double>>(index_map, bs);
+    kv = std::make_shared<la::Vector<double>>(index_map, bs);
+
+    kernels::copy(*u_, *ku);
+    kernels::copy(*v_, *kv);
+
+    // Runge-Kutta timestepping data
+    int n_RK = 4;
+    xt::xarray<double> a_runge{0.0, 0.5, 0.5, 1.0};
+    xt::xarray<double> b_runge{1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0};
+    xt::xarray<double> c_runge{0.0, 0.5, 0.5, 1.0};
+
+    // RK variables
+    double tn;
+
+    while (t < tf) {
+      dt = std::min(dt, tf - t);
+
+      // Store solution at start of time step
+      kernels::copy(*u_, *u0);
+      kernels::copy(*v_, *v0);
+
+      // Runge-Kutta step
+      for (int i = 0; i < n_RK; i++) {
+        kernels::copy(*u0, *un);
+        kernels::copy(*v0, *vn);
+
+        kernels::axpy(*un, dt * a_runge(i), *ku, *un);
+        kernels::axpy(*vn, dt * a_runge(i), *kv, *vn);
+
+        // RK time evaluation
+        tn = t + c_runge(i) * dt;
+
+        // Compute RHS vector
+        f0(tn, un, vn, ku);
+        f1(tn, un, vn, kv);
+
+        // Update solution
+        kernels::axpy(*u_, dt * b_runge(i), *ku, *u_);
+        kernels::axpy(*v_, dt * b_runge(i), *kv, *v_);
+      }
+
+      // Update time
+      t += dt;
+      step += 1;
+
+      if (step % 200 == 0) {
+        if (rank == 0) {
+          std::cout << "t: " << t 
+                    << ",\t Steps: " << step 
+                    << "/" << nstep << std::endl;
+        }
+      }
+    }
+
+    // Prepare solution at final time
+    kernels::copy(*u_, *u_n->x());
+    kernels::copy(*v_, *v_n->x());
+    u_n->x()->scatter_fwd();
+    v_n->x()->scatter_fwd();
+
+  }
+
+  std::size_t num_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
+private:
+  int rank, size;  // MPI rank and size
+  double c0_;      // speed of sound (m/s)
+  double delta_;   // diffusivity of sound (m^2/s)
+  double freq0_;   // source frequency (Hz)
+  double p0_;      // pressure amplitude (Pa)
+  double w0_;      // angular frequency (rad/s)
+  double T_;       // period (s)
+  double alpha_;
+  double window_, dwindow_;
+
+  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::Constant<double>> c0, delta;
+  std::shared_ptr<fem::Function<double>> u, v, g, dg, u_n, v_n;
+  std::shared_ptr<fem::Form<double>> a, L;
+  std::shared_ptr<la::Vector<double>> m, b;
+
+  xtl::span<double> _g, _dg, out;
+  xtl::span<const double> m_, b_;
+  xtl::span<double> _m, _b;
+
+  std::shared_ptr<const common::IndexMap> index_map;
+  int bs;
   
-
-
-}
+};
