@@ -297,7 +297,7 @@ private:
   std::shared_ptr<fem::FunctionSpace> V, V_DG;
   std::shared_ptr<fem::Function<double>> u, v, c0, g, u_n, v_n;
   std::shared_ptr<fem::Form<double>> a, L;
-  std::shared_ptr<la::Vector<double>> m, b, c_0;
+  std::shared_ptr<la::Vector<double>> m, b;
 
   xtl::span<double> _c0, _g, out;
   xtl::span<const double> m_, b_;
