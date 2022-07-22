@@ -13,11 +13,11 @@
 
 namespace {
   template <typename T, int P>
-  static inline void transform_spectral(T* __restrict__ G, T* __restrict__ fw0, 
-                                        T* __restrict__ fw1, T* __restrict__ fw2,
-                                        T& c0) {
+  static inline void transform_spectral(T& coeff, T* __restrict__ G,
+                                        T* __restrict__ fw0, 
+                                        T* __restrict__ fw1, 
+                                        T* __restrict__ fw2) {
                     
-    double coeff = -1.0 * (c0 * c0);
     constexpr int nq = (P + 1) * (P + 1) * (P + 1);
     for (int iq = 0; iq < nq; iq++) {
       const double* _G = G + iq * 6;
@@ -35,10 +35,10 @@ template <typename T, int P>
 class StiffnessSpectralInhomogenous {
 public:
   StiffnessSpectralInhomogenous(std::shared_ptr<fem::FunctionSpace>& V,
-                                std::shared_ptr<fem::Function<T>>& speedOfSound) : _dofmap(0) {
+                                std::shared_ptr<fem::Function<T>>& coefficient) : _dofmap(0) {
 
     // Speed of sound vector
-    _c0 = speedOfSound->x()->array().data();
+    _coeff = coefficient->x()->array().data();
 
     // Create map between basis degree and quadrature degree
     std::map<int, int> qdegree;
@@ -86,7 +86,7 @@ public:
     T* fw0 = _fw0.data();
     T* fw1 = _fw1.data();
     T* fw2 = _fw2.data();
-    T c0;
+    T coeff;
 
     // Reusable buffer for contraction
     Buffer<T, N, N> buffer;
@@ -120,8 +120,8 @@ public:
 
       // Apply transform
       T* G = _G.data() + cell * _num_quads * 6;
-      c0 = _c0[cell];
-      transform_spectral<T, P>(G, fw0, fw1, fw2, c0);
+      coeff = _coeff[cell];
+      transform_spectral<T, P>(coeff, G, fw0, fw1, fw2);
 
       // Apply contraction in the x-direction
       buffer.zero();
@@ -185,5 +185,5 @@ private:
   std::vector<std::int32_t> _perm_dofmap;
 
   // Speed of sound data
-  const T* _c0;
+  const T* _coeff;
 };
