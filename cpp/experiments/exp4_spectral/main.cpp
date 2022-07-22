@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Temporal parameters
-    double CFL = 0.65;
+    double CFL = 0.62;
     double timeStepSize = CFL * meshSize / (speedOfSound * pow(degreeOfBasis, 2));
     double startTime = 0.0;
     double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
