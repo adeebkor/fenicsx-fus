@@ -13,10 +13,10 @@
 
 namespace {
   template <typename T, int P>
-  static inline void transform_spectral(T* __restrict__ G, T* __restrict__ fw0, 
-                                        T* __restrict__ fw1, T* __restrict__ fw2) {
-    double c0 = 1500.0;
-    double coeff = - 1.0 * (c0 * c0);
+  static inline void transform_spectral(T& coeff, T* __restrict__ G, 
+                                        T* __restrict__ fw0, 
+                                        T* __restrict__ fw1, 
+                                        T* __restrict__ fw2) {
     constexpr int nq = (P + 1) * (P + 1) * (P + 1);
     for (int iq = 0; iq < nq; iq++) {
       const double* _G = G + iq * 6;
@@ -33,7 +33,7 @@ namespace {
 template <typename T, int P>
 class StiffnessSpectral {
 public:
-  StiffnessSpectral(std::shared_ptr<fem::FunctionSpace>& V) : _dofmap(0) {
+  StiffnessSpectral(std::shared_ptr<fem::FunctionSpace>& V, T& coeff) : _dofmap(0) {
     // Create map between basis degree and quadrature degree
     std::map<int, int> qdegree;
     qdegree[2] = 3;
@@ -45,6 +45,9 @@ public:
     qdegree[8] = 14;
     qdegree[9] = 16;
     qdegree[10] = 18;
+
+    // Coefficient in the stiffness operator
+    coeff_ = coeff;
 
     // Get mesh and mesh attributes
     std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
@@ -114,7 +117,7 @@ public:
 
       // Apply transform
       T* G = _G.data() + cell * _num_quads * 6;
-      transform_spectral<T, P>(G, fw0, fw1, fw2);
+      transform_spectral<T, P>(coeff_, G, fw0, fw1, fw2);
 
       // Apply contraction in the x-direction
       buffer.zero();
@@ -142,6 +145,9 @@ public:
   }
 
 private:
+  // Coefficient in the stiffness operator
+  T coeff_;
+
   // Number of dofs in each direction
   static constexpr int N = P + 1;
 
