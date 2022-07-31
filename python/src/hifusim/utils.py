@@ -44,7 +44,9 @@ def compute_eval_params(mesh, points):
     return points_on_proc, cells
 
 
-def compute_diffusivity_of_sound(frequency: float, speed: float, attenuationdB: float) -> float:
+def compute_diffusivity_of_sound(frequency: float, speed: float,
+                                 attenuationdB: float) -> float:
     attenuationNp = attenuationdB / 20 * np.log(10)  # (Np/m/MHz^2)
-    diffusivity = 2 * attenuationNp * speed * speed * speed / frequency / frequency
+    diffusivity = 2 * attenuationNp * speed * speed * speed / \
+        frequency / frequency
     return diffusivity
