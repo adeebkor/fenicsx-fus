@@ -11,6 +11,7 @@ mesh/*.geo
 *.pvd
 *.c
 *.h
+*.avi
 *u_t.h5
 *u_t.xdmf
 
