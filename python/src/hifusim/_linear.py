@@ -7,7 +7,6 @@ import basix
 import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
-from dolfinx.io import VTKFile
 from dolfinx.mesh import locate_entities
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
@@ -140,7 +139,7 @@ class LinearGLL:
         # Solve
         result.pointwiseDivide(self.b, self.m)
 
-    def rk4(self, t0: float, tf: float, dt: float, write_step_range: list, folder: str):
+    def rk4(self, t0: float, tf: float, dt: float):
         """
         Runge-Kutta 4th order solver
 
@@ -180,10 +179,6 @@ class LinearGLL:
         b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
         c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
-        # VTK output
-        with VTKFile(MPI.COMM_WORLD, f"{folder}/u.pvd", "w") as vtk:
-            vtk.write_mesh(self.mesh)
-
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
@@ -220,9 +215,6 @@ class LinearGLL:
             if step % 10 == 0:
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                     t, step, nstep))
-
-            if step > write_step_range[0] and step < write_step_range[1]:
-                vtk.write_function(self.u_n, t)
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                        mode=PETSc.ScatterMode.FORWARD)
@@ -969,7 +961,7 @@ class LinearGLLPML:
         # Solve
         result.pointwiseDivide(self.b, self.m)
 
-    def rk4(self, t0: float, tf: float, dt: float, write_step_range: list, folder: str):
+    def rk4(self, t0: float, tf: float, dt: float):
         """
         Runge-Kutta 4th order solver
 
@@ -1009,10 +1001,6 @@ class LinearGLLPML:
         b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
         c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
-        # VTK output
-        with VTKFile(MPI.COMM_WORLD, f"{folder}/u.pvd", "w") as vtk:
-            vtk.write_mesh(self.mesh)
-
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
@@ -1050,9 +1038,6 @@ class LinearGLLPML:
                 if self.rank == 0:
                     PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                         t, step, nstep))
-
-            if step > write_step_range[0] and step < write_step_range[1]:
-                vtk.write_function(self.u_n, t)
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                        mode=PETSc.ScatterMode.FORWARD)
