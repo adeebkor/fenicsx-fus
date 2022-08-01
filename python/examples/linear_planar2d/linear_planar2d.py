@@ -47,14 +47,12 @@ MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
 # Temporal parameters
-CFL = 0.4
+CFL = 0.62
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-# domainLength / speedOfSound + 8.0 / sourceFrequency
-nstep = 1750
-finalTime = nstep * timeStepSize
+finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 if mpi_rank == 0:
@@ -76,4 +74,4 @@ model = LinearGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize, [1249, 1750], "sol")
+model.rk4(startTime, finalTime, timeStepSize)
