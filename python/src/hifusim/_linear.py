@@ -19,6 +19,10 @@ class LinearGLL:
     """
 
     def __init__(self, mesh, meshtags, k, c0, freq0, p0):
+
+        self.mpi_size = MPI.COMM_WORLD.size
+        self.mpi_rank = MPI.COMM_WORLD.rank
+
         self.mesh = mesh
 
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
@@ -157,6 +161,32 @@ class LinearGLL:
         step : number of RK steps
         """
 
+        # ---------------------------------------------------------------------
+        # Computing function evaluation parameters
+
+        N = 2048
+        tol = 1e-6
+
+        x = np.linspace(tol, 0.12-tol, N)
+        points = np.zeros((3, N))
+        points[0] = x
+
+        from dolfinx import geometry
+        bb_tree = geometry.BoundingBoxTree(self.mesh, self.mesh.topology.dim)
+
+        cells = []
+        points_on_proc = []
+        cell_candidates = geometry.compute_collisions(bb_tree, points.T)
+        colliding_cells = geometry.compute_colliding_cells(
+            self.mesh, cell_candidates, points.T)
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                points_on_proc.append(point)
+                cells.append(colliding_cells.links(i)[0])
+
+        points_on_proc = np.array(points_on_proc, dtype=float)
+        # ---------------------------------------------------------------------
+
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
         v_ = self.v_n.vector.copy()
@@ -182,6 +212,8 @@ class LinearGLL:
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
+        numStepPerPeriod = int(self.T / dt + 1)
+        step_period = 0
         while t < tf:
             dt = min(dt, tf-t)
 
@@ -215,6 +247,26 @@ class LinearGLL:
             if step % 10 == 0:
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                     t, step, nstep))
+
+            # Collect data for one period
+            if (t > 0.12 / self.c0 + 6.0 / self.freq and step_period < numStepPerPeriod):
+                u_.copy(result=self.u_n.vector)
+
+                # Function evalution
+                uval = self.u_n.eval(points_on_proc, cells)
+                MPI.COMM_WORLD.Barrier()
+
+                # Write evaluation from each process to a single text file
+                for i in range(self.mpi_size):
+                    if (self.mpi_rank == i):
+                        fname = f"data/pressure_on_z_axis_{step_period}.txt"
+                        if points_on_proc.shape[0] != 0:
+                            vals = np.hstack((points_on_proc[:, [0]], uval))
+                            with open(fname, "a") as file:
+                                np.savetxt(file, vals, delimiter=",",
+                                           fmt="%.9f,%.4f")
+                    MPI.COMM_WORLD.Barrier()
+                step_period += 1
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
                        mode=PETSc.ScatterMode.FORWARD)
