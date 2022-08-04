@@ -5,6 +5,8 @@ cpp/Fastor/
 
 mesh/*.py
 mesh/*.geo
+*sol/
+*data*/
 *.png
 *.pvtu
 *.vtu
