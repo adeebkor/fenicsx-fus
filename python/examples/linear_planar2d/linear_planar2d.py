@@ -1,9 +1,9 @@
 #
 # .. _linear_planar2d:
 #
-# Linear solver for the 2D planewave problem
+# Linear solver for the 2D planar transducer problem
 # ==========================================
-# Copyright (C) 2021 Adeeb Arif Kor
+# Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
@@ -47,13 +47,18 @@ MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
 # Temporal parameters
-CFL = 0.62
+CFL = 0.4
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
+vtk_output_range = [
+    int((domainLength / speedOfSound - 0.0 / sourceFrequency)/timeStepSize) + 1,
+    int((domainLength / speedOfSound + 4.0 / sourceFrequency)/timeStepSize) + 1
+]
+
 
 if mpi_rank == 0:
     print(f"Problem type: Planar 2D", flush=True)
@@ -74,4 +79,4 @@ model = LinearGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize)
+model.rk4(startTime, finalTime, timeStepSize, vtk_output_range, "sol")
