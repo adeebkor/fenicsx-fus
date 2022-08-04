@@ -25,7 +25,7 @@ period = 1 / sourceFrequency  # (s)
 
 # Material parameters
 speedOfSound = 1500  # (m/s)
-attenuationCoefficientdB = 100.0  # (dB/m)
+attenuationCoefficientdB = 1.0  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
     sourceFrequency, speedOfSound, attenuationCoefficientdB)
 
@@ -57,9 +57,7 @@ timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-# domainLength / speedOfSound + 8.0 / sourceFrequency
-nstep = 1750
-finalTime = nstep * timeStepSize
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 if mpi_rank == 0:
@@ -83,4 +81,4 @@ model = LinearGLLPML(mesh, mt, degreeOfBasis, speedOfSound, diffusivityOfSound,
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize, [1249, 1750], "sol")
+model.rk4(startTime, finalTime, timeStepSize)
