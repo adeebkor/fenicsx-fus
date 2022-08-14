@@ -5,7 +5,7 @@ from petsc4py import PETSc
 import basix
 import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
-from dolfinx.petsc import assemble_vector
+from dolfinx.fem.petsc import assemble_vector
 from ufl import TestFunction, Measure, inner, grad, dx
 
 
