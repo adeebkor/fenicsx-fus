@@ -32,6 +32,7 @@ class LossyGLL:
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
         self.g = Function(self.V)
+        self.dg = Function(self.V)
         self.u_n = Function(self.V)
         self.v_n = Function(self.V)
 
@@ -41,6 +42,7 @@ class LossyGLL:
         # Physical parameters
         self.c0 = c0
         self.delta0 = delta0
+        self.freq = freq0
         self.w0 = 2 * np.pi * freq0
         self.p0 = p0
         self.T = 1 / freq0  # period
@@ -68,9 +70,9 @@ class LossyGLL:
                      * ds(1, metadata=md)
                      - 1 / c0 * inner(self.v_n, self.v)
                      * ds(2, metadata=md))
-            - self.delta * inner(grad(self.v_n), grad(self.v))
+            - delta0 * inner(grad(self.v_n), grad(self.v))
             * dx(metadata=md)
-            + self.delta * inner(self.dg, self.v)
+            + delta0 * inner(self.dg, self.v)
             * ds(1, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
