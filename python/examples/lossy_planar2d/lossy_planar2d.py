@@ -8,7 +8,7 @@
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.io import XDMFFile
+from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
 from hifusim import LossyGLL, compute_diffusivity_of_sound
@@ -24,7 +24,7 @@ period = 1 / sourceFrequency  # (s)
 
 # Material parameters
 speedOfSound = 1500  # (m/s)
-attenuationCoefficientdB = 100.0  # (dB/m)
+attenuationCoefficientdB = 1.0  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
     sourceFrequency, speedOfSound, attenuationCoefficientdB)
 
@@ -50,17 +50,18 @@ MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
 # Temporal parameters
-CFL = 0.4
+CFL = 0.35
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
 startTime = 0.0
-finalTime = 50 * timeStepSize  # domainLength / speedOfSound + 4.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planar 2D", flush=True)
+    print(f"Problem type: Planar 2D (Lossy)", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
+    print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
     print(f"Domain length: {domainLength}", flush=True)
@@ -77,4 +78,7 @@ model = LossyGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize)
+model.rk4(startTime, finalTime, timeStepSize, [0, 1000], "sol")
+
+# with VTXWriter(MPI.COMM_WORLD, "out_high_order.bp", [sol[0]]) as f:
+#     f.write(0.0)
