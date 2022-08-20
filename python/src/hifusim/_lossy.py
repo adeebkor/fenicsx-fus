@@ -151,7 +151,8 @@ class LossyGLL:
         # Solve
         result.pointwiseDivide(self.b, self.m)
 
-    def rk4(self, t0: float, tf: float, dt: float, write_step_range: list, folder: str):
+    def rk4(self, t0: float, tf: float, dt: float, write_step_range: list,
+            folder: str):
         """
         Runge-Kutta 4th order solver
 
@@ -258,7 +259,8 @@ class LossyGLL:
                     t, step, nstep))
 
             # Collect data for one period
-            if (t > 0.12 / self.c0 + 2.0 / self.freq and step_period < numStepPerPeriod):
+            if (t > 0.12 / self.c0 + 2.0 / self.freq and
+                    step_period < numStepPerPeriod):
                 u_.copy(result=self.u_n.vector)
 
                 # Function evalution
