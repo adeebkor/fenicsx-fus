@@ -1,6 +1,7 @@
 from .utils import compute_eval_params, compute_diffusivity_of_sound  # noqa
 from ._analytical import SoundHardExact2D, SoundSoftExact2D, PenetrableExact2D  # noqa
-from ._linear import Linear, LinearGLL, LinearGLLSciPy, LinearInhomogenousGLL, LinearGLLPML  # noqa
+from ._linear import (Linear, LinearGLL, LinearGLLSciPy, LinearInhomogenousGLL,
+    LinearGLLPML)  # noqa
 from ._lossy import LossyGLL  # noqa
 from ._scatterer import (
     LinearSoundSoftGLL, LinearSoundHardGLL, LinearPenetrableGLL)  # noqa
