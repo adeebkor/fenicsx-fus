@@ -216,7 +216,7 @@ class LinearGLL:
             t += dt
             step += 1
 
-            if step % 10 == 0:
+            if step % 100 == 0:
                 PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
                     t, step, nstep))
 
@@ -227,7 +227,7 @@ class LinearGLL:
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
 
-        return self.u_n, self.v_n, t, step
+        return self.u_n, self.v_n, t
 
 
 class LinearGLLSciPy:
