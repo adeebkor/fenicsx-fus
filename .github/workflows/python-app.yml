@@ -18,7 +18,7 @@ jobs:
     # container: dolfinx/dolfinx
     # steps:
     #   - uses: actions/checkout@v2
-    container: dolfinx/dev-env
+    container: dolfinx/dolfinx:stable
     env:
       CC: clang
       CXX: clang++
