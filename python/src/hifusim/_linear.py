@@ -8,7 +8,6 @@ import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from dolfinx.io import VTXWriter, VTKFile
-from dolfinx.mesh import locate_entities
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
 
@@ -234,7 +233,8 @@ class LinearGLL:
 
             # -----------------------------------------------------------------
             # Collect data for one period
-            if (t > 0.12 / self.c0 + 2.0 / self.freq and step_period < numStepPerPeriod):
+            if (t > 0.12 / self.c0 + 2.0 / self.freq and
+                    step_period < numStepPerPeriod):
                 u_.copy(result=self.u_n.vector)
                 vtx.write(t)
                 vtk.write_function(self.u_n, t)
@@ -251,7 +251,6 @@ class LinearGLL:
         # ---------------------------------------------------------------------
         vtx.close()
         # ---------------------------------------------------------------------
-
 
         return self.u_n, self.v_n, t
 
@@ -1059,7 +1058,8 @@ class LinearHeterogenousGLL:
 
             # -----------------------------------------------------------------
             # Collect data for one period
-            if (t > 0.06 / self.c0 - 1 / self.freq and t < 0.06 / self.c0 + 6 / self.freq):
+            if (t > 0.06 / self.c0 - 1 / self.freq and
+                    t < 0.06 / self.c0 + 6 / self.freq):
                 u_.copy(result=self.u_n.vector)
                 vtx.write(t)
                 vtk.write_function(self.u_n, t)
@@ -1126,14 +1126,16 @@ class LinearGLLPML:
         # self.delta.x.array[meshtags[0].values == 2] = np.full(
         #     np.count_nonzero(meshtags[0].values == 2), delta0)
         self.delta = Function(self.V)
-        self.delta.interpolate(lambda x: 
-            np.piecewise(x[0], [x[0] < 0.12, x[0] >= 0.12], 
-                         [0.0, lambda x: delta0 / 5 / self.lmbda * x - 
-                         0.12 * delta0 / 5 / self.lmbda]))
+        self.delta.interpolate(lambda x:
+                               np.piecewise(x[0], [x[0] < 0.12, x[0] >= 0.12],
+                                            [0.0,
+                                             lambda x: delta0 / 5 /
+                                             self.lmbda * x - 0.12 * delta0
+                                             / 5 / self.lmbda]))
         # self.delta.interpolate(lambda x:
         #     np.piecewise(x[0], [x[0] < 0.12, x[0] >= 0.12],
-        #                  [0.0, 
-        #                  lambda x: 25*self.lmbda**2/delta0 * (x - 
+        #                  [0.0,
+        #                  lambda x: 25*self.lmbda**2/delta0 * (x -
         #                                                       0.12)**2]))
         # with VTXWriter(self.mesh.comm, "delta.bp", self.delta) as out_delta:
         #     out_delta.write(0.0)
@@ -1331,7 +1333,8 @@ class LinearGLLPML:
 
             # -----------------------------------------------------------------
             # Collect data for one period
-            if (t > 0.12 / self.c0 + 2.0 / self.freq and step_period < numStepPerPeriod):
+            if (t > 0.12 / self.c0 + 2.0 / self.freq and
+                    step_period < numStepPerPeriod):
                 u_.copy(result=self.u_n.vector)
                 vtx.write(t)
                 vtk.write_function(self.u_n, t)
@@ -1351,13 +1354,14 @@ class LinearGLLPML:
 
         return self.u_n, self.v_n, t
 
+
 class LinearGLL2:
     """
     FE solver the linear second order wave equation.
 
     - includes density
 
-    This solver uses GLL lattice and GLL quadrature in such a way that it 
+    This solver uses GLL lattice and GLL quadrature in such a way that it
     produces a diagonal mass matrix.
 
     """
@@ -1402,9 +1406,9 @@ class LinearGLL2:
         # JIT compilation parameters
         jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
 
-        # Define variational 
+        # Define variational
         self.u.x.array[:] = 1.0
-        self.a = form(1 / self.rho0 / self.c0 / self.c0 
+        self.a = form(1 / self.rho0 / self.c0 / self.c0
                       * inner(self.u, self.v) * dx(metadata=md),
                       jit_params=jit_params)
         self.m = assemble_vector(self.a)
@@ -1803,5 +1807,3 @@ class LinearHeterogenousGLL2:
         v_.copy(result=self.v_n.vector)
 
         return self.u_n, self.v_n, t
-
-
