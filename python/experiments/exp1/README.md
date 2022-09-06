@@ -1,0 +1,1 @@
+The experiment in this folder runs the 1D linear wave equation solver. This experiment aims to collect data to show the effect of windowing in the solver. This can be verify by looking at the convergence rate of the finite element solution.
