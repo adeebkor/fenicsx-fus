@@ -73,5 +73,5 @@ def test_diagonal(dimension, p):
     # Get nonzero indices
     idx = np.nonzero(A.to_dense())
 
-    assert(np.allclose(idx[0], np.arange(ndof)) and
-           np.allclose(idx[1], np.arange(ndof)))
+    assert (np.allclose(idx[0], np.arange(ndof)) and
+            np.allclose(idx[1], np.arange(ndof)))

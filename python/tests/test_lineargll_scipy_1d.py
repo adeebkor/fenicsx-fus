@@ -88,4 +88,4 @@ def test_linear_scipy_L2(degree, epw):
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
-    assert(L2_error < 1E-3)
+    assert (L2_error < 1E-3)

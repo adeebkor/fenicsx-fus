@@ -103,4 +103,4 @@ def test_westervelt_L2(degree, epw):
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
-    assert(L2_error < 1E-1)
+    assert (L2_error < 1E-1)
