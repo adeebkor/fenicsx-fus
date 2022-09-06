@@ -7,7 +7,7 @@ mesh/*.py
 mesh/*.geo
 *sol/
 *vtk/
-*data*/
+*data*
 *.bp
 *.png
 *.pvtu
