@@ -1,6 +1,7 @@
 .vscode/
 fenicsx/
 cpp/Fastor/
+python/src/hifusim.egg-info
 *__pycache__/
 
 mesh/*.py
