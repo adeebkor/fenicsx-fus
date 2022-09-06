@@ -34,39 +34,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: Get Basix and install
-      uses: actions/checkout@v2
-      with:
-        path: ./basix
-        repository: FEniCS/basix
-        ref: main
-        
-    - name: Install FEniCS Python components
-      run: |
-        cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -B build-basix -S ./basix/cpp
-        cmake --build build-basix
-        cmake --install build-basix
-        python3 -m pip install ./basix/python
-        python3 -m pip install git+https://github.com/FEniCS/ufl.git
-        python3 -m pip install git+https://github.com/FEniCS/ffcx.git
-    - name: Install dolfinx
-      uses: actions/checkout@v2
-      with:
-        path: ./dolfinx
-        repository: FEniCS/dolfinx
-        ref: main
-    
-    - name: Configure C++ (dolfinx)
-      run: cmake -G Ninja -DCMAKE_BUILD_TYPE=Developer -B build-dolfinx -S ./dolfinx/cpp/
-      
-    - name: Build and install C++ library (dolfinx)
-      run: |
-        cmake --build build-dolfinx
-        cmake --install build-dolfinx
-    
-    - name: Build Python interface (dolfinx)
-      run: python3 -m pip -v install ./dolfinx/python/
-
     - name: Install hifusim package
       run: python3 -m pip -v install python/ --no-cache-dir
 
