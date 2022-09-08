@@ -15,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLLPML, compute_diffusivity_of_sound
+from hifusim import LinearGLLSponge, compute_diffusivity_of_sound
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -28,6 +28,7 @@ period = 1 / sourceFrequency  # (s)
 
 # Material parameters
 speedOfSound = 1500.0  # (m/s)
+density = 1000.0  # (kg/m^3)
 attenuationCoefficientdB = 1.0  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
     sourceFrequency, speedOfSound, attenuationCoefficientdB)
@@ -65,7 +66,7 @@ finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planewave 2D (sponge)", flush=True)
+    print("Problem type: Planewave 2D (sponge)", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
@@ -78,12 +79,13 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLLPML(mesh, mt, degreeOfBasis, speedOfSound, diffusivityOfSound,
-                     sourceFrequency, sourceAmplitude)
+model = LinearGLLSponge(mesh, mt, degreeOfBasis, speedOfSound, density,
+                        diffusivityOfSound, sourceFrequency, sourceAmplitude)
 
 # Solve
 model.init()
 u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+
 
 # Best approximation
 class Analytical:
@@ -102,14 +104,14 @@ class Analytical:
 
         return val
 
-V_e = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
-u_e = Function(V_e)
-u_e.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, 
-                           tf))
 
+V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
+u_ba = Function(V_ba)
+u_ba.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude,
+                            tf))
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)
 
-with VTXWriter(mesh.comm, "output_analytical.bp", u_e) as f_e:
-    f_e.write(0.0)
+with VTXWriter(mesh.comm, "output_analytical.bp", u_ba) as f_ba:
+    f_ba.write(0.0)

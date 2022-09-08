@@ -15,8 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import (LinearHeterogenousGLL, LinearHeterogenous,
-                     LinearHeterogenousGLL2)
+from hifusim import LinearHeterogenousGLL
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -29,13 +28,12 @@ period = 1 / sourceFrequency  # (s)
 
 # Material parameters
 speedOfSoundWater = 1500  # (m/s)
-speedOfSoundBone = 2800 # (m/s)
+speedOfSoundBone = 2800  # (m/s)
 densityWater = 1000  # (kg/m^3)
 densityBone = 1850  # (kg/m^3)
-refractiveIndex = speedOfSoundWater / speedOfSoundBone
 
 # Domain parameters
-domainLength = 0.12 # (m)
+domainLength = 0.12  # (m)
 
 # FE parameters
 degreeOfBasis = 4
@@ -67,7 +65,7 @@ finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planewave 2D (heterogenous)", flush=True)
+    print("Problem type: Planewave 2D (heterogenous)", flush=True)
     print(f"Speed of sound (Water): {speedOfSoundWater}", flush=True)
     print(f"Speed of sound (Bone): {speedOfSoundBone}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
@@ -81,13 +79,9 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-# model = LinearHeterogenous(mesh, mt, degreeOfBasis, speedOfSoundWater, 
-                            #   speedOfSoundBone, sourceFrequency,
-                            #   sourceAmplitude)
-model = LinearHeterogenousGLL2(mesh, mt, degreeOfBasis,
-                               speedOfSoundWater, speedOfSoundBone,
-                               densityWater, densityBone,
-                               sourceFrequency, sourceAmplitude)
+model = LinearHeterogenousGLL(
+    mesh, mt, degreeOfBasis, speedOfSoundWater, speedOfSoundBone,
+    densityWater, densityBone, sourceFrequency, sourceAmplitude)
 
 # Solve
 model.init()
@@ -95,6 +89,7 @@ u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as out:
     out.write(0.0)
+
 
 # Best approximation
 class Wave:
@@ -118,12 +113,16 @@ class Wave:
         self.t = t
 
     def field(self, x):
-        x0 = x[0] + 0.j
-        val = np.piecewise(x0, [x0 < 0.06, x0 >= 0.06],
-                           [lambda x: self.R * self.p * np.exp(1j * (self.w * self.t - self.k1 * (x - 0.06))),
-                            lambda x: self.T * self.p * np.exp(1j * (self.w * self.t - self.k2 * (x - 0.06)))])
+        x0 = x[0] + 0.j  # need to plus 0.j because piecewise return same type
+        val = np.piecewise(
+            x0, [x0 < 0.06, x0 >= 0.06],
+            [lambda x: self.R * self.p * np.exp(
+                1j * (self.w * self.t - self.k1 * (x - 0.06))),
+             lambda x: self.T * self.p * np.exp(
+                1j * (self.w * self.t - self.k2 * (x - 0.06)))])
 
         return val.imag
+
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
 u_ba = Function(V_ba)

@@ -10,10 +10,11 @@
 import numpy as np
 from mpi4py import MPI
 
+from dolfinx.fem import Function, FunctionSpace
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL, LinearGLL2
+from hifusim import LinearGLL
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -60,7 +61,7 @@ finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planewave 2D", flush=True)
+    print("Problem type: Planewave 2D", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Density: {density}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
@@ -74,14 +75,38 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-# model = LinearGLL(mesh, mt_facet, degreeOfBasis, speedOfSound, sourceFrequency, 
-                #   sourceAmplitude)
-model  = LinearGLL2(mesh, mt_facet, degreeOfBasis, speedOfSound, density,
-                    sourceFrequency, sourceAmplitude)
+model = LinearGLL(mesh, mt_facet, degreeOfBasis, speedOfSound, density,
+                  sourceFrequency, sourceAmplitude)
 
 # Solve
 model.init()
 u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
 
+
+# Best approximation
+class Analytical:
+    """ Analytical solution """
+
+    def __init__(self, c0, f0, p0, t):
+        self.p0 = p0
+        self.c0 = c0
+        self.f0 = f0
+        self.w0 = 2 * np.pi * f0
+        self.t = t
+
+    def __call__(self, x):
+        val = self.p0 * np.exp(1j*(self.w0*self.t - self.w0/self.c0*x[0]))
+
+        return val.imag
+
+
+V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
+u_ba = Function(V_ba)
+u_ba.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude,
+                            tf))
+
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
-        f.write(0.0)
+    f.write(0.0)
+
+with VTXWriter(mesh.comm, "output_analytical.bp", u_ba) as f_ba:
+    f_ba.write(0.0)
