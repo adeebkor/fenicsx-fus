@@ -1,9 +1,9 @@
 #
-# .. _linear_planewave2d:
+# .. _linear_planewave2d_1:
 #
 # Linear solver for the 2D planewave problem
 # - structured mesh
-# - first-order Sommerfeld
+# - first-order Sommerfeld  ABC
 # ==========================================
 # Copyright (C) 2021 Adeeb Arif Kor
 
