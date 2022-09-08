@@ -239,7 +239,7 @@ class Westervelt:
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
 
-        return self.u_n, self.v_n, t, step
+        return self.u_n, self.v_n, t
 
 
 class WesterveltGLL:
@@ -478,7 +478,7 @@ class WesterveltGLL:
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
 
-        return self.u_n, self.v_n, t, step
+        return self.u_n, self.v_n, t
 
 
 class WesterveltGLLSciPy:
