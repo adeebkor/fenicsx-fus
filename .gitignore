@@ -10,6 +10,7 @@ mesh/*.geo
 *vtk/
 *data*
 *.bp
+*.jpeg
 *.png
 *.pvtu
 *.vtu
