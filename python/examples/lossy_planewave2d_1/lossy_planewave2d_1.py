@@ -14,7 +14,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLL, LossyGLL2
+from hifusim import LossyGLL
 from hifusim.utils import compute_diffusivity_of_sound
 
 
@@ -68,7 +68,7 @@ finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planewave 2D", flush=True)
+    print("Problem type: Planewave 2D", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Density: {density}", flush=True)
     print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
@@ -83,8 +83,8 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL2(mesh, mt_facet, degreeOfBasis, speedOfSound, density,
-                  diffusivityOfSound, sourceFrequency, sourceAmplitude)
+model = LossyGLL(mesh, mt_facet, degreeOfBasis, speedOfSound, density,
+                 diffusivityOfSound, sourceFrequency, sourceAmplitude)
 
 # Solve
 model.init()
@@ -106,7 +106,7 @@ class Analytical:
     def __call__(self, x):
         val = self.p0 * np.exp(1j*(self.w0*self.t - self.w0/self.c0*x[0])) \
                 * np.exp(-self.a0*x[0])
-        
+
         return val.imag
 
 
@@ -116,7 +116,7 @@ u_ba.interpolate(Analytical(speedOfSound, attenuationCoefficientNp,
                             sourceFrequency, sourceAmplitude, tf))
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
-        f.write(0.0)
+    f.write(0.0)
 
 with VTXWriter(mesh.comm, "output_analytical.bp", u_ba) as f_ba:
-        f_ba.write(0.0)
+    f_ba.write(0.0)
