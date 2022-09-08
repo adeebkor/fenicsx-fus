@@ -15,7 +15,7 @@ class LossyGLL:
 
     This solver uses GLL lattice and GLL quadrature in such a way that it
     produces a diagonal mass matrix.
-    
+
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, delta0, freq0, p0):

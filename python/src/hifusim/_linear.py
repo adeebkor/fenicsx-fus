@@ -7,7 +7,6 @@ import basix
 import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
-from dolfinx.io import VTXWriter, VTKFile
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
 
@@ -47,7 +46,7 @@ class Linear:
             basix.LagrangeVariant.gll_warped)
         FE = basix.ufl_wrapper.BasixElement(element)
         V = FunctionSpace(mesh, FE)
-        
+
         # Define functions
         self.v = TestFunction(V)
         self.u = TrialFunction(V)
@@ -61,9 +60,9 @@ class Linear:
         self.M.assemble()
 
         self.L = form(
-            - inner(self.c0*self.c0/self.rho0*grad(self.u_n), grad(self.v)) 
+            - inner(self.c0*self.c0/self.rho0*grad(self.u_n), grad(self.v))
             * dx
-            + inner(self.c0*self.c0/self.rho0*self.g, self.v) 
+            + inner(self.c0*self.c0/self.rho0*self.g, self.v)
             * ds(1)
             - inner(self.c0/self.rho0*self.v_n, self.v) * ds(2))
         self.b = assemble_vector(self.L)
@@ -469,7 +468,7 @@ class LinearGLLSciPy:
 
     Note:
         - Experimental
-    
+
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0):
@@ -665,7 +664,7 @@ class LinearHeterogenous:
             basix.LagrangeVariant.gll_warped)
         FE = basix.ufl_wrapper.BasixElement(element)
         V = FunctionSpace(mesh, FE)
-        
+
         # Define functions
         self.v = TestFunction(V)
         self.u = TrialFunction(V)
@@ -896,7 +895,7 @@ class LinearHeterogenousGLL:
             basix.LagrangeVariant.gll_warped)
         FE = basix.ufl_wrapper.BasixElement(element)
         V = FunctionSpace(mesh, FE)
-        
+
         # Define functions
         self.v = TestFunction(V)
         self.u = Function(V)
@@ -922,7 +921,7 @@ class LinearHeterogenousGLL:
 
         # Define forms
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u/self.rho/self.c/self.c, self.v) 
+        self.a = form(inner(self.u/self.rho/self.c/self.c, self.v)
                       * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
@@ -1103,7 +1102,7 @@ class LinearGLLSponge:
 
     Note:
         - Experimental
-    
+
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, delta0, freq0, p0):
@@ -1147,7 +1146,7 @@ class LinearGLLSponge:
         # --------------------------------------------------------------------
         # Sponge layer
         self.delta = Function(V)
-        
+
         # Linear function
         self.delta.interpolate(lambda x:
                                np.piecewise(x[0], [x[0] < 0.12, x[0] >= 0.12],
@@ -1174,7 +1173,7 @@ class LinearGLLSponge:
         self.u.x.array[:] = 1.0
         self.a = form(
             inner(1/self.rho0*self.u, self.v) * dx(metadata=md)
-            + inner(self.delta/self.rho0/self.c0*self.u, self.v) 
+            + inner(self.delta/self.rho0/self.c0*self.u, self.v)
             * ds(2, metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
