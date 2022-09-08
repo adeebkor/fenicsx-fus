@@ -13,7 +13,7 @@ from hifusim import LinearGLLSciPy
 def test_linear_scipy_L2(degree, epw):
     # Material parameters
     c0 = 1  # speed of sound (m/s)
-    rho0 = 1  # density of medium (kg / m^3)
+    rho0 = 2  # density of medium (kg / m^3)
 
     # Source parameters
     f0 = 10  # source frequency (Hz)
@@ -51,9 +51,7 @@ def test_linear_scipy_L2(degree, epw):
     tend = L / c0 + 16 / f0  # simulation final time (s)
 
     # Instantiate model
-    eqn = LinearGLLSciPy(mesh, mt, degree, c0, f0, p0)
-    eqn.alpha = 4
-    print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
+    eqn = LinearGLLSciPy(mesh, mt, degree, c0, rho0, f0, p0)
 
     # Solve
     eqn.init()

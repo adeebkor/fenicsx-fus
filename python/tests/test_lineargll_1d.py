@@ -13,7 +13,7 @@ from hifusim import LinearGLL
 def test_linear_L2(degree, epw):
     # Material parameters
     c0 = 1  # speed of sound (m/s)
-    rho0 = 1  # density of medium (kg / m^3)
+    rho0 = 4  # density of medium (kg / m^3)
 
     # Source parameters
     f0 = 10  # source frequency (Hz)
@@ -54,12 +54,8 @@ def test_linear_L2(degree, epw):
     CFL = 0.9
     dt = CFL * h / (c0 * degree**2)
 
-    print("Final time:", tend)
-
     # Instantiate model
-    eqn = LinearGLL(mesh, mt, degree, c0, f0, p0)
-    eqn.alpha = 4
-    print("Degree of freedoms: ", eqn.V.dofmap.index_map.size_global)
+    eqn = LinearGLL(mesh, mt, degree, c0, rho0, f0, p0)
 
     # Solve
     eqn.init()
