@@ -3,6 +3,7 @@ from ._analytical import SoundHardExact2D, SoundSoftExact2D, PenetrableExact2D  
 from ._linear import (Linear, LinearGLL, LinearGLLSciPy, LinearHeterogenous,
     LinearHeterogenousGLL, LinearGLLPML, LinearGLL2, LinearHeterogenousGLL2)  # noqa
 from ._lossy import LossyGLL  # noqa
+from ._planewave import PlanewaveGLL, PlanewaveHeterogenousGLL  # noqa
 from ._scatterer import (
     LinearSoundSoftGLL, LinearSoundHardGLL, LinearPenetrableGLL)  # noqa
 from ._westervelt import Westervelt, WesterveltGLL, WesterveltGLLSciPy  # noqa
@@ -15,5 +16,6 @@ __all__ = [
     "LinearHeterogenousGLL2",
     "LinearSoundSoftGLL", "LinearSoundHardGLL", "LinearPenetrableGLL",
     "LossyGLL",
+    "PlanewaveGLL", "PlanewaveHeterogenousGLL",
     "Westervelt", "WesterveltGLL", "WesterveltGLLSciPy",
 ]
