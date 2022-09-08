@@ -11,19 +11,19 @@ from hifusim import Linear
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
 def test_linear_L2(degree, epw):
-    # Material parameters
-    c0 = 1  # speed of sound (m/s)
-    rho0 = 4  # density of medium (kg / m^3)
-
     # Source parameters
     f0 = 10  # source frequency (Hz)
     u0 = 1  # velocity amplitude (m / s)
-    p0 = rho0*c0*u0  # pressure amplitude (Pa)
+
+    # Material parameters
+    c0 = 1  # speed of sound (m/s)
+    rho0 = 4  # density of medium (kg / m^3)
 
     # Domain parameters
     L = 1.0  # domain length (m)
 
     # Physical parameters
+    p0 = rho0*c0*u0  # pressure amplitude (Pa)
     lmbda = c0/f0  # wavelength (m)
 
     # Mesh parameters
@@ -61,7 +61,7 @@ def test_linear_L2(degree, epw):
 
     # Solve
     eqn.init()
-    eqn.rk4(tstart, tend, dt)
+    u_n, _, tf = eqn.rk4(tstart, tend, dt)
 
     class Analytical:
         """ Analytical solution """
@@ -81,10 +81,10 @@ def test_linear_L2(degree, epw):
 
     V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
-    u_e.interpolate(Analytical(c0, f0, p0, tend))
+    u_e.interpolate(Analytical(c0, f0, p0, tf))
 
     # L2 error
-    diff = eqn.u_n - u_e
+    diff = u_n - u_e
     L2_diff = mesh.comm.allreduce(
         assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
     L2_exact = mesh.comm.allreduce(

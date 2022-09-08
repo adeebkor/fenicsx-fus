@@ -12,14 +12,14 @@ from hifusim import WesterveltGLL
 
 @pytest.mark.parametrize("degree, epw", [(3, 16), (4, 8), (5, 4), (6, 2)])
 def test_westervelt_L2(degree, epw):
+    # Source parameters
+    f0 = 10  # source frequency (Hz)
+    p0 = 1  # pressure amplitude (Pa)
+
     # Material parameters
     c0 = 1  # speed of sound (m / s)
     rho0 = 1  # density of medium (kg / m^3)
     beta = 0.01  # coefficient of nonlinearity
-
-    # Source parameters
-    f0 = 10  # source frequency (Hz)
-    p0 = 1  # pressure amplitude (Pa)
 
     # Domain parameters
     L = 1.0  # domain length (m)
@@ -64,7 +64,7 @@ def test_westervelt_L2(degree, epw):
 
     # Solve
     eqn.init()
-    eqn.rk4(tstart, tend, dt)
+    u_n, _, tf = eqn.rk4(tstart, tend, dt)
 
     # Calculate L2
     class Analytical:
@@ -92,10 +92,10 @@ def test_westervelt_L2(degree, epw):
 
     V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
-    u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tend))
+    u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
 
     # L2 error
-    diff = eqn.u_n - u_e
+    diff = u_n - u_e
     L2_diff = mesh.comm.allreduce(
         assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
     L2_exact = mesh.comm.allreduce(
