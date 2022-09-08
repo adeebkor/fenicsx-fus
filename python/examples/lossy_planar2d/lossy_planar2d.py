@@ -8,7 +8,7 @@
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.io import XDMFFile
+from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
 from hifusim import LossyGLL, compute_diffusivity_of_sound
@@ -78,4 +78,7 @@ model = LossyGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize, [0, 1000], "sol")
+u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+
+with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
+    f.write(0.0)
