@@ -474,7 +474,7 @@ class LinearGLLSciPy:
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0):
+    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
 
         # Physical parameters
         self.c0 = c0
@@ -482,6 +482,7 @@ class LinearGLLSciPy:
         self.freq = freq0
         self.w0 = 2 * np.pi * freq0
         self.p0 = p0
+        self.s0 = s0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
 
@@ -517,17 +518,18 @@ class LinearGLLSciPy:
 
         # Define forms
         self.u.x.array[:] = 1.0
-        self.a = form(inner(1/self.rho0*self.u, self.v) * dx(metadata=md))
+        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
+                      * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(
-            - inner(self.c0*self.c0/self.rho0*grad(self.u_n), grad(self.v))
+            - inner(1/self.rho0*grad(self.u_n), grad(self.v))
             * dx(metadata=md)
-            + inner(self.c0*self.c0/self.rho0*self.g, self.v)
+            + inner(1/self.rho0*self.g, self.v)
             * ds(1, metadata=md)
-            - inner(self.c0/self.rho0*self.v_n, self.v)
+            - inner(1/self.rho0/self.c0*self.v_n, self.v)
             * ds(2, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
@@ -563,7 +565,7 @@ class LinearGLLSciPy:
             window = 1.0
 
         # Update source
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
             * np.cos(self.w0 * t)
 
         # Update fields
