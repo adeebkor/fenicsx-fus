@@ -18,7 +18,7 @@ class LossyGLL:
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, delta0, freq0, p0):
+    def __init__(self, mesh, meshtags, k, c0, rho0, delta0, freq0, p0, s0):
 
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
@@ -31,6 +31,7 @@ class LossyGLL:
         self.freq = freq0
         self.w0 = 2 * np.pi * freq0
         self.p0 = p0
+        self.s0 = s0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
 
@@ -83,7 +84,7 @@ class LossyGLL:
             * ds(1, metadata=md)
             - inner(self.c0/self.rho0*self.v_n, self.v)
             * ds(2, metadata=md)
-            - self.delta0*inner(1/self.rho0*grad(self.v_n), grad(self.v))
+            - inner(self.delta0/self.rho0*grad(self.v_n), grad(self.v))
             * dx(metadata=md)
             + inner(self.delta0/self.rho0*self.dg, self.v)
             * ds(1, metadata=md),
@@ -141,10 +142,10 @@ class LossyGLL:
             dwindow = 0.0
 
         # Update boundary condition
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
             * np.cos(self.w0 * t)
-        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
-            * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
+        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.s0 \
+            * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.s0 \
             * np.sin(self.w0 * t)
 
         # Update fields
