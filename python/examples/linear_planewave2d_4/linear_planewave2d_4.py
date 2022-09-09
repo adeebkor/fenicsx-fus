@@ -89,7 +89,7 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency, 
+model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
                   sourceAmplitude, speedOfSoundWater)
 
 # Solve

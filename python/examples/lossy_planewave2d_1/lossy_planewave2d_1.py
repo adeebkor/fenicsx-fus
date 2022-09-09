@@ -94,7 +94,7 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0, 
+model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
                  sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve

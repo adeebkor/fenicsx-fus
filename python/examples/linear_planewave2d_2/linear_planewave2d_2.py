@@ -87,8 +87,8 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLLSponge(mesh, mt_facet, degreeOfBasis, c0, rho0, 
-                        diffusivityOfSound, sourceFrequency, sourceAmplitude, 
+model = LinearGLLSponge(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                        diffusivityOfSound, sourceFrequency, sourceAmplitude,
                         speedOfSound)
 
 # Solve
