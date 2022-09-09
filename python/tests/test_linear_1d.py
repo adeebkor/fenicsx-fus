@@ -47,6 +47,14 @@ def test_linear_L2(degree, epw):
                         np.full(facets1.shape, 2, np.intc)))
     mt = meshtags(mesh, tdim-1, indices, values[pos])
 
+    # Define DG function for physical parameters
+    V_DG = FunctionSpace(mesh, ("DG", 0))
+    c = Function(V_DG)
+    c.x.array[:] = c0
+
+    rho = Function(V_DG)
+    rho.x.array[:] = rho0
+
     # Temporal parameters
     tstart = 0.0  # simulation start time (s)
     tend = L / c0 + 16 / f0  # simulation final time (s)
@@ -57,7 +65,7 @@ def test_linear_L2(degree, epw):
     print("Final time:", tend)
 
     # Instantiate model
-    eqn = Linear(mesh, mt, degree, c0, rho0, f0, p0)
+    eqn = Linear(mesh, mt, degree, c, rho, f0, p0, c0)
 
     # Solve
     eqn.init()
