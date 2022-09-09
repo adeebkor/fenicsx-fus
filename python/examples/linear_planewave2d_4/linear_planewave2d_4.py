@@ -15,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearHeterogenousGLL
+from hifusim import LinearGLL
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -55,6 +55,16 @@ meshSize = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
+# Define DG functions to specify different medium
+V_DG = FunctionSpace(mesh, ("DG", 0))
+c0 = Function(V_DG)
+c0.x.array[:] = speedOfSoundWater
+c0.x.array[mt_cell.find(2)] = speedOfSoundBone
+
+rho0 = Function(V_DG)
+rho0.x.array[:] = densityWater
+rho0.x.array[mt_cell.find(2)] = densityBone
+
 # Temporal parameters
 CFL = 0.4
 timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
@@ -79,9 +89,8 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearHeterogenousGLL(
-    mesh, mt, degreeOfBasis, speedOfSoundWater, speedOfSoundBone,
-    densityWater, densityBone, sourceFrequency, sourceAmplitude)
+model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency, 
+                  sourceAmplitude, speedOfSoundWater)
 
 # Solve
 model.init()
