@@ -15,8 +15,8 @@ using namespace dolfinx;
 namespace kernels {
 // Copy data from a la::Vector in to a la::Vector out, including ghost entries.
 void copy(const la::Vector<double>& in, la::Vector<double>& out) {
-  xtl::span<const double> _in = in.array();
-  xtl::span<double> _out = out.mutable_array();
+  std::span<const double> _in = in.array();
+  std::span<double> _out = out.mutable_array();
   std::copy(_in.begin(), _in.end(), _out.begin());
 }
 
@@ -38,9 +38,9 @@ void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
 /// This solver uses GLL lattice and GLL quadrature such that it produces
 /// a diagonal mass matrix.
 /// @param [in] Mesh The mesh
-/// @param [in] MeshTags The boundary meshtags
+/// @param [in] FacetTags The boundary facet tags
 /// @param [in] speedOfSound A DG function defining the speed of sound within the domain
-/// @param [in] density A DG function defining the density within the domain
+/// @param [in] density A DG function defining the densities within the domain
 /// @param [in] sourceFrequency The source frequency
 /// @param [in] sourceAmplitude The source amplitude
 /// @param [in] sourceSpeed The medium speed of sound that is in contact with the source
@@ -48,7 +48,7 @@ template <typename T, int P>
 class LinearGLL{
 public:
   LinearGLL(std::shared_ptr<mesh::Mesh> Mesh,
-            std::shared_ptr<mesh::MeshTags<std::int32_t>> MeshTags,
+            std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
             std::shared_ptr<fem::Function<T>> speedOfSound,
             std::shared_ptr<fem::Function<T>> density,
             const T& sourceFrequency, const T& sourceAmplitude, 
@@ -67,11 +67,11 @@ public:
     s0 = sourceSpeed;
     period = 1.0 / sourceFrequency;
     window_length = 4.0;
-    
+
     // Mesh data
     mesh = Mesh;
-    mt = MeshTags;
-    
+    ft = FacetTags;
+
     // Define function space
     V = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
@@ -108,7 +108,7 @@ public:
                            {"c0", c0}, {"rho0", rho0}},
                           {}, 
                           {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*mt)}}));
+                            &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
   }
@@ -124,8 +124,8 @@ public:
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result, i.e. dun/dtn
-  void f0(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
-          std::shared_ptr<la::Vector<double>> result) {
+  void f0(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
+          std::shared_ptr<la::Vector<T>> result) {
     kernels::copy(*v, *result);
   }
 
@@ -283,7 +283,7 @@ private:
   T period, window_length, window;
 
   std::shared_ptr<mesh::Mesh> mesh;
-  std::shared_ptr<mesh::MeshTags<std::int32_t>> mt;
+  std::shared_ptr<mesh::MeshTags<std::int32_t>> ft;
   std::shared_ptr<const common::IndexMap> index_map;
   std::shared_ptr<fem::FunctionSpace> V;
   std::shared_ptr<fem::Function<T>> u, u_n, v_n, g, c0, rho0;
