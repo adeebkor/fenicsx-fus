@@ -14,9 +14,10 @@ using namespace dolfinx;
 
 namespace kernels {
 // Copy data from a la::Vector in to a la::Vector out, including ghost entries.
-void copy(const la::Vector<double>& in, la::Vector<double>& out) {
-  std::span<const double> _in = in.array();
-  std::span<double> _out = out.mutable_array();
+template <typename T>
+void copy(const la::Vector<T>& in, la::Vector<T>& out) {
+  std::span<const T> _in = in.array();
+  std::span<T> _out = out.mutable_array();
   std::copy(_in.begin(), _in.end(), _out.begin());
 }
 
@@ -25,11 +26,12 @@ void copy(const la::Vector<double>& in, la::Vector<double>& out) {
 /// @param alpha
 /// @param x
 /// @param y
-void axpy(la::Vector<double>& r, double alpha, const la::Vector<double>& x,
-          const la::Vector<double>& y) {
+template <typename T>
+void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
+          const la::Vector<T>& y) {
   std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
-                 [&alpha](const double& vx, const double& vy) { return vx * alpha + vy; });
+                 [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
 }
 
 } // namespace kernels
@@ -126,7 +128,7 @@ public:
   /// @param[out] result Result, i.e. dun/dtn
   void f0(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
-    kernels::copy(*v, *result);
+    kernels::copy<T>(*v, *result);
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
@@ -134,8 +136,8 @@ public:
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
   /// @param[out] result Result, i.e. dvn/dtn
-  void f1(double& t, std::shared_ptr<la::Vector<double>> u, std::shared_ptr<la::Vector<double>> v,
-          std::shared_ptr<la::Vector<double>> result) {
+  void f1(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
+          std::shared_ptr<la::Vector<T>> result) {
 
     // Apply windowing
     if (t < period * window_length) {
@@ -148,14 +150,13 @@ public:
     std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
 
     u->scatter_fwd();
-    kernels::copy(*u, *u_n->x());
+    kernels::copy<T>(*u, *u_n->x());
 
     v->scatter_fwd();
-    kernels::copy(*v, *v_n->x());
+    kernels::copy<T>(*v, *v_n->x());
 
     // Assemble RHS
     std::fill(b_.begin(), b_.end(), 0.0);
-
     fem::assemble_vector(b_, *L);
     b->scatter_rev(std::plus<T>());
 
@@ -171,7 +172,7 @@ public:
       // Element wise division
       // out[i] = b[i]/m[i]
       std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
-                     [](const double& bi, const double& mi) { return bi / mi; });
+                     [](const T& bi, const T& mi) { return bi / mi; });
     }
   }
 
@@ -182,9 +183,9 @@ public:
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
 
     // Time-stepping parameters
-    double t = startTime;
-    double tf = finalTime;
-    double dt = timeStep;
+    T t = startTime;
+    T tf = finalTime;
+    T dt = timeStep;
     int totalStep = (finalTime - startTime) / timeStep + 1;
     int step = 0;
 
@@ -195,8 +196,8 @@ public:
     u_ = std::make_shared<la::Vector<T>>(index_map, bs);
     v_ = std::make_shared<la::Vector<T>>(index_map, bs);
 
-    kernels::copy(*u_n->x(), *u_);
-    kernels::copy(*v_n->x(), *v_);
+    kernels::copy<T>(*u_n->x(), *u_);
+    kernels::copy<T>(*v_n->x(), *v_);
 
     // Placeholder vectors at intermediate time step n
     un = std::make_shared<la::Vector<T>>(index_map, bs);
@@ -210,8 +211,8 @@ public:
     ku = std::make_shared<la::Vector<T>>(index_map, bs);
     kv = std::make_shared<la::Vector<T>>(index_map, bs);
 
-    kernels::copy(*u_, *ku);
-    kernels::copy(*v_, *kv);
+    kernels::copy<T>(*u_, *ku);
+    kernels::copy<T>(*v_, *kv);
 
     // Runge-Kutta 4th order time-stepping data
     std::array<T, 4> a_runge = {0.0, 0.5, 0.5, 1.0};
@@ -219,22 +220,22 @@ public:
     std::array<T, 4> c_runge = {0.0, 0.5, 0.5, 1.0};
 
     // RK variables
-    double tn;
+    T tn;
 
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      kernels::copy(*u_, *u0);
-      kernels::copy(*v_, *v0);
+      kernels::copy<T>(*u_, *u0);
+      kernels::copy<T>(*v_, *v0);
 
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
-        kernels::copy(*u0, *un);
-        kernels::copy(*v0, *vn);
+        kernels::copy<T>(*u0, *un);
+        kernels::copy<T>(*v0, *vn);
 
-        kernels::axpy(*un, dt * a_runge[i], *ku, *un);
-        kernels::axpy(*vn, dt * a_runge[i], *kv, *vn);
+        kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);
+        kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
@@ -244,8 +245,8 @@ public:
         f1(tn, un, vn, kv);
 
         // Update solution
-        kernels::axpy(*u_, dt * b_runge[i], *ku, *u_);
-        kernels::axpy(*v_, dt * b_runge[i], *kv, *v_);
+        kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);
+        kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);
       }
 
       // Update time
@@ -262,8 +263,8 @@ public:
     }
 
     // Prepare solution at final time
-    kernels::copy(*u_, *u_n->x());
-    kernels::copy(*v_, *v_n->x());
+    kernels::copy<T>(*u_, *u_n->x());
+    kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
 
