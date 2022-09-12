@@ -122,7 +122,7 @@ public:
     b_ = b->mutable_array();
   }
 
-  // Set the initial values of u and v, i.e. u_0 and v_0
+  /// Set the initial values of u and v, i.e. u_0 and v_0
   void init() {
     u_n->x()->set(0.0);
     v_n->x()->set(0.0);
@@ -145,7 +145,7 @@ public:
   /// @param[out] result Result, i.e. dvn/dtn
   void f1(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
-  
+
     // Apply windowing
     if (t < period * window_length) {
       window = 0.5 * (1.0 - cos(freq * M_PI * t / window_length));
