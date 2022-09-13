@@ -1,17 +1,22 @@
 #
-# .. _lossy_planar2d:
+# .. _lossy_planar2d_1:
 #
 # Lossy solver for the 2D planar transducer problem
+# - structured mesh
+# - first-order Sommerfeld ABC
 # =================================================
 # Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
 
+from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLL, compute_diffusivity_of_sound
+from hifusim import LossyGLL
+from hifusim.utils import compute_diffusivity_of_sound
+
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -21,12 +26,14 @@ mpi_size = MPI.COMM_WORLD.size
 sourceFrequency = 0.5e6  # (Hz)
 sourceAmplitude = 60000  # (Hz)
 period = 1 / sourceFrequency  # (s)
+angularFrequency = 2 * np.pi * sourceFrequency  # (rad / s)
 
 # Material parameters
 speedOfSound = 1500  # (m/s)
-attenuationCoefficientdB = 1.0  # (dB/m)
+density = 1000  # (kg/m^3)
+attenuationCoefficientdB = 50.0  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    sourceFrequency, speedOfSound, attenuationCoefficientdB)
+    angularFrequency, speedOfSound, attenuationCoefficientdB)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -36,11 +43,12 @@ degreeOfBasis = 4
 
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
-    mesh = fmesh.read_mesh(name="planar2d")
+    mesh_name = "planar_2d_1"
+    mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
-    mt_cell = fmesh.read_meshtags(mesh, name="planar2d_regions")
-    mesh.topology.create_connectivity(tdim - 1, tdim)
-    mt_facet = fmesh.read_meshtags(mesh, name="planar2d_boundaries")
+    mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
+    mesh.topology.create_connectivity(tdim-1, tdim)
+    mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
 numCell = mesh.topology.index_map(tdim).size_local
@@ -49,14 +57,25 @@ meshSize = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
+# Define a DG function space for the physical parameters of the domain
+V_DG = FunctionSpace(mesh, ("DG", 0))
+c0 = Function(V_DG)
+c0.x.array[:] = speedOfSound
+
+rho0 = Function(V_DG)
+rho0.x.array[:] = density
+
+delta0 = Function(V_DG)
+delta0.x.array[:] = diffusivityOfSound
+
 # Temporal parameters
-CFL = 0.35
+CFL = 0.4
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
 startTime = 0.0
 finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
-numberOfStep = int(finalTime / timeStepSize + 1)
+numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
     print(f"Problem type: Planar 2D (Lossy)", flush=True)
@@ -73,8 +92,8 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
-                 diffusivityOfSound, sourceFrequency, sourceAmplitude)
+model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
+                 sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()

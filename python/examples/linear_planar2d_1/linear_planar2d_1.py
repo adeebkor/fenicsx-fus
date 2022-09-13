@@ -1,14 +1,17 @@
 #
-# .. _linear_planar2d:
+# .. _linear_planar2d_1:
 #
 # Linear solver for the 2D planar transducer problem
-# ==========================================
+# - structured mesh
+# - first-order Sommerfeld ABC
+# ==================================================
 # Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.io import XDMFFile
+from dolfinx.fem import FunctionSpace, Function
+from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
 from hifusim import LinearGLL
@@ -17,13 +20,14 @@ from hifusim import LinearGLL
 mpi_rank = MPI.COMM_WORLD.rank
 mpi_size = MPI.COMM_WORLD.size
 
-# Material parameters
-speedOfSound = 1500  # (m/s)
-
 # Source parameters
 sourceFrequency = 0.5e6  # (Hz)
 sourceAmplitude = 60000  # (Pa)
 period = 1 / sourceFrequency  # (s)
+
+# Material parameters
+speedOfSound = 1500  # (m/s)
+density = 1000  # (kg/m^3)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -33,11 +37,12 @@ degreeOfBasis = 4
 
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
-    mesh = fmesh.read_mesh(name="planar2d")
+    mesh_name = "planar_2d_1"
+    mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
-    mt_cell = fmesh.read_meshtags(mesh, name="planar2d_regions")
-    mesh.topology.create_connectivity(tdim - 1, tdim)
-    mt_facet = fmesh.read_meshtags(mesh, name="planar2d_boundaries")
+    mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
+    mesh.topology.create_connectivity(tdim-1, tdim)
+    mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
 numCell = mesh.topology.index_map(tdim).size_local
@@ -46,19 +51,22 @@ meshSize = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
+# Define a DG function space for the physical parameters of the domain
+V_DG = FunctionSpace(mesh, ("DG", 0))
+c0 = Function(V_DG)
+c0.x.array[:] = speedOfSound
+
+rho0 = Function(V_DG)
+rho0.x.array[:] = density
+
 # Temporal parameters
-CFL = 0.4
+CFL = 0.9
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
 finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
-vtk_output_range = [
-    int((domainLength / speedOfSound - 0.0 / sourceFrequency)/timeStepSize) + 1,
-    int((domainLength / speedOfSound + 4.0 / sourceFrequency)/timeStepSize) + 1
-]
-
 
 if mpi_rank == 0:
     print(f"Problem type: Planar 2D", flush=True)
@@ -74,9 +82,12 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLL(mesh, mt_facet, degreeOfBasis, speedOfSound,
-                  sourceFrequency, sourceAmplitude)
+model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                  sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()
-model.rk4(startTime, finalTime, timeStepSize, vtk_output_range, "sol")
+u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+
+with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
+    f.write(0.0)
