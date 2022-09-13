@@ -596,6 +596,8 @@ class LinearGLLS2:
         # Update source
         source = window * self.p0 * self.w0 / self.s0 * np.cos(self.w0 * t)
 
+        # --------------------------------------------------------------------
+        # Tapered-cosine (Tukey) window
         # a = 0.005
         # b = 0.01
         # self.g.interpolate(
@@ -613,6 +615,7 @@ class LinearGLLS2:
         #          lambda x: 0.5*(1+np.cos(np.pi*(x - a)/(b - a))) * source,
         #          lambda x: 0]))
 
+        # Semi-circle window
         # r0 = 0.005
         # self.g.interpolate(
         #     lambda x:
@@ -625,22 +628,37 @@ class LinearGLLS2:
         #          lambda x: np.sqrt(r0**2 - x**2)/r0 * source,
         #          lambda x: 0.0]))
 
-        a = -0.02
-        b = -0.0125
-        c = 0.0125
-        d = 0.02
+        # Two heaviside function window
+        # a = -0.02
+        # b = -0.0125
+        # c = 0.0125
+        # d = 0.02
+        # self.g.interpolate(
+        #     lambda x:
+        #     np.piecewise(
+        #         x[1],
+        #         [x[1] < a,
+        #          np.logical_and(x[1] >= a, x[1] <= b),
+        #          np.logical_and(x[1] > b, x[1] < c),
+        #          np.logical_and(x[1] >= c, x[1] <= d),
+        #          x[1] > d],
+        #         [lambda x: 0,
+        #          lambda x: source,
+        #          lambda x: 0,
+        #          lambda x: source,
+        #          lambda x: 0]))
+
+        # Heaviside function window
+        a = -0.011
+        b = 0.011
         self.g.interpolate(
             lambda x:
             np.piecewise(
                 x[1],
                 [x[1] < a,
                  np.logical_and(x[1] >= a, x[1] <= b),
-                 np.logical_and(x[1] > b, x[1] < c),
-                 np.logical_and(x[1] >= c, x[1] <= d),
-                 x[1] > d],
+                 x[1] > b],
                 [lambda x: 0,
-                 lambda x: source,
-                 lambda x: 0,
                  lambda x: source,
                  lambda x: 0]))
 
