@@ -595,24 +595,24 @@ class LinearGLLS2:
 
         # Update source
         source = window * self.p0 * self.w0 / self.s0 * np.cos(self.w0 * t)
-        
+
         # a = 0.005
         # b = 0.01
         # self.g.interpolate(
-        #     lambda x: 
+        #     lambda x:
         #     np.piecewise(
-        #         x[1], 
-        #         [x[1] < -b, 
+        #         x[1],
+        #         [x[1] < -b,
         #          np.logical_and(x[1] >= -b, x[1] < -a),
         #          np.logical_and(x[1] >= -a, x[1] <= a),
         #          np.logical_and(x[1] > a, x[1] <= b),
         #          x[1] > b],
-        #         [lambda x: 0, 
-        #          lambda x: 0.5*(1+np.cos(np.pi*(- x - a)/(b - a))) * source, 
+        #         [lambda x: 0,
+        #          lambda x: 0.5*(1+np.cos(np.pi*(- x - a)/(b - a))) * source,
         #          lambda x: source,
         #          lambda x: 0.5*(1+np.cos(np.pi*(x - a)/(b - a))) * source,
         #          lambda x: 0]))
-        
+
         # r0 = 0.005
         # self.g.interpolate(
         #     lambda x:
