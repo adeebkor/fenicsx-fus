@@ -1,0 +1,1 @@
+This experiment compares the "non-plane" wave solution between a comforming source boundary and a non-conforming source boundary.
