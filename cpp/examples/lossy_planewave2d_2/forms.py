@@ -35,13 +35,13 @@ qdegree = {3: 4, 4: 5, 5: 6, 6: 8, 7: 10, 8: 12, 9: 14, 10: 16}
 md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 
 # Define forms
-a = inner(u/rho0, v) * dx(metadata=md) \
-    + inner(delta0/rho0/c0*u, v) * ds(2, metadata=md)
+a = inner(u/rho0/c0/c0, v) * dx(metadata=md) \
+    + inner(delta0/rho0/c0/c0/c0*u, v) * ds(2, metadata=md)
 
-L = - inner(c0*c0/rho0*grad(u_n), grad(v)) * dx(metadata=md) \
-    + inner(c0*c0/rho0*g, v)*ds(1, metadata=md) \
-    - inner(c0/rho0*v_n, v)*ds(2, metadata=md) \
-    - inner(delta0/rho0*grad(v_n), grad(v)) * dx(metadata=md) \
-    + inner(delta0/rho0*dg, v) * ds(1, metadata=md)
+L = - inner(1/rho0*grad(u_n), grad(v)) * dx(metadata=md) \
+    + inner(1/rho0*g, v)*ds(1, metadata=md) \
+    - inner(1/rho0/c0*v_n, v)*ds(2, metadata=md) \
+    - inner(delta0/rho0/c0/c0*grad(v_n), grad(v)) * dx(metadata=md) \
+    + inner(delta0/rho0/c0/c0*dg, v) * ds(1, metadata=md)
 
 forms = [a, L]
