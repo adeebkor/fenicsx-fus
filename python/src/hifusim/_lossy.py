@@ -69,24 +69,25 @@ class LossyGLL:
         # Define forms
         self.u.x.array[:] = 1.0
         self.a = form(
-            inner(1/self.rho0*self.u, self.v) * dx(metadata=md)
-            + inner(self.delta0/self.rho0/self.c0*self.u, self.v)
-            * ds(2, metadata=md),
+            inner(self.u/self.rho0/self.c0/self.c0, self.v) * dx(metadata=md)
+            + inner(self.delta0/self.rho0/self.c0/self.c0/self.c0*self.u,
+                    self.v) * ds(2, metadata=md),
             jit_params=jit_params)
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(
-            - inner(self.c0*self.c0/self.rho0*grad(self.u_n), grad(self.v))
+            - inner(1/self.rho0*grad(self.u_n), grad(self.v))
             * dx(metadata=md)
-            + inner(self.c0*self.c0/self.rho0*self.g, self.v)
+            + inner(1/self.rho0*self.g, self.v)
             * ds(1, metadata=md)
-            - inner(self.c0/self.rho0*self.v_n, self.v)
+            - inner(1/self.rho0/self.c0*self.v_n, self.v)
             * ds(2, metadata=md)
-            - inner(self.delta0/self.rho0*grad(self.v_n), grad(self.v))
+            - inner(self.delta0/self.rho0/self.c0/self.c0*grad(self.v_n),
+                    grad(self.v))
             * dx(metadata=md)
-            + inner(self.delta0/self.rho0*self.dg, self.v)
+            + inner(self.delta0/self.rho0/self.c0/self.c0*self.dg, self.v)
             * ds(1, metadata=md),
             jit_params=jit_params)
         self.b = assemble_vector(self.L)
