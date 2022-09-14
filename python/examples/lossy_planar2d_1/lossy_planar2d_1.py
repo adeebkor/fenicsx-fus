@@ -24,14 +24,14 @@ mpi_size = MPI.COMM_WORLD.size
 
 # Source parameters
 sourceFrequency = 0.5e6  # (Hz)
-sourceAmplitude = 60000  # (Hz)
+sourceAmplitude = 60000  # (Pa)
 period = 1 / sourceFrequency  # (s)
 angularFrequency = 2 * np.pi * sourceFrequency  # (rad / s)
 
 # Material parameters
 speedOfSound = 1500  # (m/s)
 density = 1000  # (kg/m^3)
-attenuationCoefficientdB = 50.0  # (dB/m)
+attenuationCoefficientdB = 100  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
     angularFrequency, speedOfSound, attenuationCoefficientdB)
 
@@ -74,12 +74,13 @@ timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
 startTime = 0.0
-finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planar 2D (Lossy)", flush=True)
+    print("Problem type: Planar 2D (Lossy)", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
+    print(f"Density: {density}", flush=True)
     print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
