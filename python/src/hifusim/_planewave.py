@@ -59,14 +59,10 @@ class PlanewaveGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define variational form
         self.u.x.array[:] = 1.0
         self.a = form(1 / self.rho0 / self.c0 / self.c0
-                      * inner(self.u, self.v) * dx(metadata=md),
-                      jit_params=jit_params)
+                      * inner(self.u, self.v) * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -84,8 +80,7 @@ class PlanewaveGLL:
                       * dx(metadata=md)
                       + 1 / self.rho0 * inner(inner(
                             grad(self.u_i), self.surface_normal), self.v)
-                      * ds(metadata=md),
-                      jit_params=jit_params)
+                      * ds(metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)

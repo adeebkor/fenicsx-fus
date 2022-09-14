@@ -279,13 +279,9 @@ class LinearSoundHardGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u, self.v) * dx(metadata=md),
-                      jit_parameters=jit_params)
+        self.a = form(inner(self.u, self.v) * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -295,8 +291,7 @@ class LinearSoundHardGLL:
                                   + inner(self.g, self.v)
                                   * ds(1, metadata=md)
                                   - 1/self.c0*inner(self.v_n, self.v)
-                                  * ds(2, metadata=md)),
-                      jit_parameters=jit_params)
+                                  * ds(2, metadata=md)))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -511,13 +506,9 @@ class LinearPenetrableGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u, self.v) * dx(metadata=md),
-                      jit_parameters=jit_params)
+        self.a = form(inner(self.u, self.v) * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -528,8 +519,7 @@ class LinearPenetrableGLL:
             + inner(self.coeff * self.coeff * self.g, self.v)
             * ds(1, metadata=md)
             - inner(self.coeff * self.v_n, self.v)
-            * ds(2, metadata=md),
-            jit_parameters=jit_params)
+            * ds(2, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)

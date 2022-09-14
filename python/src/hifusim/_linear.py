@@ -283,14 +283,10 @@ class LinearGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define forms
         self.u.x.array[:] = 1.0
         self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                      * dx(metadata=md),
-                      jit_params=jit_params)
+                      * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -301,8 +297,7 @@ class LinearGLL:
             + inner(1/self.rho0*self.g, self.v)
             * ds(1, metadata=md)
             - inner(1/self.rho0/self.c0*self.v_n, self.v)
-            * ds(2, metadata=md),
-            jit_params=jit_params)
+            * ds(2, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -524,14 +519,10 @@ class LinearGLLS2:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define forms
         self.u.x.array[:] = 1.0
         self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                      * dx(metadata=md),
-                      jit_params=jit_params)
+                      * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -542,8 +533,7 @@ class LinearGLLS2:
             + inner(1/self.rho0*self.g, self.v)
             * ds(1, metadata=md)
             - inner(1/self.rho0/self.c0*self.v_n, self.v)
-            * ds(2, metadata=md),
-            jit_params=jit_params)
+            * ds(2, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)

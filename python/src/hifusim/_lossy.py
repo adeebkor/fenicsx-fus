@@ -63,16 +63,12 @@ class LossyGLL:
         md = {"quadrature_rule": "GLL",
               "quadrature_degree": qd[str(k)]}
 
-        # JIT compilation parameters
-        jit_params = {"cffi_extra_compile_args": ["-Ofast", "-march=native"]}
-
         # Define forms
         self.u.x.array[:] = 1.0
         self.a = form(
             inner(self.u/self.rho0/self.c0/self.c0, self.v) * dx(metadata=md)
             + inner(self.delta0/self.rho0/self.c0/self.c0/self.c0*self.u,
-                    self.v) * ds(2, metadata=md),
-            jit_params=jit_params)
+                    self.v) * ds(2, metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -88,8 +84,7 @@ class LossyGLL:
                     grad(self.v))
             * dx(metadata=md)
             + inner(self.delta0/self.rho0/self.c0/self.c0*self.dg, self.v)
-            * ds(1, metadata=md),
-            jit_params=jit_params)
+            * ds(1, metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
