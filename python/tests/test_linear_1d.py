@@ -6,11 +6,11 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import Linear
+from hifusim import LinearExplicit
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
-def test_linear_L2(degree, epw):
+def test_linear_explicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     u0 = 1  # velocity amplitude (m / s)
@@ -65,11 +65,11 @@ def test_linear_L2(degree, epw):
     print("Final time:", tend)
 
     # Instantiate model
-    eqn = Linear(mesh, mt, degree, c, rho, f0, p0, c0)
+    eqn = LinearExplicit(mesh, mt, degree, c, rho, f0, p0, c0)
 
     # Solve
     eqn.init()
-    u_n, _, tf = eqn.rk4(tstart, tend, dt)
+    u_n, _, tf = eqn.rk(tstart, tend, dt, 4)
 
     class Analytical:
         """ Analytical solution """

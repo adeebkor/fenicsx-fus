@@ -1,10 +1,11 @@
 #
-# .. _linear_planewave2d_4:
+# .. _linear_planewave2d_4_exp:
 #
 # Linear solver for the 2D planewave problem
 # - structured mesh
 # - first-order Sommerfeld
 # - two different medium (x < 0.06 m, x > 0.06 m)
+# - explicit Runge-Kutta solver
 # ===================================================================
 # Copyright (C) 2021 Adeeb Arif Kor
 
@@ -15,7 +16,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL
+from hifusim import LinearGLLExplicit
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -66,12 +67,12 @@ rho0.x.array[:] = densityWater
 rho0.x.array[mt_cell.find(2)] = densityBone
 
 # Temporal parameters
-CFL = 0.4
+CFL = 0.9
 timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency
+finalTime = domainLength / speedOfSoundWater + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
@@ -89,12 +90,12 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
-                  sourceAmplitude, speedOfSoundWater)
+model = LinearGLLExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
+                          sourceAmplitude, speedOfSoundWater)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+u_n, v_n, tf = model.rk(startTime, finalTime, timeStepSize, 4)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as out:
     out.write(0.0)

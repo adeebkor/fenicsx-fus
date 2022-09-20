@@ -1,9 +1,10 @@
 #
-# .. _linear_planar2d_1:
+# .. _linear_planar2d_1_exp:
 #
 # Linear solver for the 2D planar transducer problem
 # - structured mesh
 # - first-order Sommerfeld ABC
+# - explicit Runge-Kutta solver
 # ==================================================
 # Copyright (C) 2022 Adeeb Arif Kor
 
@@ -14,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL
+from hifusim import LinearGLLExplicit
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -82,12 +83,12 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                  sourceFrequency, sourceAmplitude, speedOfSound)
+model = LinearGLLExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                          sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+u_n, v_n, tf = model.rk(startTime, finalTime, timeStepSize, 4)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)

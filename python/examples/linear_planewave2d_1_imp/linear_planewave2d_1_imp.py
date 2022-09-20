@@ -1,21 +1,21 @@
 #
-# .. _linear_planar2d_2:
+# .. _linear_planewave2d_1_imp:
 #
-# Linear solver for the 2D planar transducer problem
+# Linear solver for the 2D planewave problem
 # - structured mesh
 # - first-order Sommerfeld ABC
-# - two different medium (x < 0.06 m, x > 0.06 m)
-# ==================================================
-# Copyright (C) 2021 Adeeb Arif Kor
+# - implicit RK solver
+# ==========================================
+# Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import Function, FunctionSpace
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL
+from hifusim import LinearGLLImplicit
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -27,10 +27,8 @@ sourceAmplitude = 60000  # (Pa)
 period = 1 / sourceFrequency  # (s)
 
 # Material parameters
-speedOfSoundWater = 1500  # (m/s)
-speedOfSoundBone = 2800  # (m/s)
-densityWater = 1000  # (kg/m^3)
-densityBone = 1850  # (kg/m^3)
+speedOfSound = 1500  # (m/s)
+density = 1000  # (kg/m^3)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -40,13 +38,12 @@ degreeOfBasis = 4
 
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
-    mesh_name = "planar_2d_2"
+    mesh_name = "planewave_2d_1"
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
     mesh.topology.create_connectivity(tdim-1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
-    mt = [mt_cell, mt_facet]
 
 # Mesh parameters
 numCell = mesh.topology.index_map(tdim).size_local
@@ -55,29 +52,28 @@ meshSize = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
-# Define DG functions to specify different medium
+# Define a DG function space for the physical parameters of the domain
 V_DG = FunctionSpace(mesh, ("DG", 0))
 c0 = Function(V_DG)
-c0.x.array[:] = speedOfSoundWater
-c0.x.array[mt_cell.find(2)] = speedOfSoundBone
+c0.x.array[:] = speedOfSound
 
 rho0 = Function(V_DG)
-rho0.x.array[:] = densityWater
-rho0.x.array[mt_cell.find(2)] = densityBone
+rho0.x.array[:] = density
 
 # Temporal parameters
-CFL = 0.9
-timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
+CFL = 1.1
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print("Problem type: Planar 2D (heterogenous)", flush=True)
-    print(f"Speed of sound (Water): {speedOfSoundWater}", flush=True)
-    print(f"Speed of sound (Bone): {speedOfSoundBone}", flush=True)
+    print("Problem type: Planewave 2D", flush=True)
+    print("Runge-Kutta type: Implicit", flush=True)
+    print(f"Speed of sound: {speedOfSound}", flush=True)
+    print(f"Density: {density}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
     print(f"Domain length: {domainLength}", flush=True)
@@ -89,12 +85,12 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
-                  sourceAmplitude, speedOfSoundWater)
+model = LinearGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                          sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+u_n, v_n, tf = model.dirk(startTime, finalTime, timeStepSize, 4)
 
-with VTXWriter(mesh.comm, "output_final.bp", u_n) as out:
-    out.write(0.0)
+with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
+    f.write(0.0)
