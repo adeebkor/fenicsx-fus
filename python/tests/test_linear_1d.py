@@ -65,11 +65,11 @@ def test_linear_explicit(degree, epw):
     print("Final time:", tend)
 
     # Instantiate model
-    eqn = LinearExplicit(mesh, mt, degree, c, rho, f0, p0, c0)
+    eqn = LinearExplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
-    u_n, _, tf = eqn.rk(tstart, tend, dt, 4)
+    u_n, _, tf = eqn.rk(tstart, tend)
 
     class Analytical:
         """ Analytical solution """

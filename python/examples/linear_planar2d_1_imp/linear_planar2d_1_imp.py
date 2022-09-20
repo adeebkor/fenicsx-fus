@@ -36,6 +36,9 @@ domainLength = 0.12  # (m)
 # FE parameters
 degreeOfBasis = 4
 
+# RK parameter
+rkOrder = 4
+
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh_name = "planar_2d_1"
@@ -70,7 +73,7 @@ finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print(f"Problem type: Planar 2D", flush=True)
+    print("Problem type: Planar 2D", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
@@ -84,12 +87,12 @@ if mpi_rank == 0:
 
 # Model
 model = LinearGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                          sourceFrequency, sourceAmplitude, speedOfSound)
+                          sourceFrequency, sourceAmplitude, speedOfSound,
+                          rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.dirk(startTime, finalTime, timeStepSize, 4)
+u_n, v_n, tf = model.dirk(startTime, finalTime)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)
-

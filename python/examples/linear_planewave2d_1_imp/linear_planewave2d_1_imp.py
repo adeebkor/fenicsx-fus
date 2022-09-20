@@ -11,6 +11,7 @@
 import numpy as np
 from mpi4py import MPI
 
+from dolfinx.common import Timer
 from dolfinx.fem import Function, FunctionSpace
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
@@ -35,6 +36,9 @@ domainLength = 0.12  # (m)
 
 # FE parameters
 degreeOfBasis = 4
+
+# RK parameter
+rkOrder = 4
 
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
@@ -86,11 +90,16 @@ if mpi_rank == 0:
 
 # Model
 model = LinearGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                          sourceFrequency, sourceAmplitude, speedOfSound)
+                          sourceFrequency, sourceAmplitude, speedOfSound,
+                          rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.dirk(startTime, finalTime, timeStepSize, 4)
+with Timer() as tsolve:
+    u_n, v_n, tf = model.dirk(startTime, finalTime)
+
+if MPI.COMM_WORLD.rank == 0:
+    print("Solve time: ", tsolve.elapsed()[0], flush=True)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)

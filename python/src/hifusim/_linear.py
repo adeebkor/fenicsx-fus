@@ -5,7 +5,7 @@ from petsc4py import PETSc
 
 import basix
 import basix.ufl_wrapper
-from dolfinx.fem import FunctionSpace, Function, Constant, form
+from dolfinx.fem import FunctionSpace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
@@ -19,7 +19,8 @@ class LinearExplicit:
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
+    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0, rk_order,
+                 dt):
 
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
@@ -34,6 +35,37 @@ class LinearExplicit:
         self.s0 = s0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
+
+        # Runge-Kutta timestepping data
+        self.dt = dt
+
+        # Forward Euler
+        if rk_order == 1:
+            self.n_RK = 1
+            self.a_runge = np.array([0])
+            self.b_runge = np.array([1])
+            self.c_runge = np.array([0])
+
+        # Ralston's 2nd order
+        if rk_order == 2:
+            self.n_RK = 2
+            self.a_runge = np.array([0, 2/3])
+            self.b_runge = np.array([1/4, 3/4])
+            self.c_runge = np.array([0, 2/3])
+
+        # Ralston's 3rd order
+        if rk_order == 3:
+            self.n_RK = 3
+            self.a_runge = np.array([0, 1/2, 3/4])
+            self.b_runge = np.array([2/9, 1/3, 4/9])
+            self.c_runge = np.array([0, 1/2, 3/4])
+
+        # Classical 4th order
+        if rk_order == 4:
+            self.n_RK = 4
+            self.a_runge = np.array([0.0, 0.5, 0.5, 1.0])
+            self.b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
+            self.c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
         # Initialise mesh
         self.mesh = mesh
@@ -145,7 +177,7 @@ class LinearExplicit:
         # Solve
         self.solver.solve(self.b, result)
 
-    def rk(self, t0: float, tf: float, dt: float, rk_order: int):
+    def rk(self, t0: float, tf: float):
         """
         Runge-Kutta solver
         Parameters
@@ -161,37 +193,11 @@ class LinearExplicit:
         t : final time
         """
 
-        # --------------------------------------------------------------------
-        # Runge-Kutta timestepping data
-
-        # Forward Euler
-        if rk_order == 1:
-            n_RK = 1
-            a_runge = np.array([0])
-            b_runge = np.array([1])
-            c_runge = np.array([0])
-
-        # Ralston's 2nd order
-        if rk_order == 2:
-            n_RK = 2
-            a_runge = np.array([0, 2/3])
-            b_runge = np.array([1/4, 3/4])
-            c_runge = np.array([0, 2/3])
-
-        # Ralston's 3rd order
-        if rk_order == 3:
-            n_RK = 3
-            a_runge = np.array([0, 1/2, 3/4])
-            b_runge = np.array([2/9, 1/3, 4/9])
-            c_runge = np.array([0, 1/2, 3/4])
-
-        # Classical 4th order
-        if rk_order == 4:
-            n_RK = 4
-            a_runge = np.array([0.0, 0.5, 0.5, 1.0])
-            b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
-            c_runge = np.array([0.0, 0.5, 0.5, 1.0])
-        # --------------------------------------------------------------------
+        # Runge-Kutta data
+        n_RK = self.n_RK
+        a_runge = self.a_runge
+        b_runge = self.b_runge
+        c_runge = self.c_runge
 
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
@@ -209,13 +215,8 @@ class LinearExplicit:
         ku = u0.copy()
         kv = v0.copy()
 
-        # Runge-Kutta timestepping data
-        n_RK = 4
-        a_runge = np.array([0.0, 0.5, 0.5, 1.0])
-        b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
-        c_runge = np.array([0.0, 0.5, 0.5, 1.0])
-
         # Temporal data
+        dt = self.dt
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
@@ -273,7 +274,8 @@ class LinearGLLExplicit:
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
+    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0, rk_order,
+                 dt):
 
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
@@ -288,6 +290,37 @@ class LinearGLLExplicit:
         self.s0 = s0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
+
+        # Runge-Kutta timestepping data
+        self.dt = dt
+
+        # Forward Euler
+        if rk_order == 1:
+            self.n_RK = 1
+            self.a_runge = np.array([0])
+            self.b_runge = np.array([1])
+            self.c_runge = np.array([0])
+
+        # Ralston's 2nd order
+        if rk_order == 2:
+            self.n_RK = 2
+            self.a_runge = np.array([0, 2/3])
+            self.b_runge = np.array([1/4, 3/4])
+            self.c_runge = np.array([0, 2/3])
+
+        # Ralston's 3rd order
+        if rk_order == 3:
+            self.n_RK = 3
+            self.a_runge = np.array([0, 1/2, 3/4])
+            self.b_runge = np.array([2/9, 1/3, 4/9])
+            self.c_runge = np.array([0, 1/2, 3/4])
+
+        # Classical 4th order
+        if rk_order == 4:
+            self.n_RK = 4
+            self.a_runge = np.array([0.0, 0.5, 0.5, 1.0])
+            self.b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
+            self.c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
         # Initialise mesh
         self.mesh = mesh
@@ -402,7 +435,7 @@ class LinearGLLExplicit:
         # Solve
         result.pointwiseDivide(self.b, self.m)
 
-    def rk(self, t0: float, tf: float, dt: float, rk_order: int):
+    def rk(self, t0: float, tf: float):
         """
         Runge-Kutta solver
 
@@ -419,37 +452,11 @@ class LinearGLLExplicit:
         t : final time
         """
 
-        # --------------------------------------------------------------------
-        # Runge-Kutta timestepping data
-
-        # Forward Euler
-        if rk_order == 1:
-            n_RK = 1
-            a_runge = np.array([0])
-            b_runge = np.array([1])
-            c_runge = np.array([0])
-
-        # Ralston's 2nd order
-        if rk_order == 2:
-            n_RK = 2
-            a_runge = np.array([0, 2/3])
-            b_runge = np.array([1/4, 3/4])
-            c_runge = np.array([0, 2/3])
-
-        # Ralston's 3rd order
-        if rk_order == 3:
-            n_RK = 3
-            a_runge = np.array([0, 1/2, 3/4])
-            b_runge = np.array([2/9, 1/3, 4/9])
-            c_runge = np.array([0, 1/2, 3/4])
-
-        # Classical 4th order
-        if rk_order == 4:
-            n_RK = 4
-            a_runge = np.array([0.0, 0.5, 0.5, 1.0])
-            b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
-            c_runge = np.array([0.0, 0.5, 0.5, 1.0])
-        # --------------------------------------------------------------------
+        # Runge-Kutta data
+        n_RK = self.n_RK
+        a_runge = self.a_runge
+        b_runge = self.b_runge
+        c_runge = self.c_runge
 
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
@@ -468,6 +475,7 @@ class LinearGLLExplicit:
         kv = v0.copy()
 
         # Temporal data
+        dt = self.dt
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
@@ -491,8 +499,8 @@ class LinearGLLExplicit:
                 tn = t + c_runge[i]*dt
 
                 # Compute slopes
-                self.f0(tn, un, vn, result=ku)
                 self.f1(tn, un, vn, result=kv)
+                self.f0(tn, un, vn, result=ku)
 
                 # Update solution
                 u_.axpy(b_runge[i]*dt, ku)
@@ -520,11 +528,12 @@ class LinearGLLImplicit:
     Solver for the linear second order wave equation.
 
     - GLL lattice and GLL quadrature.
-    - Diagonally implicit Runge-Kutta solver.
+    - Singly diagonally implicit Runge-Kutta solver.
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
+    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0, rk_order,
+                 dt):
 
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
@@ -539,6 +548,44 @@ class LinearGLLImplicit:
         self.s0 = s0
         self.T = 1 / freq0  # period
         self.alpha = 4  # window length
+
+        # Runge-Kutta timestepping data
+        self.dt = dt
+
+        # Backward Euler
+        if rk_order == 1:
+            self.n_RK = 1
+            self.a_runge = np.array([[1]])
+            self.b_runge = np.array([1])
+            self.c_runge = np.array([1])
+
+        # Crouzeix 2 stages
+        if rk_order == 2:
+            self.n_RK = 2
+            self.a_runge = np.array([[1/4, 0],
+                                     [1/2, 1/4]])
+            self.b_runge = np.array([1/2, 1/2])
+            self.c_runge = np.array([1/4, 3/4])
+
+        # Crouzeix 3 stages
+        if rk_order == 3:
+            q = 2*np.cos(np.pi/18)/np.sqrt(3)
+            self.n_RK = 3
+            self.a_runge = np.array([[(1+q)/2, 0, 0],
+                                     [-q/2, (1+q)/2, 0],
+                                     [1+q, -(1+2*q), (1+q)/2]])
+            self.b_runge = np.array([1/(6*q**2), 1-1/(3*q**2), 1/(6*q**2)])
+            self.c_runge = np.array([(1+q)/2, 1/2, (1-q)/2])
+
+        # 4 stages
+        if rk_order == 4:
+            self.n_RK = 4
+            self.a_runge = np.array([[1/2, 0, 0, 0],
+                                     [1/6, 1/2, 0, 0],
+                                     [-1/2, 1/2, 1/2, 0],
+                                     [3/2, -3/2, 1/2, 1/2]])
+            self.b_runge = np.array([3/2, -3/2, 1/2, 1/2])
+            self.c_runge = np.array([1/2, 2/3, 1/2, 1])
 
         # Initialise mesh
         self.mesh = mesh
@@ -560,8 +607,7 @@ class LinearGLLImplicit:
         self.g = Function(V)
         self.u_n = Function(V)
         self.v_n = Function(V)
-        self.tau = 1.0
-        self.sigma = Constant(mesh, self.tau)
+        self.tau = self.dt * self.a_runge[0, 0]
 
         # Quadrature parameters
         qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
@@ -570,20 +616,15 @@ class LinearGLLImplicit:
               "quadrature_degree": qd[str(k)]}
 
         # Define forms
-        self.a0 = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                       * dx(metadata=md))
-        self.M = assemble_matrix(self.a0)
-        self.M.assemble()
-
-        self.a1 = form(inner(1/self.rho0*grad(self.u), grad(self.v))
-                       * dx(metadata=md))
-        self.K = assemble_matrix(self.a1)
-        self.K.assemble()
-
-        self.a2 = form(inner(1/self.rho0/self.c0*self.u, self.v)
-                       * ds(2, metadata=md))
-        self.B = assemble_matrix(self.a2)
-        self.B.assemble()
+        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
+                      * dx(metadata=md)
+                      + inner(self.tau*self.tau/self.rho0*grad(self.u),
+                              grad(self.v))
+                      * dx(metadata=md)
+                      + inner(self.tau/self.rho0/self.c0*self.u, self.v)
+                      * ds(2, metadata=md))
+        self.A = assemble_matrix(self.a)
+        self.A.assemble()
 
         self.L = form(
             - inner(1/self.rho0*grad(self.u_n), grad(self.v))
@@ -592,7 +633,7 @@ class LinearGLLImplicit:
             * ds(1, metadata=md)
             - inner(1/self.rho0/self.c0*self.v_n, self.v)
             * ds(2, metadata=md)
-            - inner(self.sigma/self.rho0*grad(self.v_n), grad(self.v))
+            - inner(self.tau/self.rho0*grad(self.v_n), grad(self.v))
             * dx(metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
@@ -602,6 +643,7 @@ class LinearGLLImplicit:
         self.solver = PETSc.KSP().create(mesh.comm)
         self.solver.setType(PETSc.KSP.Type.CG)
         self.solver.getPC().setType(PETSc.PC.Type.JACOBI)
+        self.solver.setOperators(self.A)
 
     def init(self):
         """
@@ -654,9 +696,6 @@ class LinearGLLImplicit:
         self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
             * np.cos(self.w0 * t)
 
-        # Update RK coefficient
-        self.sigma.value = self.tau
-
         # Update fields
         u.copy(result=self.u_n.vector)
         self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
@@ -673,14 +712,10 @@ class LinearGLLImplicit:
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
 
-        # Assemble LHS
-        A = self.M + self.tau*self.tau*self.K + self.tau*self.B
-
         # Solve
-        self.solver.setOperators(A)
         self.solver.solve(self.b, result)
 
-    def dirk(self, t0: float, tf: float, dt: float, rk_order: int):
+    def dirk(self, t0: float, tf: float):
         """
         Diagonally implicit Runge-Kutta solver
 
@@ -697,44 +732,11 @@ class LinearGLLImplicit:
         t : final time
         """
 
-        # --------------------------------------------------------------------
-        # Diagonally implicit Runge-Kutta timestepping data
-
-        # Backward Euler
-        if rk_order == 1:
-            n_RK = 1
-            a_runge = np.array([[1]])
-            b_runge = np.array([1])
-            c_runge = np.array([1])
-
-        # Crouzeix 2 stages
-        if rk_order == 2:
-            n_RK = 2
-            a_runge = np.array([[1/4, 0],
-                                [1/2, 1/4]])
-            b_runge = np.array([1/2, 1/2])
-            c_runge = np.array([1/4, 3/4])
-
-        # Crouzeix 3 stages
-        if rk_order == 3:
-            q = 2*np.cos(np.pi/18)/np.sqrt(3)
-            n_RK = 3
-            a_runge = np.array([[(1+q)/2, 0, 0],
-                                [-q/2, (1+q)/2, 0],
-                                [1+q, -(1+2*q), (1+q)/2]])
-            b_runge = np.array([1/(6*q**2), 1-1/(3*q**2), 1/(6*q**2)])
-            c_runge = np.array([(1+q)/2, 1/2, (1-q)/2])
-
-        # 4 stages
-        if rk_order == 4:
-            n_RK = 4
-            a_runge = np.array([[1/2, 0, 0, 0],
-                                [1/6, 1/2, 0, 0],
-                                [-1/2, 1/2, 1/2, 0],
-                                [3/2, -3/2, 1/2, 1/2]])
-            b_runge = np.array([3/2, -3/2, 1/2, 1/2])
-            c_runge = np.array([1/2, 2/3, 1/2, 1])
-        # --------------------------------------------------------------------
+        # Runge-Kutta data
+        n_RK = self.n_RK
+        a_runge = self.a_runge
+        b_runge = self.b_runge
+        c_runge = self.c_runge
 
         # Placeholder vectors at time step n
         u_ = self.u_n.vector.copy()
@@ -753,6 +755,7 @@ class LinearGLLImplicit:
         kv = n_RK * [v0.copy()]
 
         # Temporal data
+        dt = self.dt
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
@@ -777,8 +780,6 @@ class LinearGLLImplicit:
                 tn = t + c_runge[i]*dt
 
                 # Solve for slopes
-                self.tau = a_runge[i, i]*dt
-
                 self.f1(tn, un, vn, ku[i], kv[i], result=kv[i])
                 self.f0(tn, un, vn, ku[i], kv[i], result=ku[i])
 
@@ -790,7 +791,7 @@ class LinearGLLImplicit:
             t += dt
             step += 1
 
-            if step % 10 == 0:
+            if step % 100 == 0:
                 PETSc.Sys.syncPrint(f"t: {t:5.5},\t Steps: {step}/{nstep}")
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,

@@ -36,6 +36,9 @@ domainLength = 0.12  # (m)
 # FE parameters
 degreeOfBasis = 4
 
+# RK parameter
+rkOrder = 4
+
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh_name = "planewave_2d_1"
@@ -85,11 +88,12 @@ if mpi_rank == 0:
 
 # Model
 model = LinearGLLExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                          sourceFrequency, sourceAmplitude, speedOfSound)
+                          sourceFrequency, sourceAmplitude, speedOfSound,
+                          rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk(startTime, finalTime, timeStepSize, 4)
+u_n, v_n, tf = model.rk(startTime, finalTime)
 
 
 # Best approximation

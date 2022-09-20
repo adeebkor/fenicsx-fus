@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
-from dolfinx.mesh import (create_interval, locate_entities, 
+from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 from ufl import inner, dx
 
@@ -38,6 +38,9 @@ lmbda = c0/f0  # wavelength (m)
 
 # FE parameters
 degree = 4
+
+# RK parameter
+rk = 4
 
 # Mesh parameters
 epw = 8
@@ -82,11 +85,11 @@ tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
-model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0)
+model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
 
 # Solve
 model.init()
-u_e, _, tf, = model.rk(tstart, tend, dt, 4)
+u_e, _, tf, = model.rk(tstart, tend)
 
 # Plot solution
 npts = 3 * degree * (nx+1)
@@ -118,7 +121,7 @@ class Analytical:
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degree))
 u_ba = Function(V_ba)
-u_ba.interpolate(Analytical(c0, f0, p0,tf))
+u_ba.interpolate(Analytical(c0, f0, p0, tf))
 
 u_ba_eval = u_ba.eval(x, cells).flatten()
 

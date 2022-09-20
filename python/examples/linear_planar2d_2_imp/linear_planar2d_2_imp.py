@@ -39,6 +39,9 @@ domainLength = 0.12  # (m)
 # FE parameters
 degreeOfBasis = 4
 
+# RK parameter
+rkOrder = 4
+
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh_name = "planar_2d_2"
@@ -90,12 +93,13 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
-                          sourceAmplitude, speedOfSoundWater)
+model = LinearGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                          sourceFrequency, sourceAmplitude, speedOfSoundWater,
+                          rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.dirk(startTime, finalTime, timeStepSize, 4)
+u_n, v_n, tf = model.dirk(startTime, finalTime)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as out:
     out.write(0.0)

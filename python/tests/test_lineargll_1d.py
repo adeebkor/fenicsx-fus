@@ -63,11 +63,11 @@ def test_lineargll_explicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0)
+    eqn = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
-    u_n, _, tf = eqn.rk(tstart, tend, dt, 4)
+    u_n, _, tf = eqn.rk(tstart, tend)
 
     class Analytical:
         """ Analytical solution """
@@ -155,11 +155,11 @@ def test_lineargll_implicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LinearGLLImplicit(mesh, mt, degree, c, rho, f0, p0, c0)
+    eqn = LinearGLLImplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
-    u_n, _, tf = eqn.dirk(tstart, tend, dt, 4)
+    u_n, _, tf = eqn.dirk(tstart, tend)
 
     class Analytical:
         """ Analytical solution """

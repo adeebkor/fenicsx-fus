@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function
-from dolfinx.mesh import (create_interval, locate_entities, 
+from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 
 from hifusim import LinearGLLExplicit
@@ -38,6 +38,9 @@ lmbda = c0/f0  # wavelength (m)
 
 # FE parameters
 degree = 4
+
+# RK parameter
+rk = 4
 
 # Mesh parameters
 epw = 8
@@ -84,11 +87,11 @@ tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
-model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0)
+model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
 
 # Solve
 model.init()
-u_e, _, tf, = model.rk(tstart, tend, dt, 4)
+u_e, _, tf, = model.rk(tstart, tend)
 
 # Plot solution
 npts = 3 * degree * (nx+1)
