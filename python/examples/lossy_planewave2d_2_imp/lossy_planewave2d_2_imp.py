@@ -1,11 +1,12 @@
 #
-# .. _lossy_planar2d_2:
+# .. _lossy_planewave2d_2_imp:
 #
-# Lossy solver for the 2D planar transducer problem
+# Lossy solver for the 2D planewave problem
 # - structured mesh
 # - first-order Sommerfeld ABC
-# - different attenuation between 2 medium (x < 0.06 m, x > 0.06 m)
-# =================================================================
+# - different attenuation between 2 medium
+# - implicit Runge-Kutta
+# =========================================
 # Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
@@ -15,7 +16,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLL
+from hifusim import LossyGLLImplicit
 from hifusim.utils import compute_diffusivity_of_sound
 
 # MPI
@@ -25,13 +26,13 @@ mpi_size = MPI.COMM_WORLD.size
 # Source parameters
 sourceFrequency = 0.5e6  # (Hz)
 sourceAmplitude = 60000  # (Pa)
-period = 1 / sourceFrequency  # (s)
+period = 1.0 / sourceFrequency  # (s)
 angularFrequency = 2 * np.pi * sourceFrequency  # (rad / s)
 
 # Material parameters
-speedOfSound = 1500  # (m/s)
+speedOfSound = 1500.0  # (m/s)
 density = 1000  # (kg/m^3)
-attenuationCoefficientdB = 100  # (dB/m)
+attenuationCoefficientdB = 500  # (dB/m)
 attenuationCoefficientNp = attenuationCoefficientdB / 20 * np.log(10)
 diffusivityOfSound = compute_diffusivity_of_sound(
     angularFrequency, speedOfSound, attenuationCoefficientdB)
@@ -42,9 +43,12 @@ domainLength = 0.12  # (m)
 # FE parameters
 degreeOfBasis = 4
 
+# RK parameter
+rkOrder = 4
+
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
-    mesh_name = "planar_2d_2"
+    mesh_name = "planewave_2d_4"
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
@@ -71,16 +75,17 @@ delta0.x.array[:] = 0.0
 delta0.x.array[mt_cell.find(2)] = diffusivityOfSound
 
 # Temporal parameters
-CFL = 0.4
+CFL = 1.5
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print("Problem type: Planar 2D (Lossy)", flush=True)
+    print("Problem type: Planewave 2D", flush=True)
+    print("Runge-Kutta type: Implicit", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Density: {density}", flush=True)
     print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
@@ -95,12 +100,13 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
-                 sourceFrequency, sourceAmplitude, speedOfSound)
+model = LossyGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
+                         sourceFrequency, sourceAmplitude, speedOfSound,
+                         rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+u_n, v_n, tf = model.dirk(startTime, finalTime)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)

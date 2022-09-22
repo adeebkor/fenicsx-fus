@@ -1,12 +1,13 @@
 #
-# .. _lossy_planewave2d_2:
+# .. _lossy_planewave2d_2_exp:
 #
 # Lossy solver for the 2D planewave problem
 # - structured mesh
 # - first-order Sommerfeld ABC
 # - different attenuation between 2 medium
+# - explicit Runge-Kutta
 # =========================================
-# Copyright (C) 2021 Adeeb Arif Kor
+# Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
@@ -15,9 +16,8 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLL
+from hifusim import LossyGLLExplicit
 from hifusim.utils import compute_diffusivity_of_sound
-
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -42,6 +42,9 @@ domainLength = 0.12  # (m)
 
 # FE parameters
 degreeOfBasis = 4
+
+# RK parameter
+rkOrder = 4
 
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
@@ -72,16 +75,17 @@ delta0.x.array[:] = 0.0
 delta0.x.array[mt_cell.find(2)] = diffusivityOfSound
 
 # Temporal parameters
-CFL = 0.4
+CFL = 1.5
 timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
-finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
     print("Problem type: Planewave 2D", flush=True)
+    print("Runge-Kutta type: Explicit", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Density: {density}", flush=True)
     print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
@@ -96,12 +100,13 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
-                 sourceFrequency, sourceAmplitude, speedOfSound)
+model = LossyGLLExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
+                         sourceFrequency, sourceAmplitude, speedOfSound,
+                         rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
+u_n, v_n, tf = model.rk(startTime, finalTime)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)

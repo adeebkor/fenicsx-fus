@@ -130,7 +130,7 @@ class LinearExplicit:
 
         Return
         ------
-        result : Result, i.e. dun/dtn
+        result : Result, i.e. k^{u}
         """
 
         v.copy(result=result)
@@ -147,7 +147,7 @@ class LinearExplicit:
 
         Return
         ------
-        result : Result, i.e. dvn/dtn
+        result : Result, i.e. k^{v}
         """
 
         if t < self.T * self.alpha:
@@ -388,7 +388,7 @@ class LinearGLLExplicit:
 
         Return
         ------
-        result : Result, i.e. dun/dtn
+        result : Result, i.e. k^{u}
         """
 
         v.copy(result=result)
@@ -405,7 +405,7 @@ class LinearGLLExplicit:
 
         Return
         ------
-        result : Result, i.e. dvn/dtn
+        result : Result, i.e. k^{v}
         """
 
         if t < self.T * self.alpha:
@@ -666,7 +666,7 @@ class LinearGLLImplicit:
 
         Return
         ------
-        result : Result, i.e. dun/dtn
+        result : Result, i.e. k^{u}
         """
 
         result.waxpy(self.tau, kv, v)
@@ -684,7 +684,7 @@ class LinearGLLImplicit:
 
         Return
         ------
-        result : Result, i.e. dvn/dtn
+        result : Result, i.e. k^{v}
         """
 
         if t < self.T * self.alpha:

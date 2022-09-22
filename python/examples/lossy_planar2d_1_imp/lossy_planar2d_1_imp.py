@@ -1,11 +1,12 @@
 #
-# .. _lossy_planewave2d_1:
+# .. _lossy_planar2d_1_imp:
 #
-# Lossy solver for the 2D planewave problem
+# Lossy solver for the 2D planar transducer problem
 # - structured mesh
-# - first order Sommerfeld ABC
-# =========================================
-# Copyright (C) 2021 Adeeb Arif Kor
+# - first-order Sommerfeld ABC
+# - implicit Runge-Kutta
+# =================================================
+# Copyright (C) 2022 Adeeb Arif Kor
 
 import numpy as np
 from mpi4py import MPI
@@ -14,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLL
+from hifusim import LossyGLLImplicit
 from hifusim.utils import compute_diffusivity_of_sound
 
 
@@ -25,14 +26,13 @@ mpi_size = MPI.COMM_WORLD.size
 # Source parameters
 sourceFrequency = 0.5e6  # (Hz)
 sourceAmplitude = 60000  # (Pa)
-period = 1.0 / sourceFrequency  # (s)
+period = 1 / sourceFrequency  # (s)
 angularFrequency = 2 * np.pi * sourceFrequency  # (rad / s)
 
 # Material parameters
-speedOfSound = 1500.0  # (m/s)
+speedOfSound = 1500  # (m/s)
 density = 1000  # (kg/m^3)
-attenuationCoefficientdB = 50  # (dB/m)
-attenuationCoefficientNp = attenuationCoefficientdB / 20 * np.log(10)
+attenuationCoefficientdB = 100  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
     angularFrequency, speedOfSound, attenuationCoefficientdB)
 
@@ -42,9 +42,12 @@ domainLength = 0.12  # (m)
 # FE parameters
 degreeOfBasis = 4
 
+# RK parameter
+rkOrder = 4
+
 # Read mesh and mesh tags
 with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
-    mesh_name = "planewave_2d_1"
+    mesh_name = "planar_2d_1"
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
@@ -70,16 +73,17 @@ delta0 = Function(V_DG)
 delta0.x.array[:] = diffusivityOfSound
 
 # Temporal parameters
-CFL = 0.4
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+CFL = 1.3
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
-timeStepSize = period / stepPerPeriod
+timeStepSize = period / stepPerPeriod  # adjust time step size
 startTime = 0.0
-finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency
+finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency
 numberOfStep = int((finalTime - startTime) / timeStepSize + 1)
 
 if mpi_rank == 0:
-    print("Problem type: Planewave 2D", flush=True)
+    print("Problem type: Planar 2D (Lossy)", flush=True)
+    print("Runge-Kutta type: Implicit", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Density: {density}", flush=True)
     print(f"Diffusivity of sound: {diffusivityOfSound}", flush=True)
@@ -94,40 +98,13 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLL(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
-                 sourceFrequency, sourceAmplitude, speedOfSound)
+model = LossyGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
+                         sourceFrequency, sourceAmplitude, speedOfSound,
+                         rkOrder, timeStepSize)
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
-
-
-# Best approximation
-class Analytical:
-    """ Analytical solution """
-
-    def __init__(self, c0, a0, f0, p0, t):
-        self.c0 = c0
-        self.a0 = a0
-        self.p0 = p0
-        self.f0 = f0
-        self.w0 = 2 * np.pi * f0
-        self.t = t
-
-    def __call__(self, x):
-        val = self.p0 * np.exp(1j*(self.w0*self.t - self.w0/self.c0*x[0])) \
-                * np.exp(-self.a0*x[0])
-
-        return val.imag
-
-
-V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
-u_ba = Function(V_ba)
-u_ba.interpolate(Analytical(speedOfSound, attenuationCoefficientNp,
-                            sourceFrequency, sourceAmplitude, tf))
+u_n, v_n, tf = model.dirk(startTime, finalTime)
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)
-
-with VTXWriter(mesh.comm, "output_analytical.bp", u_ba) as f_ba:
-    f_ba.write(0.0)

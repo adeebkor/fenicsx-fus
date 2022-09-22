@@ -2,7 +2,7 @@ from .utils import compute_eval_params, compute_diffusivity_of_sound  # noqa
 from ._analytical import SoundHardExact2D, SoundSoftExact2D, PenetrableExact2D  # noqa
 from ._linear import (LinearExplicit, LinearGLLExplicit, LinearGLLImplicit,
                       LinearGLLS2, LinearGLLSciPy, LinearGLLSponge)  # noqa
-from ._lossy import LossyGLL  # noqa
+from ._lossy import LossyGLLExplicit, LossyGLLImplicit  # noqa
 from ._planewave import PlanewaveGLL, PlanewaveHeterogenousGLL  # noqa
 from ._scatterer import (
     LinearSoundSoftGLL, LinearSoundHardGLL, LinearPenetrableGLL)  # noqa
@@ -14,7 +14,7 @@ __all__ = [
     "LinearExplicit", "LinearGLLExplicit", "LinearGLLImplicit",
     "LinearGLLS2", "LinearGLLSciPy", "LinearGLLSponge",
     "LinearSoundSoftGLL", "LinearSoundHardGLL", "LinearPenetrableGLL",
-    "LossyGLL",
+    "LossyGLLExplicit", "LossyGLLImplicit",
     "PlanewaveGLL", "PlanewaveHeterogenousGLL",
     "Westervelt", "WesterveltGLL", "WesterveltGLLSciPy",
 ]
