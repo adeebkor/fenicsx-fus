@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 
+from dolfinx.common import Timer
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
@@ -40,7 +41,7 @@ lmbda = c0/f0  # wavelength (m)
 degree = 4
 
 # RK parameter
-rk = 4
+rk = 2
 
 # Mesh parameters
 epw = 8
@@ -78,8 +79,8 @@ rho = Function(V_DG)
 rho.x.array[:] = rho0
 
 # Temporal parameters
-CFL = 0.9
-dt = CFL * h / (c0 * degree * 2)
+CFL = 0.1
+dt = CFL * h / (c0 * degree**2)
 
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
@@ -89,7 +90,11 @@ model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
 
 # Solve
 model.init()
-u_e, _, tf, = model.rk(tstart, tend)
+with Timer() as t_solve:
+    u_e, _, tf, = model.rk(tstart, tend)
+
+print("Solver time: ", t_solve.elapsed()[0])
+
 
 # Plot solution
 npts = 3 * degree * (nx+1)
