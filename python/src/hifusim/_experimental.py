@@ -6,8 +6,230 @@ from petsc4py import PETSc
 import basix
 import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
-from dolfinx.fem.petsc import assemble_vector
-from ufl import TestFunction, Measure, inner, grad, dx
+from dolfinx.fem.petsc import assemble_matrix, assemble_vector
+from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
+
+
+class LinearGLLNewmark:
+    """
+    Solver for linear second order wave equation.
+
+    - GLL lattice and GLL quadrature -> diagonal mass matrix
+    - This code uses the Newmark time-stepping method.
+    - Experimental
+
+    """
+
+    def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0, dt):
+
+        # MPI
+        self.mpi_size = MPI.COMM_WORLD.size
+        self.mpi_rank = MPI.COMM_WORLD.rank
+
+        # Physical parameters
+        self.c0 = c0
+        self.rho0 = rho0
+        self.freq = freq0
+        self.w0 = 2 * np.pi * freq0
+        self.p0 = p0
+        self.s0 = s0
+        self.T = 1 / freq0  # period
+        self.alpha = 4  # window length
+
+        # Time-stepping data
+        self.dt = dt
+        self.gamma = 1/2
+        self.beta = 1/4
+
+        # Initialise mesh
+        self.mesh = mesh
+
+        # Boundary facets
+        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+
+        # Define cell, finite element and function space
+        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        element = basix.create_element(
+            basix.ElementFamily.P, cell_type, k,
+            basix.LagrangeVariant.gll_warped)
+        FE = basix.ufl_wrapper.BasixElement(element)
+        V = FunctionSpace(mesh, FE)
+
+        # Define functions
+        self.v = TestFunction(V)
+        self.u = TrialFunction(V)
+        self.g = Function(V)
+        self.u_n = Function(V)
+        self.v_n = Function(V)
+        self.w_n = Function(V)
+
+        # Quadrature parameters
+        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
+              "9": 16, "10": 18}
+        md = {"quadrature_rule": "GLL",
+              "quadrature_degree": qd[str(k)]}
+
+        # Define forms
+        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
+                      * dx(metadata=md)
+                      + inner(self.gamma*self.dt/self.rho0/self.c0*self.u,
+                              self.v)
+                      * ds(2, metadata=md)
+                      + inner(self.beta*self.dt*self.dt/self.rho0*grad(self.u),
+                              grad(self.v))
+                      * dx(metadata=md))
+        self.A = assemble_matrix(self.a)
+        self.A.assemble()
+
+        self.L = form(
+            - inner(1/self.rho0/self.c0*(
+                self.v_n + (1 - self.gamma)*self.dt*self.w_n), self.v)
+            * ds(2, metadata=md)
+            - inner(1/self.rho0*grad(
+                self.u_n + self.dt*self.v_n +
+                0.5*self.dt*self.dt*(1 - 2*self.beta)*self.w_n), grad(self.v))
+            * dx(metadata=md)
+            + inner(1/self.rho0*self.g, self.v)
+            * ds(1, metadata=md))
+        self.b = assemble_vector(self.L)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
+
+        # Linear solver
+        self.solver = PETSc.KSP().create(mesh.comm)
+        self.solver.setType(PETSc.KSP.Type.PREONLY)
+        self.solver.getPC().setType(PETSc.PC.Type.LU)
+        self.solver.getPC().setFactorSolverType("mumps")
+        self.solver.setOperators(self.A)
+
+    def init(self):
+        """
+        Set the initial values of u and v, i.e. u_0 and v_0
+        """
+
+        self.u_n.x.array[:] = 0.0
+        self.v_n.x.array[:] = 0.0
+        self.w_n.x.array[:] = 0.0
+
+    def solve(self, t: float, u: PETSc.Vec, v: PETSc.Vec, w: PETSc.Vec,
+              result: PETSc.Vec):
+        """
+        Solve for u_{n+1}
+
+        Parameters
+        ----------
+        t : Current time, i.e. t_{n}
+        u : Current u, i.e. u_{n}
+        v : Current v, i.e. v_{n}
+        w : Current w, i.e. w_{n}
+
+        Return
+        ------
+
+        result : Result, i.e. w_{n+1}
+
+        """
+
+        if t < self.T * self.alpha:
+            window = 0.5 * (1 - np.cos(self.freq * np.pi * t / self.alpha))
+        else:
+            window = 1.0
+
+        # Update source
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
+            * np.cos(self.w0 * t)
+
+        # Update fields
+        u.copy(result=self.u_n.vector)
+        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                                    mode=PETSc.ScatterMode.FORWARD)
+        v.copy(result=self.v_n.vector)
+        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                                    mode=PETSc.ScatterMode.FORWARD)
+        w.copy(result=self.w_n.vector)
+        self.w_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                                    mode=PETSc.ScatterMode.FORWARD)
+
+        # Assemble RHS
+        with self.b.localForm() as b_local:
+            b_local.set(0.0)
+        assemble_vector(self.b, self.L)
+
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
+                           mode=PETSc.ScatterMode.REVERSE)
+
+        # Solve
+        self.solver.solve(self.b, result)
+        result.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                           mode=PETSc.ScatterMode.FORWARD)
+
+    def newmark(self, t0: float, tf: float):
+        """
+        Newmark method
+
+        Parameters
+        ----------
+        t0: start time
+        tf: final time
+
+        Returns
+        -------
+        u : u at final time
+        v : v at final time
+        t : final time
+
+        """
+
+        # Placeholder vectors at time step n
+        u_ = self.u_n.vector.copy()
+        v_ = self.v_n.vector.copy()
+        w_ = self.w_n.vector.copy()
+
+        # Placeholder vectors at start of time step
+        u0 = self.u_n.vector.copy()
+        v0 = self.v_n.vector.copy()
+        w0 = self.w_n.vector.copy()
+
+        # Temporal data
+        dt = self.dt
+        t = t0
+        step = 0
+        nstep = int((tf - t0) / dt) + 1
+
+        while t < tf:
+            dt = min(dt, tf - t)
+
+            # Store solution at start of time step
+            u_.copy(result=u0)
+            v_.copy(result=v0)
+            w_.copy(result=w0)
+
+            # Solve
+            t_ = t + dt
+            self.solve(t_, u0, v0, w0, w_)
+
+            # Update u_, v_
+            v_ = v0 + (1 - self.gamma)*dt*w0 + self.gamma*dt*w_
+            u_ = u0 + dt*v0 + 0.5*dt*dt*((1 - 2*self.beta)*w0 + 2*self.beta*w_)
+
+            # Update time
+            t = t_
+            step += 1
+
+            if step % 100 == 0:
+                PETSc.Sys.syncPrint(f"t: {t:5.5},\t Steps: {step}/{nstep}")
+
+        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                       mode=PETSc.ScatterMode.FORWARD)
+        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                       mode=PETSc.ScatterMode.FORWARD)
+        w_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
+                       mode=PETSc.ScatterMode.FORWARD)
+        u_.copy(result=self.u_n.vector)
+        v_.copy(result=self.v_n.vector)
+        w_.copy(result=self.w_n.vector)
+
+        return self.u_n, self.v_n, self.w_n, t
 
 
 class LinearGLLS2:

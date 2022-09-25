@@ -5,7 +5,7 @@
 # - structured mesh
 # - first-order Sommerfeld ABC
 # - homogenous medium
-# - explicit RK solver
+# - implicit Newmark (beta = 1/4, gamma = 1/2)
 # ==========================================
 # Copyright (C) 2022 Adeeb Arif Kor
 
@@ -18,7 +18,7 @@ from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 from ufl import inner, dx
 
-from hifusim import LinearGLLExplicit
+from hifusim import LinearGLLNewmark
 from hifusim.utils import compute_eval_params
 
 # Material parameters
@@ -38,9 +38,6 @@ lmbda = c0/f0  # wavelength (m)
 
 # FE parameters
 degree = 4
-
-# RK parameter
-rk = 4
 
 # Mesh parameters
 epw = 8
@@ -78,18 +75,18 @@ rho = Function(V_DG)
 rho.x.array[:] = rho0
 
 # Temporal parameters
-CFL = 0.9
+CFL = 0.5
 dt = CFL * h / (c0 * degree * 2)
 
 tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
-model = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
+model = LinearGLLNewmark(mesh, mt, degree, c, rho, f0, p0, c0, dt)
 
 # Solve
 model.init()
-u_e, _, tf, = model.rk(tstart, tend)
+u_e, v_e, w_e, tf = model.newmark(tstart, tend)
 
 # Plot solution
 npts = 3 * degree * (nx+1)
