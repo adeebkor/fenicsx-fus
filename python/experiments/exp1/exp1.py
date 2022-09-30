@@ -77,9 +77,9 @@ model.alpha = 4.0
 model.init()
 uh, vh, tf = model.rk4(startTime, finalTime, timeStepSize)
 
+
+
 # Compute accuracy
-
-
 class Analytical:
     """ Analytical solution """
 
