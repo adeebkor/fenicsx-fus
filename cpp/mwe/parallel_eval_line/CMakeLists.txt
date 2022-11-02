@@ -1,30 +1,30 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(PROJECT_NAME mwe_parallel_eval_line)
-project(${PROJECT_NAME})
+project(${PROJECT_NAME} LANGUAGES C CXX)
 
-# Set C++17 standard
-set(CMAKE_CXX_STANDARD 17)
+# Set standard
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-O3 -march=native ${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_C_FLAGS "-O3 -march=native  ${CMAKE_C_FLAGS} -Wall")
+
+# Set flags
+set(CMAKE_CXX_FLAGS "-Ofast -march=native ${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "-Ofast -march=native ${CMAKE_C_FLAGS} -Wall")
+
+if (NOT TARGET dolfinx)
+  find_package(DOLFINX REQUIRED)
+endif()
+
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/form.c
-  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/form.py -o ${CMAKE_CURRENT_SOURCE_DIR}/
-  DEPENDS form.py
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
+  COMMAND ffcx ${CMAKE_CURRENT_SOURCE_DIR}/forms.py -o ${CMAKE_CURRENT_SOURCE_DIR}/
+  VERBATIM DEPENDS forms.py COMMENT "Compile forms.py using FFCx"
 )
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-
-find_package(DOLFINX REQUIRED)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories("../../common" ".")
 
-# Executable
 add_executable(${PROJECT_NAME} form.c main.cpp)
-
-# Target libraries
-target_link_libraries(${PROJECT_NAME} dolfinx blas lapack)
-
-message(STATUS ${CMAKE_CXX_FLAGS})
+target_link_libraries(${PROJECT_NAME} dolfinx)

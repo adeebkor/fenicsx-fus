@@ -4,7 +4,7 @@ import matplotlib.mlab as ml
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import griddata
 
-data = np.genfromtxt("build/filename.txt", delimiter=",")
+data = np.genfromtxt("build/surface_data.txt", delimiter=",")
 
 unique_data = np.unique(data, axis=0)
 unique_data = unique_data[unique_data[:, 0].argsort()]
@@ -20,4 +20,4 @@ X, Y = np.meshgrid(xi, yi)
 Z = griddata((x, y), z, (X, Y), method="nearest")
 
 plt.contourf(X, Y, Z)
-plt.savefig("pressure_on_surface.png")
+plt.savefig("plot_over_surface.png")
