@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="planar_3d_1" GridType="Uniform">
+      <Topology TopologyType="Hexahedron" NumberOfElements="491400" NodesPerElement="8">
+        <DataItem Dimensions="491400 8" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planar_3d_1/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="498979 3" Format="HDF">mesh.h5:/Mesh/planar_3d_1/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="planar_3d_1_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planar_3d_1']/Geometry)" />
+      <Topology TopologyType="Hexahedron" NumberOfElements="491400" NodesPerElement="8">
+        <DataItem Dimensions="491400 8" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planar_3d_1_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="planar_3d_1_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="491400 1" Format="HDF">mesh.h5:/MeshTags/planar_3d_1_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="planar_3d_1_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planar_3d_1']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="14840" NodesPerElement="4">
+        <DataItem Dimensions="14840 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planar_3d_1_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="planar_3d_1_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="14840 1" Format="HDF">mesh.h5:/MeshTags/planar_3d_1_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
