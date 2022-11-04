@@ -99,7 +99,6 @@ class LinearGLLNewmark:
         self.solver = PETSc.KSP().create(mesh.comm)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
         self.solver.getPC().setType(PETSc.PC.Type.LU)
-        self.solver.getPC().setFactorSolverType("mumps")
         self.solver.setOperators(self.A)
 
     def init(self):

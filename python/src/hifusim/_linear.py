@@ -106,7 +106,6 @@ class LinearExplicit:
         self.solver = PETSc.KSP().create(MPI.COMM_WORLD)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
         self.solver.getPC().setType(PETSc.PC.Type.LU)
-        self.solver.getPC().setFactorSolverType("mumps")
         self.solver.setOperators(self.M)
 
     def init(self):
