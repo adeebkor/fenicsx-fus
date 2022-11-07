@@ -19,6 +19,7 @@ mesh/*.geo
 *.avi
 *u_t.h5
 *u_t.xdmf
+cpp/fenicsx/benchmarks/*/mesh.*
 
 *build/
 
