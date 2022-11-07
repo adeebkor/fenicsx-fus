@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="transducer_3d_2" GridType="Uniform">
+      <Topology TopologyType="Hexahedron" NumberOfElements="963072" NodesPerElement="8">
+        <DataItem Dimensions="963072 8" NumberType="Int" Format="HDF">mesh.h5:/Mesh/transducer_3d_2/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="980205 3" Format="HDF">mesh.h5:/Mesh/transducer_3d_2/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="transducer_3d_2_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='transducer_3d_2']/Geometry)" />
+      <Topology TopologyType="Hexahedron" NumberOfElements="963072" NodesPerElement="8">
+        <DataItem Dimensions="963072 8" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/transducer_3d_2_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="transducer_3d_2_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="963072 1" Format="HDF">mesh.h5:/MeshTags/transducer_3d_2_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="transducer_3d_2_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='transducer_3d_2']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="33792" NodesPerElement="4">
+        <DataItem Dimensions="33792 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/transducer_3d_2_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="transducer_3d_2_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="33792 1" Format="HDF">mesh.h5:/MeshTags/transducer_3d_2_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
