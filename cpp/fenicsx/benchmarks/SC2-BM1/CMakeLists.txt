@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME benchmark1)
+set(PROJECT_NAME SC2BM1)
 project(${PROJECT_NAME} LANGUAGES C CXX)
 
 # Set standard
