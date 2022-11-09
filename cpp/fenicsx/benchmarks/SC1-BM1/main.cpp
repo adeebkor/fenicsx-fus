@@ -1,6 +1,6 @@
 //
 // Homogenous 3D linear wave problem
-// - circular planar source
+// - spherical source
 // - first-order Sommerfeld ABC
 // =======================================
 // Copyright (C) 2022 Adeeb Arif Kor
@@ -44,7 +44,8 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD, 
+    "/home/mabm4/rds/Projects/hifu-simulation/cpp/fenicsx/benchmarks/SC1-BM1/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_2"));
     mesh->topology().create_connectivity(2, 3);
@@ -88,15 +89,15 @@ int main(int argc, char* argv[])
     rho0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.65;
+    const double CFL = 0.50;
     double timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const double startTime = 0.0;
     // const double finalTime = 100*timeStepSize;
-    // const double finalTime = 0.03 / speedOfSoundWater + 2.0 / sourceFrequency;  
-    const double finalTime = domainLength / speedOfSound + 4.0 / sourceFrequency;
+    // const double finalTime = 0.02 / speedOfSound + 2.0 / sourceFrequency;  
+    const double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     if (mpi_rank == 0){
