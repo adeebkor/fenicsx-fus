@@ -223,7 +223,7 @@ public:
     double * u_value = u_eval.data();
     double * p_value = points_on_proc.data();
 
-    int numStepPerPeriod = period / timeStep + 1;
+    int numStepPerPeriod = period / timeStep + 2;
     int step_period = 0;
     // ------------------------------------------------------------------------
 
@@ -308,8 +308,8 @@ public:
 
       // ---------------------------------------------------------------------
       // Collect data for one period
-      if (t > 0.12 / s0 + 2.0 / freq && step_period < numStepPerPeriod) {
-      // if (t > 0.03 / s0 - 2.0 / freq && t < 0.03 / s0 + 2.0 / freq) {
+      if (t > 0.12 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
+      // if (t > 0.02 / s0 - 2.0 / freq && t < 0.02 / s0) {
       // if (t > startTime && t < finalTime) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
