@@ -176,7 +176,7 @@ std::vector<double> compute_scaled_geometrical_factor(
   {
     // Get cell geometry (coordinates dofs)
     auto x_dofs = x_dofmap.links(c);
-    for (std::size_t i = 0; i < x_dofs.size(); ++i)
+    for (std::size_t i = 0; i < num_dofs_g; ++i)
     {
       for (std::size_t j = 0; j < gdim; ++j)
         coord_dofs(i, j) = x_g[3 * x_dofs[i] + j];
@@ -212,7 +212,7 @@ std::vector<double> compute_scaled_geometrical_factor(
 
       // Compute the scaled Jacobian determinant
       detJ(c, q) = cmap.compute_jacobian_determinant(_J, det_scratch);
-      detJ(c, q) = std::abs(detJ(c, q)) * weights[q];
+      detJ(c, q) = std::fabs(detJ(c, q)) * weights[q];
 
       // Only store the upper triangular values since G is symmetric
       for (std::size_t a = 0; a < gdim; ++a) {
