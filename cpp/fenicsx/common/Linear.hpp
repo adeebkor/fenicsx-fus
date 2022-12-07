@@ -76,8 +76,8 @@ public:
 
     // Define function space
     V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
-    
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+
     // Define field functions
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -89,21 +89,23 @@ public:
     // Define source function
     g = std::make_shared<fem::Function<T>>(V);
     g_ = g->x()->mutable_array();
-    
+
     // Define forms
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
+    // Define LHS form
     a = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_a, {V},
                           {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
-    
+
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
     std::fill(m_.begin(), m_.end(), 0.0);
     fem::assemble_vector(m_, *a);
     m->scatter_rev(std::plus<T>());
 
+    // Define RHS form
     L = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L, {V}, 
                           {{"g", g}, {"u_n", u_n}, {"v_n", v_n}, 
