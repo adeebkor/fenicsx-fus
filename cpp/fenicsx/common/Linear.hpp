@@ -182,51 +182,6 @@ public:
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
 
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    const std::size_t num_points = 2048;
-
-    // Create evaluation point coordinates
-    std::vector<double> point_coordinates(num_points*3);
-    for (std::size_t i = 0; i < num_points; i++) {
-      point_coordinates[3*i] = 0.0;
-      point_coordinates[3*i + 1] = 0.0;
-      point_coordinates[3*i + 2] = i*0.12/(num_points - 1); 
-    }
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells = geometry::compute_colliding_cells(
-      *mesh, cell_candidates, point_coordinates);
-    
-    std::vector<std::int32_t> cells;
-    std::vector<double> points_on_proc;
-
-    for (std::size_t i = 0; i < num_points; ++i) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3*i]);
-        points_on_proc.push_back(point_coordinates[3*i + 1]);
-        points_on_proc.push_back(point_coordinates[3*i + 2]);
-        cells.push_back(link[0]);
-      }
-    }
-
-    std::size_t num_points_local = points_on_proc.size() / 3;
-    std::vector<double> u_eval(num_points_local);
-    
-    double * u_value = u_eval.data();
-    double * p_value = points_on_proc.data();
-
-    int numStepPerPeriod = period / timeStep + 2;
-    int step_period = 0;
-    // ------------------------------------------------------------------------
-
     // Time-stepping parameters
     T t = startTime;
     T tf = finalTime;
@@ -305,39 +260,6 @@ public:
                     << "/" << totalStep << std::endl;
         }
       }
-
-      // ---------------------------------------------------------------------
-      // Collect data for one period
-      if (t > 0.12 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
-      // if (t > 0.02 / s0 - 2.0 / freq && t < 0.02 / s0) {
-      // if (t > startTime && t < finalTime) {
-        kernels::copy(*u_, *u_n->x());
-        u_n->x()->scatter_fwd();
-
-        // Evaluate function
-        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
-                  {num_points_local, 1});
-        u_value = u_eval.data();
-
-        // Write evaluation from each process to a single text file
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        for (int i = 0; i < mpi_size; ++i) {
-          if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_on_z_axis_" + 
-                    std::to_string(step_period) + ".txt";
-            std::ofstream txt_file(fname, std::ios_base::app);
-            for (std::size_t i = 0; i < num_points_local; i++) {
-              txt_file << *(p_value + 3 * i + 2) << "," 
-                       << *(u_value + i) << std::endl;
-            }
-            txt_file.close();
-          }
-          MPI_Barrier(MPI_COMM_WORLD);
-        }
-        step_period++;
-      }
-      // ----------------------------------------------------------------------
     }
 
     // Prepare solution at final time
