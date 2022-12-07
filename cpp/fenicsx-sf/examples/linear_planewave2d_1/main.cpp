@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     const double domainLength = 0.12;  // (m)
 
     // FE parameters
-    const int degreeOfBasis = 5;
+    const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
@@ -120,8 +120,19 @@ int main(int argc, char* argv[])
         speedOfSound);
 
     // Solve
+    common::Timer tsolve("Solve time");
+
     model.init();
+    
+    tsolve.start();
     model.rk4(startTime, finalTime, timeStepSize);
+    tsolve.stop();
+
+    if (mpi_rank == 0) {
+      std::cout << "Solve time: " << tsolve.elapsed()[0] << std::endl;
+      std::cout << "Time per step: " 
+                << tsolve.elapsed()[0] / numberOfStep << std::endl;
+    }
 
     // Final solution
     auto u_n = model.u_sol();
