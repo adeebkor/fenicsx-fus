@@ -3,6 +3,75 @@
 
 #pragma once
 
+/// ------------------------------------------------------------------------ //
+/// Transpose of the 2D tensor A and store in 2D tensor B
+/// @param[in] A tensor
+/// @param[out] B tensor
+template <typename T, int Na, int Nb, int offa, int offb>
+static inline void transpose(const T* __restrict__ A, T* __restrict__ B) {
+  
+  for (int a = 0; a < Na; ++a) {
+    for (int b = 0; b < Nb; ++b) {
+      B[a * offa + b * offb] = A[a * Nb + b];
+    }
+  }
+}
+
+/// ------------------------------------------------------------------------ //
+/// Compute the tensor contraction C[a, b] = A[a, k] * B[k, c] as a
+/// matrix-matrix multiplication
+/// k is the contraction index
+/// @param[in] A tensor of shape (Na, Nk)
+/// @param[in] B tensor of shape (Nb, Nk) -> Shape (Nb, Nk) so that we can transverse row-wise
+/// @param[out] C tensor of shape (Na, Nb)
+template <typename T, int Na, int Nb, int Nk>
+static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
+                            T* __restrict__ C) {
+  
+  for (int a = 0; a < Na; ++a) {
+    for (int b = 0; b < Nb; ++b) {
+      for (int k = 0; k < Nk; ++k) {
+        C[a * Nb + b] += A[a * Nk + k] * B[b * Nk + k];
+      } 
+    }
+  }
+}
+
+/// ------------------------------------------------------------------------ //
+/// Perform transpose of 3D tensor A and store in 3D tensor B
+/// @param[in] A tensor of shape (Na, Nb, Nc)
+/// @param[out] B output tensor
+template <typename T, int Na, int Nb, int Nc, int offa, int offb, int offc>
+static inline void transpose(T* __restrict__ A, T* __restrict__ B) {
+  for (int a = 0; a < Na; a++)
+    for (int b = 0; b < Nb; b++)
+      for (int c = 0; c < Nc; c++)
+        B[offa * a + offb * b + offc * c] = A[a * Nb * Nc + b * Nc + c];
+}
+
+/// ------------------------------------------------------------------------ //
+/// Compute the tensor contraction C[{a, b}, c] = A[{a, b}, k] * B[k, c] as a
+/// matrix-matrix multiplication
+/// k is the contraction index
+/// @param[in] A tensor of shape (Na, Nb, Nk)
+/// @param[in] B tensor of shape (Nb, Nk) -> Shape (Nb, Nk) so that we can transverse row-wise
+/// @param[out] C tensor of shape (Na, Nb, Nc)
+template <typename T, int Na, int Nb, int Nc, int Nk>
+static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
+                             T* __restrict__ C) {
+  
+  int Nd = Na * Nb;
+
+  for (int d = 0; d < Nd; ++d) {
+    for (int c = 0; c < Nc; ++c) {
+      for (int k = 0; k < Nk; ++k) {
+        C[d * Nc + c] += A[d * Nk + k] * B[c * Nk + k];
+      }
+    }
+  }
+}
+
+/*
 template <typename T, int Na, int Nb>
 struct Buffer {
   std::array<T, Na * Nb * Nb> T0{0};
@@ -17,6 +86,7 @@ struct Buffer {
     T2 = {0};
   }
 };
+
 // --------------------------------------------------------------------//
 /// Compute the tensor contraction C[a,b,c] <- A[a, k] B[k, b, c]
 /// as a matrix- matrix multiplication C[a,{b, c}] = A[a, k] B[k, {b, c}]
@@ -40,22 +110,6 @@ static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
   }
 }
 
-// --------------------------------------------------------------------//
-// Perform transpose of tensor A and store in B
-// A[Na, Nb, Nc]
-// Permutations:
-// ijk => jik <Na, Nb, Nc, Nb, Na*Nb, 1> => B[Nb, Na, Nc]
-// ijk => ikj <Na, Nb, Nc, Nb*Nb, 1, Nb>
-// ijk => kji <Na, Nb, Nc, 1, Nb, Na*Nb>
-// ijk => jki <Na, Nb, Nc, 1, Na*Nb, Na>
-// ijk => kij <Na, Nb, Nc, Nb, 1, Na*Nb>
-template <typename T, int Na, int Nb, int Nc, int offa, int offb, int offc>
-static inline void transpose(T* __restrict__ A, T* __restrict__ B) {
-  for (int a = 0; a < Na; a++)
-    for (int b = 0; b < Nb; b++)
-      for (int c = 0; c < Nc; c++)
-        B[offa * a + offb * b + offc * c] = A[a * Nb * Nc + b * Nc + c];
-}
 // --------------------------------------------------------------------//
 /// Compute A = [I0 x I1 x I2]  B by successive tensor contractions
 /// A[Na, Na, Na]
@@ -93,4 +147,4 @@ static inline void apply_contractions(const T* I0, const T* I1, const T* I2,
   // [a0, a1, a2] <- [a2, a0, a1]
   transpose<T, Na, Na, Na, 1, Na * Na, Na>(buffer.T2.data(), A);
 }
-// --------------------------------------------------------------------//
+*/
