@@ -253,7 +253,7 @@ public:
       t += dt;
       step += 1;
 
-      if (step % 10 == 0) {
+      if (step % 100 == 0) {
         if (mpi_rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
