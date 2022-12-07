@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <dolfinx.h>
+#include <dolfinx/io/XDMFFile.h>
 
 using namespace dolfinx;
 
@@ -31,6 +32,18 @@ int main(int argc, char* argv[])
         mesh::CellType::quadrilateral,
         part));
 
+    /*
+    // Read mesh and tags
+    auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    auto mesh = std::make_shared<mesh::Mesh>(
+      fmesh.read_mesh(element, mesh::GhostMode::none, "planewave_2d_5"));
+    mesh->topology().create_connectivity(1, 2);
+    auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
+      fmesh.read_meshtags(mesh, "planewave_2d_5_cells"));
+    */
+
+    // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_m, "u", mesh));
 
