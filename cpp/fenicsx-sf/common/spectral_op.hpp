@@ -125,8 +125,8 @@ namespace stiffness {
       const T w0 = fw0[iq];
       const T w1 = fw1[iq];
 
-      fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1);
-      fw1[iq] = coeff * (_G[1] * w0 + _G[2] * w1);
+      fw0[iq] = coeff * (_G[2] * w0 + _G[1] * w1);
+      fw1[iq] = coeff * (_G[1] * w0 + _G[0] * w1);
 
     }
   }
@@ -204,9 +204,9 @@ public:
 
       // Apply contraction in the y-direction
       fw1_.fill(0.0);
-      transpose<T, N, N, 1, N>(x_.data(), T1.data());  // [i1, i2] -> [i2, i1] A^T
-      contract<T, N, N, N>(T1.data(), dphi_, T2.data());  // [i2, i1] x [i1, q1] -> [i2, q1] A^T
-      transpose<T, N, N, 1, N>(T2.data(), fw1);  // [i2, q1] -> [q1, i2] A
+      transpose<T, N, N, 1, N>(x_.data(), T1.data());  // [i1, i2] -> [i2, i1]
+      contract<T, N, N, N>(T1.data(), dphi_, T2.data());  // [i2, i1] x [i1, q1] -> [i2, q1]
+      transpose<T, N, N, 1, N>(T2.data(), fw1);  // [i2, q1] -> [q1, i2]
 
       // Apply transform
       T* G = G_.data() + c * Nd * 3;
