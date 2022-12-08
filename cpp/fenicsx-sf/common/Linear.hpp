@@ -125,10 +125,13 @@ public:
     std::span<const T> c0_ = c0->x()->array();
     std::span<const T> rho0_ = rho0->x()->array();
 
-    s_coeffs.resize(c0_.size());
-    for (std::size_t i = 0; i < s_coeffs.size(); ++i)
-      s_coeffs[i] = - 1.0 / rho0_[i];
-    
+    coeff = std::make_shared<fem::Function<T>>(rho0->function_space());
+    c_ = coeff->x()->mutable_array();
+
+    for (std::size_t i = 0; i < rho0_.size(); ++i)
+      c_[i] = - 1.0 / rho0_[i];
+
+    coeff->x()->scatter_rev(std::plus<T>());
   }
 
   /// Set the initial values of u and v, i.e. u_0 and v_0
@@ -147,7 +150,7 @@ public:
     kernels::copy<T>(*v, *result);
   }
 
-    /// Evaluate dv/dt = f1(t, u, v)
+  /// Evaluate dv/dt = f1(t, u, v)
   /// @param[in] t Current time, i.e. tn
   /// @param[in] u Current u, i.e. un
   /// @param[in] v Current v, i.e. vn
@@ -173,7 +176,7 @@ public:
 
     // Assemble RHS
     std::fill(b_.begin(), b_.end(), 0.0);
-    stiff_op->operator()(*u_n->x(), s_coeffs, *b);
+    stiff_op->operator()(*u_n->x(), c_, *b);
     fem::assemble_vector(b_, *L);
     b->scatter_rev(std::plus<T>());
 
@@ -320,5 +323,6 @@ private:
   std::shared_ptr<StiffnessSpectral2D<T, P>> stiff_op;
 
   // Operators' coefficients
-  std::vector<T> s_coeffs;
+  std::shared_ptr<fem::Function<T>> coeff;
+  std::span<T> c_;
 };
