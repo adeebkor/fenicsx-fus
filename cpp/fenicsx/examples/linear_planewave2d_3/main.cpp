@@ -138,5 +138,15 @@ int main(int argc, char* argv[])
     // Output to VTX
     dolfinx::io::VTXWriter u_out(mesh->comm(), "output_final.bp", {u_n});
     u_out.write(0.0);
+
+    // Check norms
+    auto Norm = std::make_shared<fem::Form<double>>(fem::create_form<double>(
+      *form_forms_Norm, {}, {{"u_n", u_n}}, {}, {}, mesh));
+    double norm = fem::assemble_scalar(*Norm);
+
+    if (mpi_rank == 0) {
+      std::cout << "L2 norm: " << std::sqrt(norm) << "\n";
+    }
+
   }
 }
