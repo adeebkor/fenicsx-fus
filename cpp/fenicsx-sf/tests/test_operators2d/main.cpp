@@ -19,6 +19,14 @@ int main(int argc, char* argv[])
   PetscInitialize(&argc, &argv, nullptr, nullptr);
 
   {
+
+    // MPI
+
+    int mpi_rank, mpi_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+
+    // Define polynomial degree
     const int P = 4;
 
     // Create mesh and function space
@@ -122,7 +130,8 @@ int main(int argc, char* argv[])
         / (m0.array()[i] * m0.array()[i]);
     }
 
-    std::cout << "Relative L2 error: " << rel_err1 << "\n";
+    std::cout << "Relative L2 error (mass), " 
+              << "PROC" << mpi_rank << " : " << rel_err1 << std::endl;
 
     // ------------------------------------------------------------------------
     // Stiffness coefficients
@@ -168,6 +177,9 @@ int main(int argc, char* argv[])
         / (s0.array()[i] * s0.array()[i]);
     }
 
-    std::cout << "Relative L2 error: " << rel_err2 << "\n";
+    std::cout << "Relative L2 error (stiffness), " 
+              << "PROC" << mpi_rank << " : " << rel_err2 << std::endl;
   }
+
+  PetscFinalize();
 }
