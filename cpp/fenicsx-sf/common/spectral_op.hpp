@@ -14,14 +14,15 @@ using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
 using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
 
 
-// ------------------------------------------------------------------------- //
+// -------------- //
+// Mass operators //
+// -------------- //
+
 namespace mass {
-  template <typename T, int P>
+  template <typename T, int P, int Nq>
   inline void transform(T* __restrict__ detJ, T __restrict__ coeff, T* __restrict__ fw) {
     
-    constexpr int nq = (P + 1) * (P + 1);
-    
-    for (int iq = 0; iq < nq; ++iq)
+    for (int iq = 0; iq < Nq; ++iq)
       fw[iq] = coeff * fw[iq] * detJ[iq];
   }
 }
@@ -82,7 +83,7 @@ public:
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
 
       double* sdetJ = detJ_.data() + c * Nd;
-      mass::transform<T, P>(sdetJ, coeffs[c], x_.data());
+      mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
 
       for (std::int32_t i = 0; i < Nd; ++i)
         y_array[tensor_dofmap_[c * Nd + i]] += x_[i];
@@ -110,8 +111,17 @@ private:
   std::array<T, Nd> x_;
 };
 
+template <typename T, int P>
+class MassSpectral3D {
+public:
+  
+};
 
-// ------------------------------------------------------------------------- //
+
+// ------------------- //
+// Stiffness operators //
+// ------------------- //
+
 namespace stiffness {
   template <typename T, int P>
   inline void transform(T* __restrict__ G, T __restrict__ coeff, 
