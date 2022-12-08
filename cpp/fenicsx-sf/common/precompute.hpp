@@ -215,10 +215,17 @@ std::vector<double> compute_scaled_geometrical_factor(
       detJ(c, q) = std::fabs(detJ(c, q)) * weights[q];
 
       // Only store the upper triangular values since G is symmetric
-      for (std::size_t a = 0; a < gdim; ++a) {
-        for (std::size_t b = 0; b < a+1; ++b) {
-          Gs(c, q, a+b) = detJ(c, q) * G(a, b);
-        }
+      if (gdim == 2) {
+        Gs(c, q, 0) = detJ(c, q) * G(0, 0);
+        Gs(c, q, 1) = detJ(c, q) * G(0, 1);
+        Gs(c, q, 2) = detJ(c, q) * G(1, 1);
+      } else if (gdim == 3) {
+        Gs(c, q, 0) = detJ(c, q) * G(0, 0);
+        Gs(c, q, 1) = detJ(c, q) * G(0, 1);
+        Gs(c, q, 2) = detJ(c, q) * G(0, 2);
+        Gs(c, q, 3) = detJ(c, q) * G(1, 1);
+        Gs(c, q, 4) = detJ(c, q) * G(1, 2);
+        Gs(c, q, 5) = detJ(c, q) * G(2, 2);
       }
     }
   }
