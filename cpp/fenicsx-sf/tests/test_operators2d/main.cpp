@@ -64,12 +64,10 @@ int main(int argc, char* argv[])
     u->interpolate(
       [](auto x) -> std::pair<std::vector<double>, std::vector<std::size_t>>
       {
-        std::vector<double> u;
+        std::vector<double> u(x.extent(1));
         
         for (std::size_t p = 0; p < x.extent(1); ++p)
-        {
-          u.push_back(std::sin(x(0, p)));
-        }
+          u[p] = std::sin(x(0, p)) * std::cos(std::numbers::pi * x(1, p));
 
         return {u, {u.size()}};
       });
@@ -127,7 +125,7 @@ int main(int argc, char* argv[])
     {
       rel_err1 += (m1.array()[i] - m0.array()[i]) 
         * (m1.array()[i] - m0.array()[i])
-        / (m0.array()[i] * m0.array()[i]);
+        / (m0.array()[i] * m0.array()[i] + 1e-10);
     }
 
     std::cout << "Relative L2 error (mass), " 
@@ -174,7 +172,7 @@ int main(int argc, char* argv[])
     {
       rel_err2 += (s1.array()[i] - s0.array()[i]) 
         * (s1.array()[i] - s0.array()[i])
-        / (s0.array()[i] * s0.array()[i]);
+        / (s0.array()[i] * s0.array()[i] + 1e-10);
     }
 
     std::cout << "Relative L2 error (stiffness), " 
