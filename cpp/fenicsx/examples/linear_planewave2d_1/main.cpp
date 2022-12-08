@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
     }
 
     // Model
-    auto model = LinearGLL<double, 4>(
+    auto model = LinearSpectral<double, 4>(
       mesh, mt_facet, c0, rho0, sourceFrequency, sourceAmplitude,
       speedOfSound);
 
