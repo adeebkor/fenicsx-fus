@@ -33,4 +33,9 @@ md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 m = inner(u/rho0/c0/c0, v) * dx(metadata=md)
 s = - inner(1/rho0*grad(u), grad(v)) * dx(metadata=md)
 
-forms = [m, s]
+f0 = Coefficient(V)
+f1 = Coefficient(V)
+
+E = inner(f1 - f0, f1 - f0) * dx
+
+forms = [m, s, E]

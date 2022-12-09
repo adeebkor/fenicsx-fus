@@ -95,39 +95,69 @@ int main(int argc, char* argv[])
                                {{"u", u}, {"c0", c0}, {"rho0", rho0}}, 
                                {}, {}));
     
-    la::Vector<double> m0(index_map, bs);
-    fem::assemble_vector(m0.mutable_array(), *m);
-    m0.scatter_rev(std::plus<double>());
+    // la::Vector<double> m0(index_map, bs);
+    // fem::assemble_vector(m0.mutable_array(), *m);
+    // m0.scatter_rev(std::plus<double>());
+
+    auto m0 = std::make_shared<fem::Function<double>>(V);
+    fem::assemble_vector(m0->x()->mutable_array(), *m);
+    m0->x()->scatter_rev(std::plus<double>());
+
+    auto m0_ = m0->x()->array();
 
     // ------------------------------------------------------------------------
     // Compute spectral mass vector
     MassSpectral2D<double, P> mass_spectral(V);
 
-    la::Vector<double> m1(index_map, bs);
-    mass_spectral(*u->x(), m_coeffs, m1);
-    m1.scatter_rev(std::plus<double>());
+    // la::Vector<double> m1(index_map, bs);
+    // mass_spectral(*u->x(), m_coeffs, m1);
+    // m1.scatter_rev(std::plus<double>());
+
+    auto m1 = std::make_shared<fem::Function<double>>(V);
+    mass_spectral(*u->x(), m_coeffs, *m1->x());
+    m1->x()->scatter_rev(std::plus<double>());
+
+    auto m1_ = m1->x()->array();
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-    /*
-    for (std::size_t i = 0; i < 10; ++i)
-      std::cout << m0.array()[i] << " " << m1.array()[i] << "\n";
-    */
+
+    // for (std::size_t i = 0; i < 10; ++i)
+    //   std::cout << m0_[i] << " " << m1_[i] << "\n";
 
     // ------------------------------------------------------------------------
     // Equality check (Mass)
 
-    float rel_err1 = 0;
+    // float rel_err1 = 0;
 
-    for (std::size_t i = 0; i < m0.array().size(); ++i)
-    {
-      rel_err1 += (m1.array()[i] - m0.array()[i]) 
-        * (m1.array()[i] - m0.array()[i])
-        / (m0.array()[i] * m0.array()[i] + 1e-10);
-    }
+    // for (std::size_t i = 0; i < m0.array().size(); ++i)
+    // {
+    //   rel_err1 += (m1.array()[i] - m0.array()[i]) 
+    //     * (m1.array()[i] - m0.array()[i])
+    //     / (m0.array()[i] * m0.array()[i] + 1e-10);
+    // }
+
+    // std::cout << "Relative L2 error (mass), " 
+    //           << "PROC" << mpi_rank << " : " << rel_err1 << std::endl;
+    
+    // float rel_err1 = 0;
+
+    // for (std::size_t i = 0; i < m0_.size(); ++i)
+    // {
+    //   rel_err1 += (m1_[i] - m0_[i]) 
+    //     * (m1_[i] - m0_[i])
+    //     / (m0_[i] * m0_[i] + 1e-10);
+    // }
+
+    // std::cout << "Relative L2 error (mass), " 
+    //           << "PROC" << mpi_rank << " : " << rel_err1 << std::endl;
+
+    auto Em = std::make_shared<fem::Form<double>>(fem::create_form<double>(
+        *form_forms_E, {}, {{"f0", m0}, {"f1", m1}}, {}, {}, mesh));
+    double error_m = fem::assemble_scalar(*Em);
 
     std::cout << "Relative L2 error (mass), " 
-              << "PROC" << mpi_rank << " : " << rel_err1 << std::endl;
+              << "PROC" << mpi_rank << " : " << error_m << std::endl;
 
     // ------------------------------------------------------------------------
     // Stiffness coefficients
@@ -142,17 +172,29 @@ int main(int argc, char* argv[])
                                {{"u", u}, {"rho0", rho0}},
                                {}, {}));
 
-    la::Vector<double> s0(index_map, bs);
-    fem::assemble_vector(s0.mutable_array(), *s);
-    s0.scatter_rev(std::plus<double>());
+    // la::Vector<double> s0(index_map, bs);
+    // fem::assemble_vector(s0.mutable_array(), *s);
+    // s0.scatter_rev(std::plus<double>());
+
+    auto s0 = std::make_shared<fem::Function<double>>(V);
+    fem::assemble_vector(s0->x()->mutable_array(), *s);
+    s0->x()->scatter_rev(std::plus<double>());
+
+    auto s0_ = s0->x()->array();
 
     // ------------------------------------------------------------------------
     // Compute spectral stiffness vector
     StiffnessSpectral2D<double, P> stiffness_spectral(V);
 
-    la::Vector<double> s1(index_map, bs);
-    stiffness_spectral(*u->x(), s_coeffs, s1);
-    s1.scatter_rev(std::plus<double>());
+    // la::Vector<double> s1(index_map, bs);
+    // stiffness_spectral(*u->x(), s_coeffs, s1);
+    // s1.scatter_rev(std::plus<double>());
+
+    auto s1 = std::make_shared<fem::Function<double>>(V);
+    stiffness_spectral(*u->x(), s_coeffs, *s1->x());
+    s1->x()->scatter_rev(std::plus<double>());
+
+    auto s1_ = s1->x()->array();
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
@@ -164,17 +206,25 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Equality check (Stiffness)
 
-    float rel_err2 = 0;
+    // float rel_err2 = 0;
 
-    for (std::size_t i = 0; i < s0.array().size(); ++i)
-    {
-      rel_err2 += (s1.array()[i] - s0.array()[i]) 
-        * (s1.array()[i] - s0.array()[i])
-        / (s0.array()[i] * s0.array()[i] + 1e-10);
-    }
+    // for (std::size_t i = 0; i < s0.array().size(); ++i)
+    // {
+    //   rel_err2 += (s1.array()[i] - s0.array()[i]) 
+    //     * (s1.array()[i] - s0.array()[i])
+    //     / (s0.array()[i] * s0.array()[i] + 1e-10);
+    // }
+
+    // std::cout << "Relative L2 error (stiffness), " 
+    //           << "PROC" << mpi_rank << " : " << rel_err2 << std::endl;
+
+    auto Es = std::make_shared<fem::Form<double>>(fem::create_form<double>(
+        *form_forms_E, {}, {{"f0", s0}, {"f1", s1}}, {}, {}, mesh));
+    double error_s = fem::assemble_scalar(*Es);
 
     std::cout << "Relative L2 error (stiffness), " 
-              << "PROC" << mpi_rank << " : " << rel_err2 << std::endl;
+              << "PROC" << mpi_rank << " : " << error_s << std::endl;
+
   }
 
   PetscFinalize();
