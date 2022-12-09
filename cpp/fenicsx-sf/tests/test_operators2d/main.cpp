@@ -27,6 +27,7 @@ int main(int argc, char* argv[])
     // Set polynomial degree
     const int P = 4;
 
+    /*
     // Create mesh and function space
     const std::size_t N = 20;
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
@@ -37,8 +38,8 @@ int main(int argc, char* argv[])
         {N, N},
         mesh::CellType::quadrilateral,
         part));
+    */
 
-    /*
     // Read mesh and tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
@@ -47,7 +48,6 @@ int main(int argc, char* argv[])
     mesh->topology().create_connectivity(1, 2);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
       fmesh.read_meshtags(mesh, "planewave_2d_5_cells"));
-    */
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
