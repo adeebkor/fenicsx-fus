@@ -33,6 +33,8 @@ region such as fluids and liver.
 * Flexibility of using different source fields. We are not restricted to
 periodic source field.
 
+<!---
+
 ## Performance estimate
 
 An accurate representation of HIFU operating condition is typically model 
@@ -65,3 +67,4 @@ The table above is plotted below:
 <p align="center">
     <img src=cclake_dof_per_second.png width="500" height="500"/>
 </p>
+-->
