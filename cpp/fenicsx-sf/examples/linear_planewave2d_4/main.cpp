@@ -1,6 +1,6 @@
 //
 // Linear solver for the 2D planewave problem
-// - unstructured mesh (2st order)
+// - unstructured mesh (2nd order)
 // - first-order Sommerfeld ABC
 // - two different medium (x < 0.06 m, x > 0.06 m)
 // ===============================================
