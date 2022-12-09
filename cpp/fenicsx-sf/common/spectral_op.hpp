@@ -230,9 +230,9 @@ namespace stiffness {
       const T w1 = fw1[iq];
       const T w2 = fw2[iq];
 
-      fw0[iq] = coeff * (_G[5] * w0 + _G[1] * w1 + _G[2] * w2);
-      fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
-      fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[0] * w2);
+      fw0[iq] = coeff * (_G[5] * w0 + _G[4] * w1 + _G[2] * w2);
+      fw1[iq] = coeff * (_G[4] * w0 + _G[3] * w1 + _G[1] * w2);
+      fw2[iq] = coeff * (_G[2] * w0 + _G[1] * w1 + _G[0] * w2);
     }
   }
 }
