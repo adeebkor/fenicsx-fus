@@ -276,7 +276,8 @@ public:
   
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
-    dphi_ = basis.data() + (P + 1) * (P + 1);
+    std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi.begin());
+    dphi_ = dphi.data();
 
     // Get the transpose of the basis
     dphiT_ = dphiT.data();
@@ -350,6 +351,7 @@ private:
   std::vector<T> G_;
 
   // Derivative of the 1D basis functions
+  std::array<T, N*N> dphi;
   const T* dphi_;
   
   // Transpose of derivative of the 1D basis functions
@@ -417,7 +419,8 @@ public:
   
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
-    dphi_ = basis.data() + (P + 1) * (P + 1);
+    std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi.begin());
+    dphi_ = dphi.data();
 
     // Get the transpose of the basis
     dphiT_ = dphiT.data();
@@ -506,6 +509,7 @@ private:
   std::vector<T> G_;
 
   // Derivative of the 1D basis functions
+  std::array<T, N*N> dphi;
   const T* dphi_;
   
   // Transpose of derivative of the 1D basis functions
@@ -534,5 +538,4 @@ private:
   std::array<T, Nd> T2;
   std::array<T, Nd> T3;
   std::array<T, Nd> T4;
-
 };
