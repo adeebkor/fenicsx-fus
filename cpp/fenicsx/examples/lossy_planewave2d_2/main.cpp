@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
     }
 
     // Model
-    auto model = LossyGLL<double, 4>(
+    auto model = LossySpectral<double, 4>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSound);
 

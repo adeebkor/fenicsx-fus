@@ -48,9 +48,9 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
 /// @param [in] sourceAmplitude The source amplitude
 /// @param [in] sourceSpeed The medium speed of sound that is in contact with the source
 template <typename T, int P>
-class LossyGLL{
+class LossySpectral{
 public:
-  LossyGLL(
+  LossySpectral(
     std::shared_ptr<mesh::Mesh> Mesh,
     std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
     std::shared_ptr<fem::Function<T>> speedOfSound,
