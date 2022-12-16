@@ -677,7 +677,7 @@ public:
 
         for (int i = 0; i < mpi_size; ++i) {
           if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_on_xz_plane_" + 
+            fname = "/home/mabm4/rds/data/pressure_on_xz_plane_" + 
                     std::to_string(step_period) + ".txt";
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
