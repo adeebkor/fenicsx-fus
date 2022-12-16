@@ -40,6 +40,11 @@ periodic source field.
 * Time discretisation:
     * Classical Runge-Kutta 4th order method.
 
+## Solver design
+
+* Requires full hexahedral (3D) or quadrilateral (2D) mesh.
+* Implementation of sum-factorisation method to reduce the cost of computation.
+
 ## Solver features
 
 Currently, the solver is capable to simulate:
@@ -49,7 +54,6 @@ condition.
 * Single-element transducer defined using a Neumann boundary condition.
 * Heterogenous medium defined using P0 discontinuous Galerkin finite 
 element function.
-
 
 
 <!---
