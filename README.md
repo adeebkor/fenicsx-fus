@@ -47,7 +47,7 @@ Currently, the solver is capable to simulate:
 * Linear and viscoelastic wave equation with 1st order absorbing boundary
 condition.
 * Single-element transducer defined using a Neumann boundary condition.
-* Heterogenous medium defined using degree 0 discontinuous Galerkin finite 
+* Heterogenous medium defined using P0 discontinuous Galerkin finite 
 element function.
 
 
