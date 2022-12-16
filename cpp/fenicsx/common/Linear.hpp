@@ -184,7 +184,7 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
-
+    
     // Time-stepping parameters
     T t = startTime;
     T tf = finalTime;

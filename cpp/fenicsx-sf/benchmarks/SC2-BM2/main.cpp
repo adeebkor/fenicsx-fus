@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "/home/mabm4/mesh/planar_3d_0/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "planar_3d_0"));
     mesh->topology().create_connectivity(2, 3);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     }
 
     // Model
-    auto model = LossySpectral<double, 4>(
+    auto model = LossySpectral3D<double, 4>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSound);
 

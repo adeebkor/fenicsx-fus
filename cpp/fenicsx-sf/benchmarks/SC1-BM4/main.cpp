@@ -1,6 +1,6 @@
 //
 // Heterogenous 3D viscoelastic wave problem
-// - circular planar source
+// - spherical source
 // - first-order Sommerfeld ABC
 // =========================================
 // Copyright (C) 2022 Adeeb Arif Kor
@@ -33,20 +33,48 @@ int main(int argc, char* argv[])
     const double period = 1 / sourceFrequency;  // (s)
     const double angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
-    // Material parameters
+    // Material parameters (Water)
     const double speedOfSoundWater = 1500.0;  // (m/s)
-    const double speedOfSoundCortBone = 2800.0;  // (m/s)
     const double densityWater = 1000.0;  // (kg/m^3)
-    const double densityCortBone = 1850.0;  // (kg/m^3)
+    
+    // Material parameters (Skin)
+    const double speedOfSoundSkin = 1610.0;  // (m/s)
+    const double densitySkin = 1090.0;  // (kg/m^3)
+    const double attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const double attenuationCoefficientNpSkin
+      = attenuationCoefficientdBSkin / 20 * log(10);
+    const double diffusivityOfSoundSkin = compute_diffusivity_of_sound(
+      angularFrequency, speedOfSoundSkin, attenuationCoefficientNpSkin);
 
-    // Compute attenuation parameter
+    // Material parameters (Cortical bone)
+    const double speedOfSoundCortBone = 2800.0;  // (m/s)
+    const double densityCortBone = 1850.0;  // (kg/m^3)
     const double attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
     const double attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundCortBone, 
       attenuationCoefficientNpCortBone);
-    
+
+    // Material parameters (Trabecular bone)
+    const double speedOfSoundTrabBone = 2300.0;  // (m/s)
+    const double densityTrabBone = 1700.0;  // (kg/m^3)
+    const double attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const double attenuationCoefficientNpTrabBone
+      = attenuationCoefficientdBTrabBone / 20 * log(10);
+    const double diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
+      angularFrequency, speedOfSoundTrabBone, 
+      attenuationCoefficientNpTrabBone);
+
+    // Material parameters (Brain)
+    const double speedOfSoundBrain = 1560.0;  // (m/s)
+    const double densityBrain = 1040.0;  // (kg/m^3)
+    const double attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const double attenuationCoefficientNpBrain
+      = attenuationCoefficientdBBrain / 20 * log(10);
+    const double diffusivityOfSoundBrain = compute_diffusivity_of_sound(
+      angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
+
     // Domain parameters
     const double domainLength = 0.12;  // (m)
 
@@ -55,14 +83,15 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD,
+    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
-      fmesh.read_mesh(element, mesh::GhostMode::none, "planar_3d_1"));
+      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_6"));
     mesh->topology().create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "planar_3d_1_cells"));
+      fmesh.read_meshtags(mesh, "transducer_3d_6_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "planar_3d_1_facets"));
+      fmesh.read_meshtags(mesh, "transducer_3d_6_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology().dim();
@@ -89,30 +118,58 @@ int main(int argc, char* argv[])
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
+    auto cells_3 = mt_cell->find(3);
+    auto cells_4 = mt_cell->find(4);
+    auto cells_5 = mt_cell->find(5);
+    auto cells_6 = mt_cell->find(6);
 
     std::span<double> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSoundSkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSoundCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSoundTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSoundCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSoundBrain; });
     c0->x()->scatter_fwd();
 
     std::span<double> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { rho0_[i] = densityWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { rho0_[i] = densitySkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
       [&](std::int32_t &i) { rho0_[i] = densityCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { rho0_[i] = densityTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { rho0_[i] = densityCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { rho0_[i] = densityBrain; });
     rho0->x()->scatter_fwd();
 
     std::span<double> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { delta0_[i] = 0.0; });
     std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundSkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundBrain; });
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.22;
+    const double CFL = 0.25;
     double timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSoundCortBone * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
@@ -124,7 +181,8 @@ int main(int argc, char* argv[])
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     if (mpi_rank == 0){
-      std::cout << "Benchmark: 3" << "\n";
+      std::cout << "Benchmark: 4" << "\n";
+      std::cout << "Source: 1" << "\n";
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";
       std::cout << std::setprecision(2) << meshSizeMinGlobal << "\n";
@@ -133,9 +191,9 @@ int main(int argc, char* argv[])
       std::cout << "Number of steps per period: " << stepPerPeriod << "\n";
       std::cout << "Total number of steps: " << numberOfStep << "\n";
     }
-    
+
     // Model
-    auto model = LossySpectral<double, 4>(
+    auto model = LossySpectral3D<double, 4>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSoundWater);
 
@@ -153,6 +211,5 @@ int main(int argc, char* argv[])
       std::cout << "Time per step: " 
                 << tsolve.elapsed()[0] / numberOfStep << std::endl;
     }
-
   }
 }

@@ -1,6 +1,6 @@
 //
 // Homogenous 3D viscoelastic wave problem
-// - circular planar source
+// - spherical source
 // - first-order Sommerfeld ABC
 // =======================================
 // Copyright (C) 2022 Adeeb Arif Kor
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
     // Source parameters
     const double sourceFrequency = 0.5e6;  // (Hz)
-    const double sourceAmplitude = 60000;  // (Pa)
+    const double sourceAmplitude = 60000.0;  // (Pa)
     const double period = 1 / sourceFrequency;  // (s)
     const double angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
@@ -49,14 +49,15 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD,
+    "/home/mabm4/mesh/transducer_3d_2/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
-      fmesh.read_mesh(element, mesh::GhostMode::none, "planar_3d_0"));
+      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_2"));
     mesh->topology().create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "planar_3d_0_cells"));
+      fmesh.read_meshtags(mesh, "transducer_3d_2_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "planar_3d_0_facets"));
+      fmesh.read_meshtags(mesh, "transducer_3d_2_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology().dim();
@@ -99,17 +100,20 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.65;
+    const double CFL = 0.45;
     double timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const double startTime = 0.0;
+    // const double finalTime = 100*timeStepSize;
+    // const double finalTime = 0.02 / speedOfSound + 2.0 / sourceFrequency;  
     const double finalTime = domainLength / speedOfSound + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     if (mpi_rank == 0){
       std::cout << "Benchmark: 2" << "\n";
+      std::cout << "Source: 1" << "\n";
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";
       std::cout << std::setprecision(2) << meshSizeMinGlobal << "\n";
@@ -120,7 +124,7 @@ int main(int argc, char* argv[])
     }
 
     // Model
-    auto model = LossySpectral<double, 4>(
+    auto model = LossySpectral3D<double, 4>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSound);
 
@@ -138,7 +142,5 @@ int main(int argc, char* argv[])
       std::cout << "Time per step: " 
                 << tsolve.elapsed()[0] / numberOfStep << std::endl;
     }
-
   }
-
 }
