@@ -33,6 +33,25 @@ region such as fluids and liver.
 * Flexibility of using different source fields. We are not restricted to
 periodic source field.
 
+## Solver method
+
+* Spatial discretisation:
+    * P4 spectral element method.
+* Time discretisation:
+    * Classical Runge-Kutta 4th order method.
+
+## Solver features
+
+Currently, the solver is capable to simulate:
+
+* Linear and viscoelastic wave equation with 1st order absorbing boundary
+condition.
+* Single-element transducer defined using a Neumann boundary condition.
+* Heterogenous medium defined using degree 0 discontinuous Galerkin finite 
+element function.
+
+
+
 <!---
 
 ## Performance estimate
