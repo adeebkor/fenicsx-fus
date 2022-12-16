@@ -18,7 +18,7 @@ from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 from ufl import inner, dx
 
-from hifusim import LinearGLLNewmark
+from hifusim import LinearSpectralNewmark
 from hifusim.utils import compute_eval_params
 
 # Material parameters
@@ -82,7 +82,7 @@ tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
-model = LinearGLLNewmark(mesh, mt, degree, c, rho, f0, p0, c0, dt)
+model = LinearSpectralNewmark(mesh, mt, degree, c, rho, f0, p0, c0, dt)
 
 # Solve
 model.init()

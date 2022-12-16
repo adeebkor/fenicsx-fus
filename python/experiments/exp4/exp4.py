@@ -13,7 +13,7 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import (create_interval, locate_entities_boundary, meshtags)
 from ufl import inner, dx
 
-from hifusim import LinearGLLExplicit
+from hifusim import LinearSpectralExplicit
 from hifusim.utils import compute_eval_params
 
 # MPI
@@ -81,7 +81,7 @@ finalTime = domainLength / speedOfSound + 16 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
-model = LinearGLLExplicit(mesh, mt, degreeOfBasis, c0, rho0,
+model = LinearSpectralExplicit(mesh, mt, degreeOfBasis, c0, rho0,
                           sourceFrequency, sourceAmplitude, speedOfSound,
                           rkOrder, timeStepSize)
 

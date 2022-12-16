@@ -16,7 +16,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossyGLLImplicit
+from hifusim import LossySpectralImplicit
 from hifusim.utils import compute_diffusivity_of_sound
 
 # MPI
@@ -100,9 +100,9 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossyGLLImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
-                         sourceFrequency, sourceAmplitude, speedOfSound,
-                         rkOrder, timeStepSize)
+model = LossySpectralImplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
+                              sourceFrequency, sourceAmplitude, speedOfSound,
+                              rkOrder, timeStepSize)
 
 # Solve
 model.init()

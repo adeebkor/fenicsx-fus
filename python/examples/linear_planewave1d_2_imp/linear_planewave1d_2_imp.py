@@ -17,7 +17,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 
-from hifusim import LinearGLLImplicit
+from hifusim import LinearSpectralImplicit
 from hifusim.utils import compute_eval_params
 
 # Material parameters
@@ -88,7 +88,7 @@ tstart = 0.0  # simulation start time (s)
 tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
-model = LinearGLLImplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
+model = LinearSpectralImplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
 
 # Solve
 model.init()

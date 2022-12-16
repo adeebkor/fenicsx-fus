@@ -6,12 +6,12 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import LossyGLLExplicit, LossyGLLImplicit
+from hifusim import LossySpectralExplicit, LossySpectralImplicit
 from hifusim.utils import compute_diffusivity_of_sound
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
-def test_lossygll_explicit(degree, epw):
+def test_lossyspectral_explicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     w0 = 2 * np.pi * f0  # angular frequency (rad/s)
@@ -72,7 +72,8 @@ def test_lossygll_explicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LossyGLLExplicit(mesh, mt, degree, c, rho, delta, f0, p0, c0, 4, dt)
+    eqn = LossySpectralExplicit(
+        mesh, mt, degree, c, rho, delta, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
@@ -113,7 +114,7 @@ def test_lossygll_explicit(degree, epw):
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
-def test_lossygll_implicit(degree, epw):
+def test_lossyspectral_implicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     w0 = 2 * np.pi * f0  # angular frequency (rad/s)
@@ -174,7 +175,8 @@ def test_lossygll_implicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LossyGLLImplicit(mesh, mt, degree, c, rho, delta, f0, p0, c0, 4, dt)
+    eqn = LossySpectralImplicit(
+        mesh, mt, degree, c, rho, delta, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()

@@ -263,7 +263,7 @@ class LinearExplicit:
         return self.u_n, self.v_n, t
 
 
-class LinearGLLExplicit:
+class LinearSpectralExplicit:
     """
     Solver for the linear second order wave equation.
 
@@ -521,7 +521,7 @@ class LinearGLLExplicit:
         return self.u_n, self.v_n, t
 
 
-class LinearGLLImplicit:
+class LinearSpectralImplicit:
     """
     Solver for the linear second order wave equation.
 

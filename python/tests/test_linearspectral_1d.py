@@ -6,11 +6,11 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import LinearGLLExplicit, LinearGLLImplicit
+from hifusim import LinearSpectralExplicit, LinearSpectralImplicit
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
-def test_lineargll_explicit(degree, epw):
+def test_linearspectral_explicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     u0 = 1  # velocity amplitude (m / s)
@@ -63,7 +63,7 @@ def test_lineargll_explicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LinearGLLExplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
+    eqn = LinearSpectralExplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
@@ -102,7 +102,7 @@ def test_lineargll_explicit(degree, epw):
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])
-def test_lineargll_implicit(degree, epw):
+def test_linearspectral_implicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     u0 = 1  # velocity amplitude (m / s)
@@ -155,7 +155,7 @@ def test_lineargll_implicit(degree, epw):
     dt = CFL * h / (c0 * degree**2)
 
     # Instantiate model
-    eqn = LinearGLLImplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
+    eqn = LinearSpectralImplicit(mesh, mt, degree, c, rho, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()

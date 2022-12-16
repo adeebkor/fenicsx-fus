@@ -12,7 +12,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL, LinearGLLS2
+from hifusim import LinearGLL, LinearSpectralS2
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -125,7 +125,7 @@ if mpi_rank == 0:
     print("Problem type: Non-conforming source", flush=True)
 
 # Model
-model = LinearGLLS2(mesh, mt_facet, degreeOfBasis, c0, rho0,
+model = LinearSpectralS2(mesh, mt_facet, degreeOfBasis, c0, rho0,
                     sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve

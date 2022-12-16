@@ -15,7 +15,7 @@ from dolfinx.fem import Function, FunctionSpace
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLLExplicit
+from hifusim import LinearSpectralExplicit
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -87,9 +87,9 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLLExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                          sourceFrequency, sourceAmplitude, speedOfSound,
-                          rkOrder, timeStepSize)
+model = LinearSpectralExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0,
+                               sourceFrequency, sourceAmplitude, speedOfSound,
+                               rkOrder, timeStepSize)
 
 # Solve
 model.init()

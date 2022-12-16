@@ -15,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLLSponge, compute_diffusivity_of_sound
+from hifusim import LinearSpectralSponge, compute_diffusivity_of_sound
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -88,9 +88,9 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearGLLSponge(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                        diffusivityOfSound, sourceFrequency, sourceAmplitude,
-                        speedOfSound)
+model = LinearSpectralSponge(
+    mesh, mt_facet, degreeOfBasis, c0, rho0, diffusivityOfSound,
+    sourceFrequency, sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()

@@ -12,7 +12,7 @@ from mpi4py import MPI
 from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import (create_interval, locate_entities_boundary, meshtags)
 
-from hifusim import LossyGLLExplicit
+from hifusim import LossySpectralExplicit
 from hifusim.utils import compute_diffusivity_of_sound, compute_eval_params
 
 # MPI
@@ -87,7 +87,7 @@ finalTime = (domainLength / speedOfSound + 4 / sourceFrequency) / 4
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
-model = LossyGLLExplicit(mesh, mt, degreeOfBasis, c0, rho0, delta0,
+model = LossySpectralExplicit(mesh, mt, degreeOfBasis, c0, rho0, delta0,
                          sourceFrequency, sourceAmplitude, speedOfSound,
                          rkOrder, timeStepSize)
 

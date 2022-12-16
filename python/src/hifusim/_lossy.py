@@ -9,7 +9,7 @@ from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
 
-class LossyGLLExplicit:
+class LossySpectralExplicit:
     """
     Solver for the viscoelastic wave equation.
 
@@ -283,7 +283,7 @@ class LossyGLLExplicit:
         return self.u_n, self.v_n, t
 
 
-class LossyGLLImplicit:
+class LossySpectralImplicit:
     """
     Solver for the viscoelastic wave equation.
 
