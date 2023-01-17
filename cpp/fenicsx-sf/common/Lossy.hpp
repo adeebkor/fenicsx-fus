@@ -493,6 +493,10 @@ public:
     }
 
     // Update boundary condition
+    // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    // std::fill(dg_.begin(), dg_.end(), 
+    //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
+    //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
@@ -657,12 +661,15 @@ public:
         if (mpi_rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
-                    << "/" << totalStep << std::endl;
+                    << "/" << totalStep 
+                    << "\t" << u_->array()[0] << std::endl;
         }
       }
+
       // ----------------------------------------------------------------------
       // Collect data
       if (t > 0.12 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
+      // if (t > 1900 * dt && step_period < numStepPerPeriod) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
 
@@ -703,6 +710,10 @@ public:
 
   std::shared_ptr<fem::Function<T>> u_sol() const {
     return u_n;
+  }
+
+  std::int64_t number_of_dofs() const {
+    return V->dofmap()->index_map->size_global();
   }
 
 private:

@@ -457,7 +457,8 @@ public:
     }
 
     // Update boundary condition
-    std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t));
+    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t));
 
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -663,6 +664,10 @@ public:
 
   std::shared_ptr<fem::Function<T>> u_sol() const {
     return u_n;
+  }
+
+  std::int64_t number_of_dofs() const {
+    return V->dofmap()->index_map->size_global();
   }
 
 private:
