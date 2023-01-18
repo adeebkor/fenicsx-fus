@@ -631,6 +631,7 @@ public:
                     << "\t" << u_->array()[0] << std::endl;
         }
       }
+    }
 
     // Prepare solution at final time
     kernels::copy<T>(*u_, *u_n->x());
