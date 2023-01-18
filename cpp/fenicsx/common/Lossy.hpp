@@ -138,7 +138,13 @@ public:
   /// @param[out] result Result, i.e. dun/dtn
   void f0(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
+
+    common::Timer copy_vector("~ F0 (copy vector)");
+    copy_vector.start();
+
     kernels::copy<T>(*v, *result);
+
+    copy_vector.stop();
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
@@ -148,6 +154,9 @@ public:
   /// @param[out] result Result, i.e. dvn/dtn
   void f1(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
+
+    common::Timer apply_window("~ F1 (apply window)");
+    apply_window.start();
 
     // Apply windowing
     if (t < period * window_length) {
@@ -159,17 +168,27 @@ public:
       dwindow = 0.0;
     }
 
+    apply_window.stop();
+
     // Update boundary condition (homogenous domain)
     // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
     // std::fill(dg_.begin(), dg_.end(), 
     //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
     //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
 
+    common::Timer update_source("~ F1 (update source)");
+    update_source.start();
+
     // Update boundary condition (heterogenous domain)
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
+
+    update_source.stop();
+
+    common::Timer update_fields("~ F1 (update fields)");
+    update_fields.start();
 
     // Update fields
     u->scatter_fwd();
@@ -178,10 +197,20 @@ public:
     v->scatter_fwd();
     kernels::copy<T>(*v, *v_n->x());
 
+    update_fields.stop();
+
+    common::Timer assemble_rhs("~ F1 (assemble RHS)");
+    assemble_rhs.start();
+
     // Assemble RHS
     std::fill(b_.begin(), b_.end(), 0.0);
     fem::assemble_vector(b_, *L);
     b->scatter_rev(std::plus<T>());
+
+    assemble_rhs.stop();
+
+    common::Timer solve("~F1 (solve)");
+    solve.start();
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -197,6 +226,8 @@ public:
       std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
                      [](const T& bi, const T& mi) { return bi / mi; });
     }
+
+    solve.stop();
   }
 
   /// Runge-Kutta 4th order solver
@@ -249,16 +280,32 @@ public:
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
+      common::Timer rk_copy_ext("~ RK (copy ext");
+      rk_copy_ext.start();
+
       kernels::copy<T>(*u_, *u0);
       kernels::copy<T>(*v_, *v0);
 
+      rk_copy_ext.stop();
+
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
+
+        common::Timer rk_copy_int("~ RK (copy int)");
+        rk_copy_int.start();
+
         kernels::copy<T>(*u0, *un);
         kernels::copy<T>(*v0, *vn);
 
+        rk_copy_int.stop();
+
+        common::Timer rk_axpy_a("~ RK (axpy a)");
+        rk_axpy_a.start();
+
         kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);
         kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);
+
+        rk_axpy_a.stop();
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
@@ -267,9 +314,14 @@ public:
         f0(tn, un, vn, ku);
         f1(tn, un, vn, kv);
 
+        common::Timer rk_axpy_b("~ RK (axpy b)");
+        rk_axpy_b.start();
+
         // Update solution
         kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);
         kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);
+
+        rk_axpy_b.stop();
       }
 
       // Update time
@@ -284,6 +336,7 @@ public:
                     << "\t" << u_->array()[0] << std::endl;
         }
       }
+    }
 
     // Prepare solution at final time
     kernels::copy<T>(*u_, *u_n->x());
