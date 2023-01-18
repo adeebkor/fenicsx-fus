@@ -183,12 +183,19 @@ public:
       dwindow = 0.0;
     }
 
-    // Update boundary condition
-    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    // Update boundary condition (homogenous domain)
+    // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    // std::fill(dg_.begin(), dg_.end(), 
+    //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
+    //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+
+    // Update boundary condition (heterogenous domain)
+    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
     std::fill(dg_.begin(), dg_.end(), 
-              dwindow * p0 * w0 / s0 * cos(w0 * t) 
-                - window * p0 * w0 * w0 / s0 * sin(w0 * t));
-    
+              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
+                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
+
+
     // Update fields
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -316,6 +323,11 @@ public:
   std::shared_ptr<fem::Function<T>> u_sol() const {
     return u_n;
   }
+
+  std::int64_t number_of_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
 
 private:
   int mpi_rank, mpi_size;  // MPI rank and size
@@ -492,16 +504,18 @@ public:
       dwindow = 0.0;
     }
 
-    // Update boundary condition
+    // Update boundary condition (homogenous domain)
     // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
     // std::fill(dg_.begin(), dg_.end(), 
     //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
     //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+
+    // Update boundary condition (heterogenous domain)
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
-    
+
     // Update fields
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -537,54 +551,6 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
-
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    const std::size_t Nr = 141;
-    const std::size_t Nz = 241;
-
-    // Create evaluation point coordinates
-    std::vector<T> point_coordinates(3 * Nr * Nz);
-    for (std::size_t i = 0; i < Nz; ++i) {
-      for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = j * 0.07 / (Nr - 1) - 0.035;
-        point_coordinates[3*j + 3*i*Nr + 1] = 0.0;
-        point_coordinates[3*j + 3*i*Nr + 2] = i * 0.12 / (Nz - 1);
-      }
-    }
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells = geometry::compute_colliding_cells(
-      *mesh, cell_candidates, point_coordinates);
-
-    std::vector<std::int32_t> cells;
-    std::vector<T> points_on_proc;
-
-    for (std::size_t i = 0; i < Nr*Nz; ++i) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3*i]);
-        points_on_proc.push_back(point_coordinates[3*i + 1]);
-        points_on_proc.push_back(point_coordinates[3*i + 2]);
-        cells.push_back(link[0]);
-      }
-    }
-
-    std::size_t num_points_local = points_on_proc.size() / 3;
-    std::vector<T> u_eval(num_points_local);
-
-    T* u_value = u_eval.data();
-    T* p_value = points_on_proc.data();
-
-    int numStepPerPeriod = period / timeStep + 3;
-    int step_period = 0;
-    // ------------------------------------------------------------------------
 
     // Time-stepping parameters
     T t = startTime;
@@ -661,44 +627,10 @@ public:
         if (mpi_rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
-                    << "/" << totalStep 
+                    << "/" << totalStep
                     << "\t" << u_->array()[0] << std::endl;
         }
       }
-
-      // ----------------------------------------------------------------------
-      // Collect data
-      if (t > 0.12 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
-      // if (t > 1900 * dt && step_period < numStepPerPeriod) {
-        kernels::copy(*u_, *u_n->x());
-        u_n->x()->scatter_fwd();
-
-        // Evaluate function
-        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
-                  {num_points_local, 1});
-        u_value = u_eval.data();
-
-        // Write evaluation from each process to a single text file
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        for (int i = 0; i < mpi_size; ++i) {
-          if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_on_xz_plane_" + 
-                    std::to_string(step_period) + ".txt";
-            std::ofstream txt_file(fname, std::ios_base::app);
-            for (std::size_t i = 0; i < num_points_local; ++i) {
-              txt_file << *(p_value + 3 * i) << ","
-                       << *(p_value + 3 * i + 2) << "," 
-                       << *(u_value + i) << std::endl;
-            }
-            txt_file.close();
-          }
-          MPI_Barrier(MPI_COMM_WORLD);
-        }
-        step_period++;
-      }
-      // ----------------------------------------------------------------------
-    }
 
     // Prepare solution at final time
     kernels::copy<T>(*u_, *u_n->x());

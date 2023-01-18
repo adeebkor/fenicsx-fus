@@ -150,7 +150,8 @@ public:
     }
 
     // Update boundary condition
-    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t)); // homogenous domain
+    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t)); // heterogenous domain
 
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -184,7 +185,7 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
-    
+
     // Time-stepping parameters
     T t = startTime;
     T tf = finalTime;
@@ -277,6 +278,10 @@ public:
     return u_n;
   }
 
+  std::int64_t number_of_dofs() const {
+    return V->dofmap()->index_map->size_global();
+  }
+
 private:
   int mpi_rank, mpi_size;  // MPI rank and size
   int bs;  // block size
@@ -286,11 +291,16 @@ private:
   T s0;  // speed (m/s)
   T period, window_length, window;
 
+  // Mesh data
   std::shared_ptr<mesh::Mesh> mesh;
   std::shared_ptr<mesh::MeshTags<std::int32_t>> ft;
   std::shared_ptr<const common::IndexMap> index_map;
+
+  // Function space and functions
   std::shared_ptr<fem::FunctionSpace> V;
   std::shared_ptr<fem::Function<T>> u, u_n, v_n, g, c0, rho0;
+
+  // Forms and vectors
   std::shared_ptr<fem::Form<T>> a, L;
   std::shared_ptr<la::Vector<T>> m, b;
 
