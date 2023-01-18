@@ -1,8 +1,8 @@
 //
-// Heterogenous 3D viscoelastic wave problem
-// - circular planar source
-// - first-order Sommerfeld ABC
-// =========================================
+// This code simulates the Benchmark 5 Source 2 of the problem in
+// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
+// of compressional wave models paper by Aubry et al.
+// ==========================================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
 #include "Lossy.hpp"
@@ -35,12 +35,12 @@ int main(int argc, char* argv[])
 
     // Material parameters
     const double speedOfSoundWater = 1500.0;  // (m/s)
-    const double speedOfSoundCortBone = 1500.0;  // (m/s)
+    const double speedOfSoundCortBone = 2800.0;  // (m/s)
     const double densityWater = 1000.0;  // (kg/m^3)
-    const double densityCortBone = 1000.0;  // (kg/m^3)
+    const double densityCortBone = 1850.0;  // (kg/m^3)
 
     // Compute attenuation parameter
-    const double attenuationCoefficientdBCortBone = 0.0;  //(dB/m)
+    const double attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
     const double attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
@@ -55,7 +55,8 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "/home/mabm4/rds/hpc-work/mesh/planar_3d_4/mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD,
+    "/home/mabm4/rds/hpc-work/mesh/planar_3d_4/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "planar_3d_4"));
     mesh->topology().create_connectivity(2, 3);
@@ -112,14 +113,13 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.1;
+    const double CFL = 0.20;
     double timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSoundCortBone * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const double startTime = 0.0;
-    // const double finalTime = 0.12 / speedOfSoundWater + 8.0 / sourceFrequency;
-    const double finalTime = 1000 * timeStepSize;
+    const double finalTime = 0.12 / speedOfSoundWater + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model

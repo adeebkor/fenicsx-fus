@@ -1,8 +1,8 @@
 //
-// Heterogenous 3D viscoelastic wave problem
-// - spherical source
-// - first-order Sommerfeld ABC
-// =========================================
+// This code simulates the Benchmark 6 Source 1 of the problem in
+// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
+// of compressional wave models paper by Aubry et al.
+// ==========================================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
 #include "Lossy.hpp"
@@ -175,8 +175,6 @@ int main(int argc, char* argv[])
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const double startTime = 0.0;
-    // const double finalTime = 100*timeStepSize;
-    // const double finalTime = 0.03 / speedOfSoundWater + 2.0 / sourceFrequency;  
     const double finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
@@ -188,7 +186,7 @@ int main(int argc, char* argv[])
     auto nDofs = model.number_of_dofs();
     
     if (mpi_rank == 0){
-      std::cout << "Benchmark: 4" << "\n";
+      std::cout << "Benchmark: 6" << "\n";
       std::cout << "Source: 1" << "\n";
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";

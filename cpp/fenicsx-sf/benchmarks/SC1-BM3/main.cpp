@@ -1,8 +1,8 @@
 //
-// Heterogenous 3D viscoelastic wave problem
-// - spherical source
-// - first-order Sommerfeld ABC
-// =========================================
+// This code simulates the Benchmark 3 Source 1 of the problem in
+// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
+// of compressional wave models paper by Aubry et al.
+// ==========================================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
 #include "Lossy.hpp"

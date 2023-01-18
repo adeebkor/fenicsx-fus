@@ -1,8 +1,8 @@
 //
-// Heterogenous 3D viscoelastic wave problem
-// - spherical source
-// - first-order Sommerfeld ABC
-// =========================================
+// This code simulates the Benchmark 3 Source 1 of the problem in
+// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
+// of compressional wave models paper by Aubry et al.
+// ==========================================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
 #include "Lossy.hpp"
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD,
-    "/home/mabm4/rds/Projects/hifu-simulation/cpp/fenicsx/benchmarks/SC1-BM3/mesh.xdmf", "r");
+    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_5/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_5"));
     mesh->topology().create_connectivity(2, 3);
@@ -119,10 +119,15 @@ int main(int argc, char* argv[])
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const double startTime = 0.0;
-    // const double finalTime = 100*timeStepSize;
-    // const double finalTime = 0.03 / speedOfSoundWater + 1.0 / sourceFrequency;  
     const double finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
+
+    // Model
+    auto model = LossySpectral<double, 4>(
+      mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
+      speedOfSoundWater);
+
+    auto nDofs = model.number_of_dofs();
 
     if (mpi_rank == 0){
       std::cout << "Benchmark: 3" << "\n";
@@ -130,16 +135,12 @@ int main(int argc, char* argv[])
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";
       std::cout << std::setprecision(2) << meshSizeMinGlobal << "\n";
+      std::cout << "Degrees of freedom: " << nDofs << "\n";
       std::cout << "CFL number: " << CFL << "\n";
       std::cout << "Time step size: " << timeStepSize << "\n";
       std::cout << "Number of steps per period: " << stepPerPeriod << "\n";
       std::cout << "Total number of steps: " << numberOfStep << "\n";
     }
-
-    // Model
-    auto model = LossySpectral<double, 4>(
-      mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
-      speedOfSoundWater);
 
     // Solve
     common::Timer tsolve("Solve time");

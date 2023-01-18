@@ -1,8 +1,8 @@
 //
-// Homogenous 3D linear wave problem
-// - spherical source
-// - first-order Sommerfeld ABC
-// =======================================
+// This code simulates the Benchmark 1 Source 1 of the problem in
+// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
+// of compressional wave models paper by Aubry et al.
+// ==========================================================================
 // Copyright (C) 2022 Adeeb Arif Kor
 
 #include "Linear.hpp"
@@ -104,8 +104,7 @@ int main(int argc, char* argv[])
       speedOfSound);
 
     auto nDofs = model.number_of_dofs();
-    
-    // Print setup
+
     if (mpi_rank == 0){
       std::cout << "Benchmark: 1" << "\n";
       std::cout << "Source: 1" << "\n";
