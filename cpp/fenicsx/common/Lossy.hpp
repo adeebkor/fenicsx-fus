@@ -167,11 +167,19 @@ public:
                 - window * p0 * w0 * w0 / s0 * sin(w0 * t));
     */
 
+    common::Timer update_source("~ F1 (update source)");
+    update_source.start();
+
     // Update boundary condition (heterogenous domain)
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));  // 1 write x Ndofs
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));  // 1 write x Ndofs
+
+    update_source.stop();
+
+    common::Timer update_fields("~ F1 (update field)");
+    update_fields.start();
 
     // Update fields
     u->scatter_fwd();
@@ -180,10 +188,20 @@ public:
     v->scatter_fwd();
     kernels::copy<T>(*v, *v_n->x());  // 1 read x Ndofs, 1 write x Ndofs
 
+    update_fields.stop();
+
+    common::Timer assemble_rhs("~ F1 (assemble rhs)");
+    assemble_rhs.start();
+
     // Assemble RHS
     std::fill(b_.begin(), b_.end(), 0.0);  // 1 write x Ndofs
     fem::assemble_vector(b_, *L);  // 
     b->scatter_rev(std::plus<T>());
+
+    assemble_rhs.stop();
+
+    common::Timer solve("~ F1 (solve)");
+    solve.start();
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -199,6 +217,8 @@ public:
       std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
                      [](const T& bi, const T& mi) { return bi / mi; });  // 2 read x Ndofs, 1 write x Ndofs
     }
+
+    solve.stop();
   }
 
   /// Runge-Kutta 4th order solver
@@ -250,61 +270,29 @@ public:
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
-      common::Timer rk_copy_ext("~ RK (copy ext");
-      rk_copy_ext.start();
-
       // Store solution at start of time step
       kernels::copy<T>(*u_, *u0);  // 1 read, 1 write
       kernels::copy<T>(*v_, *v0);  // 1 read, 1 write
 
-      rk_copy_ext.stop();
-
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
-
-        common::Timer rk_copy_int("~ RK (copy int)");
-        rk_copy_int.start();
 
         kernels::copy<T>(*u0, *un);  // 1 read, 1 write
         kernels::copy<T>(*v0, *vn);  // 1 read, 1 write
 
-        rk_copy_int.stop();
-
-        common::Timer rk_axpy_a("~ RK (axpy a)");
-        rk_axpy_a.start();
-
         kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);  // 2 read, 1 write
         kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);  // 2 read, 1 write
-
-        rk_axpy_a.stop();
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
 
         // Compute RHS vector
-
-        common::Timer rk_f0("~ RK (f0)");
-        rk_f0.start();
-
         f0(tn, un, vn, ku);
-        
-        rk_f0.stop();
-        
-        common::Timer rk_f1("~ RK (f1)");
-        rk_f1.start();
-
         f1(tn, un, vn, kv);
-
-        rk_f1.stop();
-
-        common::Timer rk_axpy_b("~ RK (axpy b)");
-        rk_axpy_b.start();
 
         // Update solution
         kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);  // 2 read, 1 write
         kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);  // 2 read, 1 write
-
-        rk_axpy_b.stop();
       }
 
       // Update time
