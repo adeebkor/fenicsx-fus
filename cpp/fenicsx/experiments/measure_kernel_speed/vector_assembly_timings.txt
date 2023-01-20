@@ -1,0 +1,35 @@
+RUN 1 (19:16 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345)
+~ b0 assembly                                                               |     1  0.501775  0.501775
+~ b1 assembly                                                               |     1  0.005749  0.005749
+~ b2 assembly                                                               |     1  0.006280  0.006280
+~ b3 assembly                                                               |     1  0.502517  0.502517
+~ b4 assembly                                                               |     1  0.005379  0.005379
+~ m0 assembly                                                               |     1  0.298257  0.298257
+~ m1 assembly                                                               |     1  0.006577  0.006577
+
+RUN 2 (19:17 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345)
+~ b0 assembly                                                               |     1  0.501581  0.501581
+~ b1 assembly                                                               |     1  0.005494  0.005494
+~ b2 assembly                                                               |     1  0.005716  0.005716
+~ b3 assembly                                                               |     1  0.503119  0.503119
+~ b4 assembly                                                               |     1  0.005302  0.005302
+~ m0 assembly                                                               |     1  0.298294  0.298294
+~ m1 assembly                                                               |     1  0.005969  0.005969
+
+RUN 3 (19:18 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345)
+~ b0 assembly                                                               |     1  0.501915  0.501915
+~ b1 assembly                                                               |     1  0.005694  0.005694
+~ b2 assembly                                                               |     1  0.005814  0.005814
+~ b3 assembly                                                               |     1  0.503292  0.503292
+~ b4 assembly                                                               |     1  0.005399  0.005399
+~ m0 assembly                                                               |     1  0.300314  0.300314
+~ m1 assembly                                                               |     1  0.006083  0.006083
+
+RUN 3 (19:19 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345)
+~ b0 assembly                                                               |     1  0.501915  0.501915
+~ b1 assembly                                                               |     1  0.005694  0.005694
+~ b2 assembly                                                               |     1  0.005814  0.005814
+~ b3 assembly                                                               |     1  0.503292  0.503292
+~ b4 assembly                                                               |     1  0.005399  0.005399
+~ m0 assembly                                                               |     1  0.300314  0.300314
+~ m1 assembly                                                               |     1  0.006083  0.006083
