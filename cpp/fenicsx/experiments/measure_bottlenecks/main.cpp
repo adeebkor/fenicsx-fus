@@ -1,9 +1,7 @@
 //
-// This code simulates the Benchmark 4 Source 1 of the problem in
-// Benchmark problems for transcranial ultrasound simulation: Intercomparison 
-// of compressional wave models paper by Aubry et al.
+// The input code to test the cost of the FEniCSx solver
 // ==========================================================================
-// Copyright (C) 2022 Adeeb Arif Kor
+// Copyright (C) 2023 Adeeb Arif Kor
 
 #include "Lossy.hpp"
 #include "forms.h"
@@ -210,6 +208,7 @@ int main(int argc, char* argv[])
                 << tsolve.elapsed()[0] / numberOfStep << std::endl;
     }
 
+    // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
   }
 }
