@@ -27,7 +27,6 @@ int main(int argc, char* argv[])
     // Set polynomial degree
     const int P = 4;
 
-    /*
     // Create mesh and function space
     const std::size_t N = 20;
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
@@ -38,8 +37,8 @@ int main(int argc, char* argv[])
         {N, N},
         mesh::CellType::quadrilateral,
         part));
-    */
 
+    /*
     // Read mesh and tags
     auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
@@ -48,6 +47,7 @@ int main(int argc, char* argv[])
     mesh->topology().create_connectivity(1, 2);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
       fmesh.read_meshtags(mesh, "quad_cells"));
+    */
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
@@ -122,8 +122,8 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Print the first 10 values
 
-    // for (std::size_t i = 0; i < 10; ++i)
-    //   std::cout << m0_[i] << " " << m1_[i] << "\n";
+    for (std::size_t i = 0; i < 10; ++i)
+      std::cout << m0_[i] << " " << m1_[i] << "\n";
 
     // ------------------------------------------------------------------------
     // Equality check (Mass)
