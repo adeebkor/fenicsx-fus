@@ -195,7 +195,6 @@ public:
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
 
-
     // Update fields
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -327,7 +326,6 @@ public:
   std::int64_t number_of_dofs() const {
     return V->dofmap()->index_map->size_global();
   }
-
 
 private:
   int mpi_rank, mpi_size;  // MPI rank and size
