@@ -462,10 +462,10 @@ public:
     for (std::size_t i = 0; i < rho0_.size(); ++i) {
       lin_coeff_[i] = - 1.0 / rho0_[i];
       att_coeff_[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+    }
 
     lin_coeff->x()->scatter_fwd();
     att_coeff->x()->scatter_fwd();
-    }
   }
 
   /// Set the initial values of u and v, i.e. u_0 and v_0
