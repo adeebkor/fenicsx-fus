@@ -1,7 +1,7 @@
 
 //
 // The code to measure the time of assemble of each kernels
-// ==========================================================================
+// ========================================================
 // Copyright (C) 2023 Adeeb Arif Kor
 
 #include "forms.h"
@@ -35,51 +35,51 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // Source parameters
-    const double sourceFrequency = 0.5e6;  // (Hz)
-    const double sourceAmplitude = 60000;  // (Pa)
-    const double period = 1 / sourceFrequency;  // (s)
-    const double angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
+    const T sourceFrequency = 0.5e6;  // (Hz)
+    const T sourceAmplitude = 60000;  // (Pa)
+    const T period = 1 / sourceFrequency;  // (s)
+    const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
     // Material parameters (Water)
-    const double speedOfSoundWater = 1500.0;  // (m/s)
-    const double densityWater = 1000.0;  // (kg/m^3)
+    const T speedOfSoundWater = 1500.0;  // (m/s)
+    const T densityWater = 1000.0;  // (kg/m^3)
     
     // Material parameters (Skin)
-    const double speedOfSoundSkin = 1610.0;  // (m/s)
-    const double densitySkin = 1090.0;  // (kg/m^3)
-    const double attenuationCoefficientdBSkin = 20.0;  // (dB/m)
-    const double attenuationCoefficientNpSkin
+    const T speedOfSoundSkin = 1610.0;  // (m/s)
+    const T densitySkin = 1090.0;  // (kg/m^3)
+    const T attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const T attenuationCoefficientNpSkin
       = attenuationCoefficientdBSkin / 20 * log(10);
-    const double diffusivityOfSoundSkin = compute_diffusivity_of_sound(
+    const T diffusivityOfSoundSkin = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundSkin, attenuationCoefficientNpSkin);
 
     // Material parameters (Cortical bone)
-    const double speedOfSoundCortBone = 2800.0;  // (m/s)
-    const double densityCortBone = 1850.0;  // (kg/m^3)
-    const double attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
-    const double attenuationCoefficientNpCortBone
+    const T speedOfSoundCortBone = 2800.0;  // (m/s)
+    const T densityCortBone = 1850.0;  // (kg/m^3)
+    const T attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
-    const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
+    const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundCortBone, 
       attenuationCoefficientNpCortBone);
 
     // Material parameters (Trabecular bone)
-    const double speedOfSoundTrabBone = 2300.0;  // (m/s)
-    const double densityTrabBone = 1700.0;  // (kg/m^3)
-    const double attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
-    const double attenuationCoefficientNpTrabBone
+    const T speedOfSoundTrabBone = 2300.0;  // (m/s)
+    const T densityTrabBone = 1700.0;  // (kg/m^3)
+    const T attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const T attenuationCoefficientNpTrabBone
       = attenuationCoefficientdBTrabBone / 20 * log(10);
-    const double diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
+    const T diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundTrabBone, 
       attenuationCoefficientNpTrabBone);
 
     // Material parameters (Brain)
-    const double speedOfSoundBrain = 1560.0;  // (m/s)
-    const double densityBrain = 1040.0;  // (kg/m^3)
-    const double attenuationCoefficientdBBrain = 30.0;  // (dB/m)
-    const double attenuationCoefficientNpBrain
+    const T speedOfSoundBrain = 1560.0;  // (m/s)
+    const T densityBrain = 1040.0;  // (kg/m^3)
+    const T attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const T attenuationCoefficientNpBrain
       = attenuationCoefficientdBBrain / 20 * log(10);
-    const double diffusivityOfSoundBrain = compute_diffusivity_of_sound(
+    const T diffusivityOfSoundBrain = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
 
     // FE parameters
@@ -102,13 +102,13 @@ int main(int argc, char* argv[])
     const int num_cell = mesh->topology().index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<double>::iterator min_mesh_size_local = std::min_element(
+    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<T>::iterator min_mesh_size_local = std::min_element(
       mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(
       mesh_size_local.begin(), min_mesh_size_local);
-    double meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
-    double meshSizeMinGlobal;
+    T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
+    T meshSizeMinGlobal;
     MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN,
                0, MPI_COMM_WORLD);
     MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -116,9 +116,9 @@ int main(int argc, char* argv[])
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
-    auto c0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto rho0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto delta0 = std::make_shared<fem::Function<double>>(V_DG);
+    auto c0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
     auto cells_5 = mt_cell->find(5);
     auto cells_6 = mt_cell->find(6);
 
-    std::span<double> c0_ = c0->x()->mutable_array();
+    std::span<T> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
       [&](std::int32_t &i) { c0_[i] = speedOfSoundBrain; });
     c0->x()->scatter_fwd();
 
-    std::span<double> rho0_ = rho0->x()->mutable_array();
+    std::span<T> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { rho0_[i] = densityWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
       [&](std::int32_t &i) { rho0_[i] = densityBrain; });
     rho0->x()->scatter_fwd();
 
-    std::span<double> delta0_ = delta0->x()->mutable_array();
+    std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { delta0_[i] = 0.0; });
     std::for_each(cells_2.begin(), cells_2.end(),
