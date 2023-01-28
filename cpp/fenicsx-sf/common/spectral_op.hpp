@@ -63,7 +63,7 @@ public:
           Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
-    detJ_ = compute_scaled_jacobian_determinant(mesh, points, weights);
+    detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
   }
 
   /// Operator y = Mx
@@ -83,7 +83,7 @@ public:
       for (std::int32_t i = 0; i < Nd; ++i)
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
 
-      double* sdetJ = detJ_.data() + c * Nd;
+      T* sdetJ = detJ_.data() + c * Nd;
       mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
 
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -148,7 +148,7 @@ public:
           Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
-    detJ_ = compute_scaled_jacobian_determinant(mesh, points, weights);
+    detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
   }
 
   /// Operator y = Mx
@@ -168,7 +168,7 @@ public:
       for (std::int32_t i = 0; i < Nd; ++i)
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
 
-      double* sdetJ = detJ_.data() + c * Nd;
+      T* sdetJ = detJ_.data() + c * Nd;
       mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
 
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -272,7 +272,7 @@ public:
           Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
-    G_ = compute_scaled_geometrical_factor(mesh, points, weights);
+    G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
   
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
@@ -415,7 +415,7 @@ public:
           Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
-    G_ = compute_scaled_geometrical_factor(mesh, points, weights);
+    G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
   
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);

@@ -11,10 +11,6 @@
 #include <dolfinx.h>
 
 namespace stdex = std::experimental;
-using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-using mdspan2_t = stdex::mdspan<double, stdex::dextents<std::size_t, 2>>;
-using mdspan3_t = stdex::mdspan<double, stdex::dextents<std::size_t, 3>>;
-using mdspan4_t = stdex::mdspan<double, stdex::dextents<std::size_t, 4>>;
 
 using namespace dolfinx;
 
@@ -36,10 +32,14 @@ void transpose(const U& A, V& B) {
 /// @param[in] mesh The mesh object (which contains the coordinate map)
 /// @param[in] points The quadrature points to compute Jacobian of the map
 /// @param[in] weights The weights evaluated at the quadrature points
-std::vector<double> compute_scaled_jacobian_determinant(
+template <typename T>
+std::vector<T> compute_scaled_jacobian_determinant(
   std::shared_ptr<const mesh::Mesh> mesh, std::vector<double> points,
   std::vector<double> weights)
 {
+  using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
+  using mdspan2_t = stdex::mdspan<T, stdex::dextents<std::size_t, 2>>;
+
   // Number of points
   std::size_t nq = weights.size();
 
@@ -63,14 +63,14 @@ std::vector<double> compute_scaled_jacobian_determinant(
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
   // Create working arrays
-  std::vector<double> coord_dofs_b(num_dofs_g * gdim);
+  std::vector<T> coord_dofs_b(num_dofs_g * gdim);
   mdspan2_t coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
 
-  std::vector<double> J_b(tdim * gdim);
+  std::vector<T> J_b(tdim * gdim);
   mdspan2_t J(J_b.data(), tdim, gdim);
-  std::vector<double> detJ_b(nc * nq);
+  std::vector<T> detJ_b(nc * nq);
   mdspan2_t detJ(detJ_b.data(), nc, nq);
-  std::vector<double> det_scratch(2 * tdim * gdim);
+  std::vector<T> det_scratch(2 * tdim * gdim);
 
   for (std::size_t c = 0; c < nc; ++c)
   {
@@ -111,10 +111,15 @@ std::vector<double> compute_scaled_jacobian_determinant(
 /// @param[in] mesh The mesh object (which contains the coordinate map)
 /// @param[in] points The quadrature points to compute Jacobian of the map
 /// @param[in] weights The weights evaluated at the quadrature points
-std::vector<double> compute_scaled_geometrical_factor(
+template <typename T>
+std::vector<T> compute_scaled_geometrical_factor(
   std::shared_ptr<const mesh::Mesh> mesh, std::vector<double> points,
   std::vector<double> weights)
 {
+  using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
+  using mdspan2_t = stdex::mdspan<T, stdex::dextents<std::size_t, 2>>;
+  using mdspan3_t = stdex::mdspan<T, stdex::dextents<std::size_t, 3>>;
+
   // The number of element of the upper triangular matrix
   std::map<int, int> gdim2dim;
   gdim2dim[2] = 3;
@@ -144,33 +149,33 @@ std::vector<double> compute_scaled_geometrical_factor(
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
   // Create working arrays
-  std::vector<double> coord_dofs_b(num_dofs_g * gdim);
+  std::vector<T> coord_dofs_b(num_dofs_g * gdim);
   mdspan2_t coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
 
   // Jacobian
-  std::vector<double> J_b(gdim * tdim);
+  std::vector<T> J_b(gdim * tdim);
   mdspan2_t J(J_b.data(), gdim, tdim);
 
   // Jacobian inverse J^{-1}
-  std::vector<double> K_b(tdim * gdim);
+  std::vector<T> K_b(tdim * gdim);
   mdspan2_t K(K_b.data(), tdim, gdim);
 
   // Jacobian inverse transpose J^{-T}
-  std::vector<double> KT_b(gdim * tdim);
+  std::vector<T> KT_b(gdim * tdim);
   mdspan2_t KT(KT_b.data(), gdim, tdim);
 
   // G = J^{-1} * J^{-T}
-  std::vector<double> G_b(gdim * tdim);
+  std::vector<T> G_b(gdim * tdim);
   mdspan2_t G(G_b.data(), gdim, tdim);
 
   // G small
-  std::vector<double> Gs_b(nc * nq * dim);
+  std::vector<T> Gs_b(nc * nq * dim);
   mdspan3_t Gs(Gs_b.data(), nc, nq, dim);
 
   // Jacobian determinants
-  std::vector<double> detJ_b(nc * nq);
+  std::vector<T> detJ_b(nc * nq);
   mdspan2_t detJ(detJ_b.data(), nc, nq);
-  std::vector<double> det_scratch(2 * gdim * tdim);
+  std::vector<T> det_scratch(2 * gdim * tdim);
 
   for (std::size_t c = 0; c < nc; ++c)
   {
