@@ -14,7 +14,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-using T = double;
+#define T_MPI MPI_FLOAT
+using T = float;
 
 
 template <typename T>
@@ -103,16 +104,16 @@ int main(int argc, char* argv[])
     const int num_cell = mesh->topology().index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<T>::iterator min_mesh_size_local = std::min_element(
+    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<double>::iterator min_mesh_size_local = std::min_element(
       mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(
       mesh_size_local.begin(), min_mesh_size_local);
     T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
     T meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN,
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN,
                0, MPI_COMM_WORLD);
-    MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
