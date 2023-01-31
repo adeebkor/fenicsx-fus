@@ -14,8 +14,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_DOUBLE
-using T = double;
+#define T_MPI MPI_FLOAT
+using T = float;
 
 
 template <typename T>
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
-    
+
     // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
