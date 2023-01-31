@@ -20,7 +20,7 @@ using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
 
 namespace mass {
   template <typename T, int P, int Nq>
-  inline void transform(T* __restrict__ detJ, T __restrict__ coeff, T* __restrict__ fw) {
+  inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
     
     for (int iq = 0; iq < Nq; ++iq)
       fw[iq] = coeff * fw[iq] * detJ[iq];
