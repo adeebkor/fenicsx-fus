@@ -73,7 +73,7 @@ public:
           Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
-    G_ = compute_scaled_geometrical_factor(mesh, points, weights);
+    G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
   
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
@@ -188,5 +188,4 @@ private:
   std::array<T, Nd> T2;
   std::array<T, Nd> T3;
   std::array<T, Nd> T4;
-
 };
