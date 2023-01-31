@@ -14,8 +14,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_FLOAT
-using T = float;
+#define T_MPI MPI_DOUBLE
+using T = double;
 
 
 template <typename T>
@@ -118,9 +118,13 @@ int main(int argc, char* argv[])
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
+    
+    // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
+
+    auto ncells = V_DG->dofmap()->index_map->size_global();
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -178,6 +182,8 @@ int main(int argc, char* argv[])
     auto V = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
     
+    auto ndofs = V->dofmap()->index_map->size_global();
+
     // Define field functions
     auto index_map = V->dofmap()->index_map;
     auto bs = V->dofmap()->index_map_bs();
@@ -215,6 +221,26 @@ int main(int argc, char* argv[])
     m0->scatter_rev(std::plus<T>());
 
     m0_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of a0 (sum-factorization)
+    std::vector<T> a0_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < a0_sf_coeffs.size(); ++i)
+      a0_sf_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
+
+    MassSpectral3D<T, degreeOfBasis> a0_sf_operator(V);
+
+    auto m0_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m0_sf_ = m0_sf->mutable_array();
+
+    common::Timer m0_sf_assembly("~ m0_sf assembly");
+    m0_sf_assembly.start();
+
+    std::fill(m0_sf_.begin(), m0_sf_.end(), 0.0);
+    a0_sf_operator(*u->x(), a0_sf_coeffs, *m0_sf);
+    m0_sf->scatter_rev(std::plus<T>());
+
+    m0_sf_assembly.stop();
 
     // ------------------------------------------------------------------------
     // Assembly of a1
@@ -341,6 +367,10 @@ int main(int argc, char* argv[])
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
+    if (mpi_rank == 0) {
+      std::cout << "Degrees of freedom: " << ndofs << "\n";
+      std::cout << "Number of cells: " << ncells << "\n";
+    }
   }
   PetscFinalize();
 
