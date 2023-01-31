@@ -155,75 +155,8 @@ int main(int argc, char* argv[])
     auto u_n = model.u_sol();
 
     // Output to VTX
-    // dolfinx::io::VTXWriter u_out(mesh->comm(), "output_final.bp", {u_n});
-    // u_out.write(0.0);
-
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    const std::size_t Nr = 241;
-    const std::size_t Nz = 141;
-
-    // Create evaluation point coordinates
-    std::vector<double> point_coordinates(3 * Nr * Nz);
-    for (std::size_t i = 0; i < Nz; ++i) {
-      for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = i * 0.12 / (Nz - 1);
-        point_coordinates[3*j + 3*i*Nr + 1] = j * 0.07 / (Nr - 1) - 0.035;
-        point_coordinates[3*j + 3*i*Nr + 2] = 0.0;
-      }
-    }
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells = geometry::compute_colliding_cells(
-      *mesh, cell_candidates, point_coordinates);
-
-    std::vector<std::int32_t> cells;
-    std::vector<double> points_on_proc;
-
-    for (std::size_t i = 0; i < Nr*Nz; ++i) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3*i]);
-        points_on_proc.push_back(point_coordinates[3*i + 1]);
-        points_on_proc.push_back(point_coordinates[3*i + 2]);
-        cells.push_back(link[0]);
-      }
-    }
-
-    std::size_t num_points_local = points_on_proc.size() / 3;
-    std::vector<T> u_eval(num_points_local);
-
-    T* u_value = u_eval.data();
-    double* p_value = points_on_proc.data();
-
-    // Evaluate function
-    u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
-              {num_points_local, 1});
-    u_value = u_eval.data();
-
-    // Write evaluation from each process to a single text file
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    for (int i = 0; i < mpi_size; ++i) {
-      if (mpi_rank == i) {
-        fname = "/home/mabm4/data/pressure_on_xz_plane_.txt";
-        std::ofstream txt_file(fname, std::ios_base::app);
-        for (std::size_t i = 0; i < num_points_local; ++i) {
-          txt_file << *(p_value + 3 * i) << ","
-                   << *(p_value + 3 * i + 1) << "," 
-                   << *(u_value + i) << std::endl;
-        }
-        txt_file.close();
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
-    // ------------------------------------------------------------------------
+    dolfinx::io::VTXWriter u_out(mesh->comm(), "output_final.bp", {u_n});
+    u_out.write(0.0);
 
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
