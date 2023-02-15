@@ -15,6 +15,9 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
+#define T_MPI MPI_FLOAT
+using T = float;
+
 int main(int argc, char* argv[])
 {
   dolfinx::init_logging(argc, argv);
@@ -28,27 +31,27 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // Source parameters
-    const double sourceFrequency = 0.5e6;  // (Hz)
-    const double sourceAmplitude = 60000;  // (Pa)
-    const double period = 1 / sourceFrequency;  // (s)
-    const double angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
+    const T sourceFrequency = 0.5e6;  // (Hz)
+    const T sourceAmplitude = 60000;  // (Pa)
+    const T period = 1 / sourceFrequency;  // (s)
+    const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
     // Material parameters
-    const double speedOfSoundWater = 1500.0;  // (m/s)
-    const double speedOfSoundCortBone = 2800.0;  // (m/s)
-    const double densityWater = 1000.0;  // (kg/m^3)
-    const double densityCortBone = 1850.0;  // (kg/m^3)
+    const T speedOfSoundWater = 1500.0;  // (m/s)
+    const T speedOfSoundCortBone = 2800.0;  // (m/s)
+    const T densityWater = 1000.0;  // (kg/m^3)
+    const T densityCortBone = 1850.0;  // (kg/m^3)
 
     // Compute attenuation parameter
-    const double attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
-    const double attenuationCoefficientNpCortBone
+    const T attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
-    const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
+    const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundCortBone, 
       attenuationCoefficientNpCortBone);
     
     // Domain parameters
-    const double domainLength = 0.12;  // (m)
+    const T domainLength = 0.12;  // (m)
 
     // FE parameters
     const int degreeOfBasis = 4;
@@ -75,37 +78,37 @@ int main(int argc, char* argv[])
       mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(
       mesh_size_local.begin(), min_mesh_size_local);
-    double meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
-    double meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN,
+    T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
+    T meshSizeMinGlobal;
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN,
                0, MPI_COMM_WORLD);
-    MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
-    auto c0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto rho0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto delta0 = std::make_shared<fem::Function<double>>(V_DG);
+    auto c0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
 
-    std::span<double> c0_ = c0->x()->mutable_array();
+    std::span<T> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSoundCortBone; });
     c0->x()->scatter_fwd();
 
-    std::span<double> rho0_ = rho0->x()->mutable_array();
+    std::span<T> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { rho0_[i] = densityWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { rho0_[i] = densityCortBone; });
     rho0->x()->scatter_fwd();
 
-    std::span<double> delta0_ = delta0->x()->mutable_array();
+    std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { delta0_[i] = 0.0; });
     std::for_each(cells_2.begin(), cells_2.end(),
@@ -113,17 +116,17 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.20;
-    double timeStepSize = CFL * meshSizeMinGlobal / 
+    const T CFL = 0.20;
+    T timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSoundCortBone * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
-    const double startTime = 0.0;
-    const double finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
+    const T startTime = 0.0;
+    const T finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
-    auto model = LossySpectral3D<double, 4>(
+    auto model = LossySpectral3D<T, degreeOfBasis>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSoundWater);
 
@@ -132,6 +135,7 @@ int main(int argc, char* argv[])
     if (mpi_rank == 0){
       std::cout << "Benchmark: 5" << "\n";
       std::cout << "Source: 2" << "\n";
+      std::cout << "Floating-point type: " << typeid(T).name() << "\n";
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";
       std::cout << std::setprecision(2) << meshSizeMinGlobal << "\n";
