@@ -1,4 +1,3 @@
-
 //
 // The code to measure the time of assemble of each kernels
 // ========================================================
