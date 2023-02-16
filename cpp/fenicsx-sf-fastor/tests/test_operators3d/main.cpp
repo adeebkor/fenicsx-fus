@@ -27,6 +27,7 @@ int main(int argc, char* argv[])
     // Set polynomial degree
     const int P = 4;
 
+    /*
     // Create mesh and function space
     const std::size_t N = 20;
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
@@ -37,6 +38,16 @@ int main(int argc, char* argv[])
         {N, N, N},
         mesh::CellType::hexahedron,
         part));
+    */
+
+    // Read mesh and tags
+    auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    auto mesh = std::make_shared<mesh::Mesh>(
+      fmesh.read_mesh(element, mesh::GhostMode::none, "hex"));
+    mesh->topology().create_connectivity(2, 3);
+    auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
+      fmesh.read_meshtags(mesh, "hex_cells"));
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
@@ -68,8 +79,8 @@ int main(int argc, char* argv[])
     std::span<T> c0_ = c0->x()->mutable_array();
     std::span<T> rho0_ = rho0->x()->mutable_array();
     
-    std::fill(c0_.begin(), c0_.end(), 1.5e3);
-    std::fill(rho0_.begin(), rho0_.end(), 1e3);
+    std::fill(c0_.begin(), c0_.end(), 1.5e-3);
+    std::fill(rho0_.begin(), rho0_.end(), 1e-3);
 
     // ------------------------------------------------------------------------
     // Stiffness coefficients
