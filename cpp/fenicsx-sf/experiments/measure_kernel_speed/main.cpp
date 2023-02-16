@@ -14,8 +14,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_FLOAT
-using T = float;
+#define T_MPI MPI_DOUBLE
+using T = double;
 
 
 template <typename T>

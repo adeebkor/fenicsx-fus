@@ -11,7 +11,7 @@
 #include <dolfinx/io/XDMFFile.h>
 
 using namespace dolfinx;
-using T = float;
+using T = double;
 
 int main(int argc, char* argv[])
 {
