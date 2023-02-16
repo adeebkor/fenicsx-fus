@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD,
-    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6_refine/mesh.xdmf", "r");
+    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_6"));
     mesh->topology().create_connectivity(2, 3);
