@@ -12,7 +12,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearGLL, LinearSpectralS2
+from hifusim import LinearSpectralExplicit, LinearSpectralS2
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
@@ -32,6 +32,9 @@ domainLength = 0.12  # (m)
 
 # FE parameters
 degreeOfBasis = 4
+
+# RK parameter
+rkOrder = 4
 
 # -----------------------------------------------------------------------------
 # Conforming source
@@ -73,12 +76,13 @@ if mpi_rank == 0:
     print("Problem type: Conforming source", flush=True)
 
 # Model
-modelc = LinearGLL(meshc, mt_facetc, degreeOfBasis, c0c, rho0c,
-                   sourceFrequency, sourceAmplitude, speedOfSound)
+modelc = LinearSpectralExplicit(
+    meshc, mt_facetc, degreeOfBasis, c0c, rho0c, sourceFrequency,
+    sourceAmplitude, speedOfSound, rkOrder, timeStepSizec)
 
 # Solve
 modelc.init()
-u_nc, v_nc, tfc = modelc.rk4(startTimec, finalTimec, timeStepSizec)
+u_nc, v_nc, tfc = modelc.rk(startTimec, finalTimec)
 
 # Output solution
 with VTXWriter(meshc.comm, "output_conform.bp", u_nc) as f_nc:
@@ -125,8 +129,9 @@ if mpi_rank == 0:
     print("Problem type: Non-conforming source", flush=True)
 
 # Model
-model = LinearSpectralS2(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                    sourceFrequency, sourceAmplitude, speedOfSound)
+model = LinearSpectralS2(
+    mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
+    sourceAmplitude, speedOfSound)
 
 # Solve
 model.init()

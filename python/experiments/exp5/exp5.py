@@ -46,7 +46,7 @@ rkOrder = 4
 wavelength = speedOfSound / sourceFrequency  # wavelength (m)
 
 # Mesh parameters
-numElementPerWavelength = 64
+numElementPerWavelength = 8
 numberOfElements = int(numElementPerWavelength * domainLength / wavelength) + 1
 meshSize = domainLength / numberOfElements
 
@@ -78,7 +78,7 @@ delta0 = Function(V_DG)
 delta0.x.array[:] = diffusivityOfSound
 
 # Temporal parameters
-CFL = 1/111
+CFL = 1/12
 timeStepSize = CFL * meshSize / speedOfSound
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
@@ -87,9 +87,9 @@ finalTime = (domainLength / speedOfSound + 4 / sourceFrequency) / 4
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
-model = LossySpectralExplicit(mesh, mt, degreeOfBasis, c0, rho0, delta0,
-                         sourceFrequency, sourceAmplitude, speedOfSound,
-                         rkOrder, timeStepSize)
+model = LossySpectralExplicit(
+    mesh, mt, degreeOfBasis, c0, rho0, delta0, sourceFrequency,
+    sourceAmplitude, speedOfSound, rkOrder, timeStepSize)
 
 # Solve
 model.init()
@@ -137,4 +137,5 @@ plt.legend()
 plt.savefig("sol.png")
 plt.close()
 
-print(f"{attenuationCoefficientdB},{diffusivityOfSound:5.5},{degreeOfBasis},{meshSize:6.6},{rkOrder},{CFL:5.5},{timeStepSize:5.5}")
+print(f"{attenuationCoefficientdB},{diffusivityOfSound:5.5},{degreeOfBasis},",
+      f"{meshSize:6.6},{rkOrder},{CFL:5.5},{timeStepSize:5.5}")
