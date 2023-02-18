@@ -37,13 +37,13 @@ domainLength = 0.12  # (m)
 degreeOfBasis = 4
 
 # RK parameter
-rkOrder = 4
+rkOrder = 1
 
 # Physical parameters
 wavelength = speedOfSound / sourceFrequency  # wavelength (m)
 
 # Mesh parameters
-numElementPerWavelength = 64
+numElementPerWavelength = 4
 numberOfElements = int(numElementPerWavelength * domainLength / wavelength) + 1
 meshSize = domainLength / numberOfElements
 
@@ -72,7 +72,7 @@ rho0 = Function(V_DG)
 rho0.x.array[:] = density
 
 # Temporal parameters
-CFL = 1/5
+CFL = 1/3200
 timeStepSize = CFL * meshSize / speedOfSound
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
@@ -81,9 +81,9 @@ finalTime = domainLength / speedOfSound + 16 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
-model = LinearSpectralExplicit(mesh, mt, degreeOfBasis, c0, rho0,
-                          sourceFrequency, sourceAmplitude, speedOfSound,
-                          rkOrder, timeStepSize)
+model = LinearSpectralExplicit(
+    mesh, mt, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
+    speedOfSound, rkOrder, timeStepSize)
 
 # Solve
 model.init()
@@ -122,7 +122,8 @@ L2_exact = mesh.comm.allreduce(
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
 print(
-    f"{degreeOfBasis},{meshSize:6.6},{rkOrder},{CFL:5.5},{timeStepSize:8.8},{L2_error:8.8}")
+    f"{degreeOfBasis},{meshSize:6.6},{rkOrder},{CFL:5.5},",
+    f"{timeStepSize:8.8},{L2_error:8.8}")
 
 # Plot the solution
 npts = 1024

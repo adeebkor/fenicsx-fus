@@ -13,7 +13,7 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import grad, inner, dx
 
-from hifusim import LinearGLL
+from hifusim import LinearSpectralExplicit
 from hifusim.utils import compute_eval_params
 
 # MPI
@@ -27,6 +27,7 @@ period = 1 / sourceFrequency  # (s)
 
 # Material parameters
 speedOfSound = 1500  # (m/s)
+density = 1000  # (kg/m^3)
 
 # Physical parameters
 lmbda = speedOfSound/sourceFrequency  # wavelength (m)
@@ -35,16 +36,27 @@ lmbda = speedOfSound/sourceFrequency  # wavelength (m)
 domainLength = 0.12  # (m)
 
 # FE parameters
-degreeOfBasis = 5
+degreeOfBasis = 3
+
+# RK parameter
+rkOrder = 4
 
 # Mesh parameters
-elementPerWavelength = 32
+elementPerWavelength = 4
 numberOfWaves = domainLength / lmbda
 numberOfElements = int(elementPerWavelength * numberOfWaves + 1)
 meshSize = domainLength / numberOfElements
 
 # Generate mesh
 mesh = create_interval(MPI.COMM_WORLD, numberOfElements, [0, domainLength])
+
+# Define a DG function space for the physical parameters of the domain
+V_DG = FunctionSpace(mesh, ("DG", 0))
+c0 = Function(V_DG)
+c0.x.array[:] = speedOfSound
+
+rho0 = Function(V_DG)
+rho0.x.array[:] = density
 
 # Tag boundaries
 tdim = mesh.topology.dim
@@ -69,17 +81,17 @@ finalTime = domainLength / speedOfSound + 6 / sourceFrequency
 numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
-model = LinearGLL(mesh, mt, degreeOfBasis, speedOfSound, sourceFrequency,
-                  sourceAmplitude)
+model = LinearSpectralExplicit(
+    mesh, mt, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
+    speedOfSound, rkOrder, timeStepSize)
 model.alpha = 4.0
 
 # Solve
 model.init()
-uh, vh, tf = model.rk4(startTime, finalTime, timeStepSize)
+uh, vh, tf = model.rk(startTime, finalTime)
+
 
 # Compute accuracy
-
-
 class Analytical:
     """ Analytical solution """
 
@@ -136,14 +148,15 @@ plt.savefig("sol.png")
 plt.close()
 
 if mpi_rank == 0:
-    print(f"Problem type: Planewave 1D (Homogenous)", flush=True)
+    print("Problem type: Planewave 1D (Homogenous)", flush=True)
     print(f"Speed of sound: {speedOfSound}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
     print(f"Domain length: {domainLength}", flush=True)
     print(f"Polynomial basis degree: {degreeOfBasis}", flush=True)
     print(
-        f"Number of elements per wavelength: {elementPerWavelength}", flush=True)
+        f"Number of elements per wavelength: {elementPerWavelength}",
+        flush=True)
     print(f"Number of elements: {numberOfElements}", flush=True)
     print(f"Minimum mesh size: {meshSize:4.4}", flush=True)
     print(f"CFL number: {CFL}", flush=True)
@@ -151,7 +164,7 @@ if mpi_rank == 0:
     print(f"Number of step per period: {stepPerPeriod}", flush=True)
     print(f"Number of steps: {numberOfStep}", flush=True)
     print(f"L2 error: {L2_error:8.8}", flush=True)
-    print(f"Relative L2:",
+    print("Relative L2:",
           np.linalg.norm(uh_eval - ue_eval) /
           np.linalg.norm(ue_eval), flush=True)
     print(f"H1 error: {H1_error:8.8}", flush=True)
