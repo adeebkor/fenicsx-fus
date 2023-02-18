@@ -49,30 +49,6 @@ static inline void transpose(T* __restrict__ A, T* __restrict__ B) {
         B[offa * a + offb * b + offc * c] = A[a * Nb * Nc + b * Nc + c];
 }
 
-/*
-/// ------------------------------------------------------------------------ //
-/// Compute the tensor contraction C[{a, b}, c] = A[{a, b}, k] * B[k, c] as a
-/// matrix-matrix multiplication
-/// k is the contraction index
-/// @param[in] A tensor of shape (Na, Nb, Nk)
-/// @param[in] B tensor of shape (Nb, Nk) -> Shape (Nb, Nk) so that we can transverse row-wise
-/// @param[out] C tensor of shape (Na, Nb, Nc)
-template <typename T, int Na, int Nb, int Nc, int Nk>
-static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
-                             T* __restrict__ C) {
-  
-  int Nd = Na * Nb;
-
-  for (int d = 0; d < Nd; ++d) {
-    for (int c = 0; c < Nc; ++c) {
-      for (int k = 0; k < Nk; ++k) {
-        C[d * Nc + c] += A[d * Nk + k] * B[c * Nk + k];
-      }
-    }
-  }
-}
-*/
-
 template <typename T, int Na, int Nb>
 struct Buffer {
   std::array<T, Na * Nb * Nb> T0{0};
