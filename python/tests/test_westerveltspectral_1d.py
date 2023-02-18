@@ -14,7 +14,6 @@ from hifusim import WesterveltSpectralExplicit
 def test_westerveltspectral_L2(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
-    w0 = 2 * np.pi * f0  # angular frequency (rad/s)
     u0 = 1  # velocity amplitude (m/s)
 
     # Material parameters
