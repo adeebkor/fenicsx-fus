@@ -5,8 +5,8 @@ from petsc4py import PETSc
 import basix
 import basix.ufl_wrapper
 from dolfinx.fem import FunctionSpace, Function, form
-from dolfinx.fem.petsc import assemble_matrix, assemble_vector
-from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
+from dolfinx.fem.petsc import assemble_vector
+from ufl import TestFunction, Measure, inner, grad, dx
 
 
 class WesterveltSpectralExplicit:
@@ -18,7 +18,7 @@ class WesterveltSpectralExplicit:
 
     """
 
-    def __init__(self, mesh, meshtags, k, c0, rho0, delta0, beta0, freq0, 
+    def __init__(self, mesh, meshtags, k, c0, rho0, delta0, beta0, freq0,
                  p0, s0, rk_order, dt):
 
         # MPI
@@ -103,7 +103,7 @@ class WesterveltSpectralExplicit:
             + inner(self.delta0/self.rho0/self.c0/self.c0/self.c0*self.u,
                     self.v) * ds(2, metadata=md)
             - inner(2*self.beta0/self.rho0/self.rho0/self.c0/self.c0/self.c0
-                    *self.u_n*self.u, self.v) * dx(metadata=md))
+                    * self.u_n*self.u, self.v) * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
@@ -120,8 +120,8 @@ class WesterveltSpectralExplicit:
             * dx(metadata=md)
             + inner(self.delta0/self.rho0/self.c0/self.c0*self.dg, self.v)
             * ds(1, metadata=md)
-            + inner(2*self.beta0/self.rho0/self.rho0/
-                    self.c0/self.c0/self.c0/self.c0*self.v_n*self.v_n,
+            + inner(2*self.beta0/self.rho0/self.rho0
+                    / self.c0/self.c0/self.c0/self.c0*self.v_n*self.v_n,
                     self.v) * dx(metadata=md))
         self.b = assemble_vector(self.L)
         self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
