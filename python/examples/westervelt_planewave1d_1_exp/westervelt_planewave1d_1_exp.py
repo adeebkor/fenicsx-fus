@@ -30,8 +30,8 @@ p0 = 60000  # pressure amplitude (Pa)
 # Material parameters
 c0 = 1500  # speed of sound (m/s)
 rho0 = 1000  # density (kg / m^3)
-beta0 = 200.0  # nonlinearity coefficient
-alphadB = 20.0
+beta0 = 90.0  # nonlinearity coefficient
+alphadB = 10.0
 alphaNp = alphadB / 20 * np.log(10)
 delta0 = compute_diffusivity_of_sound(
     w0, c0, alphadB)
