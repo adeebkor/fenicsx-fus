@@ -38,9 +38,7 @@ delta0 = compute_diffusivity_of_sound(
 
 # Domain parameters
 L = 0.12  # domain length (m)
-
 xsh = rho0*c0**3/beta0/p0/w0  # shock formation distance (m)
-print(xsh)
 
 # Physical parameters
 lmbda = c0/f0  # wavelength (m)
