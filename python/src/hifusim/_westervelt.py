@@ -102,8 +102,8 @@ class WesterveltSpectralExplicit:
             inner(self.u/self.rho0/self.c0/self.c0, self.v) * dx(metadata=md)
             + inner(self.delta0/self.rho0/self.c0/self.c0/self.c0*self.u,
                     self.v) * ds(2, metadata=md)
-            - inner(2*self.beta0/self.rho0/self.rho0/self.c0/self.c0/self.c0/self.c0
-                    * self.u_n*self.u, self.v) * dx(metadata=md))
+            - inner(2*self.beta0/self.rho0/self.rho0/self.c0/self.c0/self.c0
+                    / self.c0*self.u_n*self.u, self.v) * dx(metadata=md))
         self.m = assemble_vector(self.a)
         self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
                            mode=PETSc.ScatterMode.REVERSE)
