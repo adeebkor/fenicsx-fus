@@ -25,13 +25,13 @@ from hifusim.utils import compute_eval_params, compute_diffusivity_of_sound
 # Source parameters
 f0 = 0.5e6  # source frequency (Hz)
 w0 = 2 * np.pi * f0
-p0 = 60000  # pressure amplitude (Pa)
+p0 = 1000000  # pressure amplitude (Pa)
 
 # Material parameters
 c0 = 1500  # speed of sound (m/s)
 rho0 = 1000  # density (kg / m^3)
-beta0 = 90.0  # nonlinearity coefficient
-alphadB = 10.0
+beta0 = 3.5  # nonlinearity coefficient
+alphadB = 100
 alphaNp = alphadB / 20 * np.log(10)
 delta0 = compute_diffusivity_of_sound(
     w0, c0, alphadB)
@@ -191,11 +191,15 @@ plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("u_1.png", bbox_inches="tight")
 plt.close()
 
+idx = np.argwhere(x.T[0] > 0.12 - 5 * lmbda)
 plt.figure(figsize=(14, 8))
-plt.plot(x.T[0], u_eval, label="FEniCSx")
-plt.plot(x.T[0], u_nonlinear_eval, "--", label="Nonlinear")
-plt.plot(x.T[0], u_linear_eval, label="Lossy")
-plt.xlim([0.105, 0.12])
+plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
+plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
+plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
+plt.xlim([0.12 - 5 * lmbda, 0.12])
+plt.tick_params(left = False, right = False , labelleft = False ,
+                labelbottom = False, bottom = False)
 plt.legend(bbox_to_anchor=(1.0, 1.0))
-plt.savefig("u_2.png", bbox_inches="tight")
+plt.title(f"Attenuation = {alphadB}")
+plt.savefig(f"u_2_{str(alphadB).zfill(2)}.png", bbox_inches="tight")
 plt.close()
