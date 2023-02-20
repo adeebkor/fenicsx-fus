@@ -31,7 +31,7 @@ p0 = 1000000  # pressure amplitude (Pa)
 c0 = 1500  # speed of sound (m/s)
 rho0 = 1000  # density (kg / m^3)
 beta0 = 3.5  # nonlinearity coefficient
-alphadB = 100
+alphadB = 1
 alphaNp = alphadB / 20 * np.log(10)
 delta0 = compute_diffusivity_of_sound(
     w0, c0, alphadB)
@@ -191,15 +191,15 @@ plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("u_1.png", bbox_inches="tight")
 plt.close()
 
-idx = np.argwhere(x.T[0] > 0.12 - 5 * lmbda)
+idx = np.argwhere(x.T[0] > 0.12 - 10 * lmbda)
 plt.figure(figsize=(14, 8))
 plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
 plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
 plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
-plt.xlim([0.12 - 5 * lmbda, 0.12])
+plt.xlim([0.12 - 10 * lmbda, 0.12])
 plt.tick_params(left = False, right = False , labelleft = False ,
                 labelbottom = False, bottom = False)
-plt.legend(bbox_to_anchor=(1.0, 1.0))
+plt.legend(bbox_to_anchor=(1.125, 1.0))
 plt.title(f"Attenuation = {alphadB}")
-plt.savefig(f"u_2_{str(alphadB).zfill(2)}.png", bbox_inches="tight")
+plt.savefig(f"u_2_{str(alphadB).zfill(3)}.png", bbox_inches="tight")
 plt.close()
