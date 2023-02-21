@@ -14,6 +14,7 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
+#define T_MPI MPI_DOUBLE
 using T = double;
 
 
@@ -85,7 +86,7 @@ int main(int argc, char* argv[])
 
     // FE parameters
     const int degreeOfBasis = 4;
-    const int degreeOfQuadrature = 5;
+    const int numberOfQuadraturePoint = 5;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -104,23 +105,27 @@ int main(int argc, char* argv[])
     const int num_cell = mesh->topology().index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<T>::iterator min_mesh_size_local = std::min_element(
+    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<double>::iterator min_mesh_size_local = std::min_element(
       mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(
       mesh_size_local.begin(), min_mesh_size_local);
     T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
     T meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN,
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN,
                0, MPI_COMM_WORLD);
-    MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
+
+    // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
+
+    auto ncells = V_DG->dofmap()->index_map->size_global();
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -178,6 +183,8 @@ int main(int argc, char* argv[])
     auto V = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
     
+    auto ndofs = V->dofmap()->index_map->size_global();
+
     // Define field functions
     auto index_map = V->dofmap()->index_map;
     auto bs = V->dofmap()->index_map_bs();
@@ -217,6 +224,26 @@ int main(int argc, char* argv[])
     m0_assembly.stop();
 
     // ------------------------------------------------------------------------
+    // Assembly of a0 (precompute)
+    std::vector<T> a0_pc_coeffs(c0_.size());
+    for (std::size_t i = 0; i < a0_pc_coeffs.size(); ++i)
+      a0_pc_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
+
+    Mass3D<T, degreeOfBasis, numberOfQuadraturePoint> a0_pc_operator(V);
+
+    auto m0_pc = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m0_pc_ = m0_pc->mutable_array();
+
+    common::Timer m0_pc_assembly("~ m0_pc assembly");
+    m0_pc_assembly.start();
+
+    std::fill(m0_pc_.begin(), m0_pc_.end(), 0.0);
+    a0_pc_operator(*u->x(), a0_pc_coeffs, *m0_pc);
+    m0_pc->scatter_rev(std::plus<T>());
+
+    m0_pc_assembly.stop();
+
+    // ------------------------------------------------------------------------
     // Assembly of a1
     auto a1 = std::make_shared<fem::Form<T>>(
                 fem::create_form<T>(*form_forms_a1, {V}, 
@@ -243,7 +270,7 @@ int main(int argc, char* argv[])
     for (std::size_t i = 0; i < L0_coeffs.size(); ++i)
       L0_coeffs[i] = - 1.0 / rho0_[i];
     
-    Stiffness3D<T, degreeOfBasis, degreeOfQuadrature> L0_operator(V);
+    Stiffness3D<T, degreeOfBasis, numberOfQuadraturePoint> L0_operator(V);
 
     auto b0 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b0_ = b0->mutable_array();
@@ -304,7 +331,7 @@ int main(int argc, char* argv[])
     for (std::size_t i = 0; i < L3_coeffs.size(); ++i)
       L3_coeffs[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
 
-    Stiffness3D<T, degreeOfBasis, degreeOfQuadrature> L3_operator(V);
+    Stiffness3D<T, degreeOfBasis, numberOfQuadraturePoint> L3_operator(V);
 
     auto b3 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b3_ = b3->mutable_array();
@@ -341,6 +368,10 @@ int main(int argc, char* argv[])
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
+    if (mpi_rank == 0) {
+      std::cout << "Degrees of freedom: " << ndofs << "\n";
+      std::cout << "Number of cells: " << ncells << "\n";
+    }
   }
   PetscFinalize();
 
