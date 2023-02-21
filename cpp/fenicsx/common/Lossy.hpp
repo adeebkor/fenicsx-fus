@@ -167,19 +167,11 @@ public:
                 - window * p0 * w0 * w0 / s0 * sin(w0 * t));
     */
 
-    common::Timer update_source("~ F1 (update source)");
-    update_source.start();
-
     // Update boundary condition (heterogenous domain)
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));  // 1 write x Ndofs
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));  // 1 write x Ndofs
-
-    update_source.stop();
-
-    common::Timer update_fields("~ F1 (update field)");
-    update_fields.start();
 
     // Update fields
     u->scatter_fwd();
@@ -188,20 +180,10 @@ public:
     v->scatter_fwd();
     kernels::copy<T>(*v, *v_n->x());  // 1 read x Ndofs, 1 write x Ndofs
 
-    update_fields.stop();
-
-    common::Timer assemble_rhs("~ F1 (assemble rhs)");
-    assemble_rhs.start();
-
     // Assemble RHS
     std::fill(b_.begin(), b_.end(), 0.0);  // 1 write x Ndofs
     fem::assemble_vector(b_, *L);  // 
     b->scatter_rev(std::plus<T>());
-
-    assemble_rhs.stop();
-
-    common::Timer solve("~ F1 (solve)");
-    solve.start();
 
     // Solve
     // TODO: Divide is more expensive than multiply.
@@ -217,8 +199,6 @@ public:
       std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
                      [](const T& bi, const T& mi) { return bi / mi; });  // 2 read x Ndofs, 1 write x Ndofs
     }
-
-    solve.stop();
   }
 
   /// Runge-Kutta 4th order solver
