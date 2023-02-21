@@ -7,24 +7,25 @@ from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import WesterveltSpectral
+from hifusim import WesterveltSpectralExplicit
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 16), (4, 8), (5, 4), (6, 2)])
-def test_westervelt_L2(degree, epw):
+def test_westerveltspectral_L2(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
-    p0 = 1  # pressure amplitude (Pa)
+    u0 = 1  # velocity amplitude (m/s)
 
     # Material parameters
-    c0 = 1  # speed of sound (m / s)
-    rho0 = 1  # density of medium (kg / m^3)
-    beta = 0.01  # coefficient of nonlinearity
+    c0 = 1  # speed of sound (m/s)
+    rho0 = 1  # density of medium (kg/m^3)
+    beta0 = 0.01  # coefficient of nonlinearity
 
     # Domain parameters
     L = 1.0  # domain length (m)
 
     # Physical parameters
+    p0 = rho0*c0*u0  # pressure amplitude (Pa)
     lmbda = c0/f0  # wavelength (m)
 
     # Mesh parameters
@@ -48,6 +49,20 @@ def test_westervelt_L2(degree, epw):
                         np.full(facets1.shape, 2, np.intc)))
     mt = meshtags(mesh, tdim-1, indices, values[pos])
 
+    # Define DG function for physical parameters
+    V_DG = FunctionSpace(mesh, ("DG", 0))
+    c = Function(V_DG)
+    c.x.array[:] = c0
+
+    rho = Function(V_DG)
+    rho.x.array[:] = rho0
+
+    delta = Function(V_DG)
+    delta.x.array[:] = 0.0
+
+    beta = Function(V_DG)
+    beta.x.array[:] = beta0
+
     # Temporal parameters
     tstart = 0.0  # simulation start time (s)
     tend = L / c0 + 8 / f0  # simulation final time (s)
@@ -55,16 +70,13 @@ def test_westervelt_L2(degree, epw):
     CFL = 0.9
     dt = CFL * h / (c0 * degree**2)
 
-    print("Final time:", tend)
-
     # Instantiate model
-    eqn = WesterveltSpectral(mesh, mt, degree, c0, f0, p0, 0.0, beta, rho0)
-    eqn.alpha = 4
-    print("Degree of freedoms:", eqn.V.dofmap.index_map.size_global)
+    eqn = WesterveltSpectralExplicit(
+        mesh, mt, degree, c, rho, delta, beta, f0, p0, c0, 4, dt)
 
     # Solve
     eqn.init()
-    u_n, _, tf = eqn.rk4(tstart, tend, dt)
+    u_n, _, tf = eqn.rk(tstart, tend)
 
     # Calculate L2
     class Analytical:
@@ -92,7 +104,7 @@ def test_westervelt_L2(degree, epw):
 
     V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
-    u_e.interpolate(Analytical(c0, f0, p0, rho0, beta, tf))
+    u_e.interpolate(Analytical(c0, f0, p0, rho0, beta0, tf))
 
     # L2 error
     diff = u_n - u_e
