@@ -1,5 +1,5 @@
 import basix.ufl_wrapper
-from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction, 
+from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction,
                  hexahedron, inner, grad, ds, dx)
 
 P = 4  # Degree of polynomial basis
@@ -38,8 +38,8 @@ md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 a = inner(u/rho0/c0/c0, v) * dx(metadata=md) \
     + inner(delta0/rho0/c0/c0/c0*u, v) * ds(metadata=md)
 
-L = inner(1/rho0*g, v)*ds(1, metadata=md) \
-    - inner(1/rho0/c0*v_n, v)*ds(metadata=md) \
+L = inner(1/rho0*g, v) * ds(1, metadata=md) \
+    - inner(1/rho0/c0*v_n, v) * ds(metadata=md) \
     + inner(delta0/rho0/c0/c0*dg, v) * ds(1, metadata=md)
 
 forms = [a, L]

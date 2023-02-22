@@ -173,7 +173,7 @@ int main(int argc, char* argv[])
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
     const T startTime = 0.0;
-    const T finalTime = 10 * timeStepSize; // domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
+    const T finalTime = 200 * timeStepSize;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
@@ -196,13 +196,8 @@ int main(int argc, char* argv[])
     }
 
     // Solve
-    common::Timer tsolve("~ Solve time");
-
     model.init();
-
-    tsolve.start();
     model.rk4(startTime, finalTime, timeStepSize);
-    tsolve.stop();
 
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
