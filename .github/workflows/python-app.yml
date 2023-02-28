@@ -20,8 +20,8 @@ jobs:
     #   - uses: actions/checkout@v2
     container: dolfinx/dolfinx:nightly
     env:
-      CC: clang
-      CXX: clang++
+      CC: gcc
+      CXX: g++
       PETSC_ARCH: linux-gnu-real-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
