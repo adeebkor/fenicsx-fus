@@ -18,12 +18,9 @@ jobs:
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
+    - name: Install DOLFINx
       run: |
-        conda env update --file environment.yml --name base
-    - name: Install fenicsx
-      run: |
-        conda install -c conda-forge fenics-dolfinx
+        conda create -n env3-10 -c conda-forge fenics-dolfinx mpich
     - name: Install hifusim package
       run: |
         python3 -m pip -v install python/ --no-cache-dir
