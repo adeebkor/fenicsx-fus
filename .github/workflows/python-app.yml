@@ -32,7 +32,7 @@ jobs:
       OMPI_MCA_hwloc_base_binding_policy: none
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Install hifusim package
       run: python3 -m pip -v install python/ --no-cache-dir
