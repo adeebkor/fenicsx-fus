@@ -21,7 +21,7 @@ jobs:
     - name: Install DOLFINx
       run: |
         conda create -n env3-10 -c conda-forge fenics-dolfinx mpich
-        conda env activate env3-10
+        conda activate env3-10
     - name: Install hifusim package
       run: |
         python3 -m pip -v install python/ --no-cache-dir
