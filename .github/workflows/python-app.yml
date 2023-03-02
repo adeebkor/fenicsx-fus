@@ -14,14 +14,14 @@ on:
 jobs:
   build:
     if: "!(contains(github.event.head_commit.message, '[ci skip]') || contains(github.event.head_commit.message, '[skip ci]'))"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # container: dolfinx/dolfinx
     # steps:
     #   - uses: actions/checkout@v2
     container: dolfinx/dolfinx:nightly
     env:
-      CC: clang
-      CXX: clang++
+      CC: gcc
+      CXX: g++
       PETSC_ARCH: linux-gnu-real-32
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -32,7 +32,7 @@ jobs:
       OMPI_MCA_hwloc_base_binding_policy: none
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Install hifusim package
       run: python3 -m pip -v install python/ --no-cache-dir
