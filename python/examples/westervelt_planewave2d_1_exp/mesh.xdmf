@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="planewave_2d_1" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="8400" NodesPerElement="4">
+        <DataItem Dimensions="8400 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planewave_2d_1/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="8591 2" Format="HDF">mesh.h5:/Mesh/planewave_2d_1/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="planewave_2d_1_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_2d_1']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="8400" NodesPerElement="4">
+        <DataItem Dimensions="8400 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_2d_1_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="planewave_2d_1_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="8400 1" Format="HDF">mesh.h5:/MeshTags/planewave_2d_1_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="planewave_2d_1_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_2d_1']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="380" NodesPerElement="2">
+        <DataItem Dimensions="380 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_2d_1_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="planewave_2d_1_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="380 1" Format="HDF">mesh.h5:/MeshTags/planewave_2d_1_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

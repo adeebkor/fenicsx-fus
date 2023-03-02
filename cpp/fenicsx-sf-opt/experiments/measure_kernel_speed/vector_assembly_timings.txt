@@ -1,0 +1,143 @@
+RUN 1 (15:45 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX512)
+~ b0 assembly                                                               |     1  0.034164  0.034164
+~ b1 assembly                                                               |     1  0.002050  0.002050
+~ b2 assembly                                                               |     1  0.002080  0.002080
+~ b3 assembly                                                               |     1  0.033956  0.033956
+~ b4 assembly                                                               |     1  0.002116  0.002116
+~ m0 assembly                                                               |     1  0.094098  0.094098
+~ m1 assembly                                                               |     1  0.002270  0.002270
+
+RUN 2 (15:47 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX512)
+~ b0 assembly                                                               |     1  0.034125  0.034125
+~ b1 assembly                                                               |     1  0.002235  0.002235
+~ b2 assembly                                                               |     1  0.002346  0.002346
+~ b3 assembly                                                               |     1  0.034122  0.034122
+~ b4 assembly                                                               |     1  0.002125  0.002125
+~ m0 assembly                                                               |     1  0.093631  0.093631
+~ m1 assembly                                                               |     1  0.002285  0.002285
+
+RUN 3 (15:49 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX512)
+~ b0 assembly                                                               |     1  0.034495  0.034495
+~ b1 assembly                                                               |     1  0.002393  0.002393
+~ b2 assembly                                                               |     1  0.002212  0.002212
+~ b3 assembly                                                               |     1  0.034535  0.034535
+~ b4 assembly                                                               |     1  0.001639  0.001639
+~ m0 assembly                                                               |     1  0.093797  0.093797
+~ m1 assembly                                                               |     1  0.002421  0.002421
+
+RUN 4 (15:51 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX512)
+~ b0 assembly                                                               |     1  0.033895  0.033895
+~ b1 assembly                                                               |     1  0.002152  0.002152
+~ b2 assembly                                                               |     1  0.002322  0.002322
+~ b3 assembly                                                               |     1  0.034106  0.034106
+~ b4 assembly                                                               |     1  0.002205  0.002205
+~ m0 assembly                                                               |     1  0.093903  0.093903
+~ m1 assembly                                                               |     1  0.002281  0.002281
+
+RUN 5 (15:53 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX512)
+~ b0 assembly                                                               |     1  0.019233  0.019233
+~ b1 assembly                                                               |     1  0.000979  0.000979
+~ b2 assembly                                                               |     1  0.000839  0.000839
+~ b3 assembly                                                               |     1  0.019061  0.019061
+~ b4 assembly                                                               |     1  0.001122  0.001122
+~ m0 assembly                                                               |     1  0.071502  0.071502
+~ m1 assembly                                                               |     1  0.001177  0.001177
+
+RUN 6 (15:55 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX512)
+~ b0 assembly                                                               |     1  0.018877  0.018877
+~ b1 assembly                                                               |     1  0.001044  0.001044
+~ b2 assembly                                                               |     1  0.000895  0.000895
+~ b3 assembly                                                               |     1  0.018933  0.018933
+~ b4 assembly                                                               |     1  0.001178  0.001178
+~ m0 assembly                                                               |     1  0.071593  0.071593
+~ m1 assembly                                                               |     1  0.000412  0.000412
+
+RUN 7 (15:57 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX512)
+~ b0 assembly                                                               |     1  0.019231  0.019231
+~ b1 assembly                                                               |     1  0.001098  0.001098
+~ b2 assembly                                                               |     1  0.001046  0.001046
+~ b3 assembly                                                               |     1  0.019026  0.019026
+~ b4 assembly                                                               |     1  0.001240  0.001240
+~ m0 assembly                                                               |     1  0.071309  0.071309
+~ m1 assembly                                                               |     1  0.001275  0.001275
+
+RUN 8 (15:59 2023/1/21 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX512)
+~ b0 assembly                                                               |     1  0.019364  0.019364
+~ b1 assembly                                                               |     1  0.001089  0.001089
+~ b2 assembly                                                               |     1  0.000942  0.000942
+~ b3 assembly                                                               |     1  0.018839  0.018839
+~ b4 assembly                                                               |     1  0.001039  0.001039
+~ m0 assembly                                                               |     1  0.071652  0.071652
+~ m1 assembly                                                               |     1  0.001111  0.001111
+
+RUN 9 (10:57 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX2)
+~ b0 assembly                                                               |     1  0.031739  0.031739
+~ b1 assembly                                                               |     1  0.002128  0.002128
+~ b2 assembly                                                               |     1  0.002173  0.002173
+~ b3 assembly                                                               |     1  0.032069  0.032069
+~ b4 assembly                                                               |     1  0.002267  0.002267
+~ m0 assembly                                                               |     1  0.122788  0.122788
+~ m1 assembly                                                               |     1  0.002414  0.002414
+
+RUN 10 (10:59 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX2)
+~ b0 assembly                                                               |     1  0.031804  0.031804
+~ b1 assembly                                                               |     1  0.002335  0.002335
+~ b2 assembly                                                               |     1  0.002176  0.002176
+~ b3 assembly                                                               |     1  0.032174  0.032174
+~ b4 assembly                                                               |     1  0.002184  0.002184
+~ m0 assembly                                                               |     1  0.122926  0.122926
+~ m1 assembly                                                               |     1  0.002420  0.002420
+
+RUN 11 (11:01 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX2)
+~ b0 assembly                                                               |     1  0.031787  0.031787
+~ b1 assembly                                                               |     1  0.002351  0.002351
+~ b2 assembly                                                               |     1  0.002140  0.002140
+~ b3 assembly                                                               |     1  0.031530  0.031530
+~ b4 assembly                                                               |     1  0.002149  0.002149
+~ m0 assembly                                                               |     1  0.122807  0.122807
+~ m1 assembly                                                               |     1  0.002083  0.002083
+
+RUN 12 (11:03 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, DOUBLE, AVX2)
+~ b0 assembly                                                               |     1  0.031791  0.031791
+~ b1 assembly                                                               |     1  0.002180  0.002180
+~ b2 assembly                                                               |     1  0.002132  0.002132
+~ b3 assembly                                                               |     1  0.031898  0.031898
+~ b4 assembly                                                               |     1  0.002028  0.002028
+~ m0 assembly                                                               |     1  0.122430  0.122430
+~ m1 assembly                                                               |     1  0.002314  0.002314
+
+RUN 12 (11:05 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX2)
+~ b0 assembly                                                               |     1  0.017277  0.017277
+~ b1 assembly                                                               |     1  0.001233  0.001233
+~ b2 assembly                                                               |     1  0.000817  0.000817
+~ b3 assembly                                                               |     1  0.017361  0.017361
+~ b4 assembly                                                               |     1  0.001161  0.001161
+~ m0 assembly                                                               |     1  0.061553  0.061553
+~ m1 assembly                                                               |     1  0.001332  0.001332
+
+RUN 13 (11:07 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX2)
+~ b0 assembly                                                               |     1  0.017432  0.017432
+~ b1 assembly                                                               |     1  0.001174  0.001174
+~ b2 assembly                                                               |     1  0.001354  0.001354
+~ b3 assembly                                                               |     1  0.017797  0.017797
+~ b4 assembly                                                               |     1  0.001078  0.001078
+~ m0 assembly                                                               |     1  0.061426  0.061426
+~ m1 assembly                                                               |     1  0.001307  0.001307
+
+RUN 14 (11:09 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX2)
+~ b0 assembly                                                               |     1  0.017624  0.017624
+~ b1 assembly                                                               |     1  0.001077  0.001077
+~ b2 assembly                                                               |     1  0.000883  0.000883
+~ b3 assembly                                                               |     1  0.016967  0.016967
+~ b4 assembly                                                               |     1  0.001189  0.001189
+~ m0 assembly                                                               |     1  0.061443  0.061443
+~ m1 assembly                                                               |     1  0.001411  0.001411
+
+RUN 15 (11:11 2023/2/15 - ICELAKE 76 NODES, DOFS 59837345, FLOAT, AVX2)
+~ b0 assembly                                                               |     1  0.018017  0.018017
+~ b1 assembly                                                               |     1  0.001108  0.001108
+~ b2 assembly                                                               |     1  0.000971  0.000971
+~ b3 assembly                                                               |     1  0.017622  0.017622
+~ b4 assembly                                                               |     1  0.001232  0.001232
+~ m0 assembly                                                               |     1  0.061953  0.061953
+~ m1 assembly                                                               |     1  0.001258  0.001258

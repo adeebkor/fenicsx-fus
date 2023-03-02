@@ -138,7 +138,7 @@ public:
   /// @param[out] result Result, i.e. dun/dtn
   void f0(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
-    kernels::copy<T>(*v, *result);
+    kernels::copy<T>(*v, *result);  // 1 read, 1 write
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
@@ -159,28 +159,30 @@ public:
       dwindow = 0.0;
     }
 
+    /*
     // Update boundary condition (homogenous domain)
-    // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
-    // std::fill(dg_.begin(), dg_.end(), 
-    //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
-    //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    std::fill(dg_.begin(), dg_.end(), 
+              dwindow * p0 * w0 / s0 * cos(w0 * t) 
+                - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+    */
 
     // Update boundary condition (heterogenous domain)
-    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
+    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));  // 1 write x Ndofs
     std::fill(dg_.begin(), dg_.end(), 
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
-                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
+                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));  // 1 write x Ndofs
 
     // Update fields
     u->scatter_fwd();
-    kernels::copy<T>(*u, *u_n->x());
+    kernels::copy<T>(*u, *u_n->x());  // 1 read x Ndofs, 1 write x Ndofs
 
     v->scatter_fwd();
-    kernels::copy<T>(*v, *v_n->x());
+    kernels::copy<T>(*v, *v_n->x());  // 1 read x Ndofs, 1 write x Ndofs
 
     // Assemble RHS
-    std::fill(b_.begin(), b_.end(), 0.0);
-    fem::assemble_vector(b_, *L);
+    std::fill(b_.begin(), b_.end(), 0.0);  // 1 write x Ndofs
+    fem::assemble_vector(b_, *L);  // 
     b->scatter_rev(std::plus<T>());
 
     // Solve
@@ -195,7 +197,7 @@ public:
       // Element wise division
       // out[i] = b[i]/m[i]
       std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
-                     [](const T& bi, const T& mi) { return bi / mi; });
+                     [](const T& bi, const T& mi) { return bi / mi; });  // 2 read x Ndofs, 1 write x Ndofs
     }
   }
 
@@ -249,16 +251,17 @@ public:
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      kernels::copy<T>(*u_, *u0);
-      kernels::copy<T>(*v_, *v0);
+      kernels::copy<T>(*u_, *u0);  // 1 read, 1 write
+      kernels::copy<T>(*v_, *v0);  // 1 read, 1 write
 
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
-        kernels::copy<T>(*u0, *un);
-        kernels::copy<T>(*v0, *vn);
 
-        kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);
-        kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);
+        kernels::copy<T>(*u0, *un);  // 1 read, 1 write
+        kernels::copy<T>(*v0, *vn);  // 1 read, 1 write
+
+        kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);  // 2 read, 1 write
+        kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);  // 2 read, 1 write
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
@@ -268,8 +271,8 @@ public:
         f1(tn, un, vn, kv);
 
         // Update solution
-        kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);
-        kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);
+        kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);  // 2 read, 1 write
+        kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);  // 2 read, 1 write
       }
 
       // Update time
@@ -284,6 +287,7 @@ public:
                     << "\t" << u_->array()[0] << std::endl;
         }
       }
+    }
 
     // Prepare solution at final time
     kernels::copy<T>(*u_, *u_n->x());

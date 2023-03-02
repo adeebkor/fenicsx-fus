@@ -5,6 +5,7 @@ python/src/hifusim.egg-info
 
 mesh/*.py
 mesh/*.geo
+*Fastor/
 *sol/
 *vtk/
 *data*

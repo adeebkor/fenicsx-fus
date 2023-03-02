@@ -1,0 +1,23 @@
+RUN 1 (16:34 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+~ F1 (assemble rhs)                                                         |    80   0.739242  59.139347
+~ F1 (solve)                                                                |    80   0.003690   0.295219
+~ F1 (update field)                                                         |    80   0.013969   1.117522
+~ F1 (update source)                                                        |    80   0.006088   0.487072
+
+RUN 2 (16:39 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+~ F1 (assemble rhs)                                                         |    80   0.739572  59.165791
+~ F1 (solve)                                                                |    80   0.003697   0.295768
+~ F1 (update field)                                                         |    80   0.014139   1.131103
+~ F1 (update source)                                                        |    80   0.005958   0.476647
+
+RUN 3 (16:42 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+~ F1 (assemble rhs)                                                         |    80   0.739686  59.174859
+~ F1 (solve)                                                                |    80   0.003673   0.293877
+~ F1 (update field)                                                         |    80   0.013681   1.094443
+~ F1 (update source)                                                        |    80   0.006166   0.493243
+
+RUN 4 (16:45 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+~ F1 (assemble rhs)                                                         |    80   0.738963  59.117001
+~ F1 (solve)                                                                |    80   0.003673   0.293872
+~ F1 (update field)                                                         |    80   0.014483   1.158622
+~ F1 (update source)                                                        |    80   0.006297   0.503761

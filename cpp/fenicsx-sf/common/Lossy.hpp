@@ -195,7 +195,6 @@ public:
               dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
                 - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
 
-
     // Update fields
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -327,7 +326,6 @@ public:
   std::int64_t number_of_dofs() const {
     return V->dofmap()->index_map->size_global();
   }
-
 
 private:
   int mpi_rank, mpi_size;  // MPI rank and size
@@ -464,10 +462,10 @@ public:
     for (std::size_t i = 0; i < rho0_.size(); ++i) {
       lin_coeff_[i] = - 1.0 / rho0_[i];
       att_coeff_[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+    }
 
     lin_coeff->x()->scatter_fwd();
     att_coeff->x()->scatter_fwd();
-    }
   }
 
   /// Set the initial values of u and v, i.e. u_0 and v_0
@@ -631,6 +629,7 @@ public:
                     << "\t" << u_->array()[0] << std::endl;
         }
       }
+    }
 
     // Prepare solution at final time
     kernels::copy<T>(*u_, *u_n->x());

@@ -1,0 +1,21 @@
+RUN 1 (ICELAKE 76 PROCESSES)
+Measure solve time!
+Polynomial basis degree: 4
+Minimum mesh size: 0.00051
+Degrees of freedom: 70863393
+CFL number: 0.25
+Time step size: 2.8e-09
+Number of steps per period: 702
+Total number of steps: 101
+Solve time: 58.583579
+
+RUN 2 (ICELAKE 76 PROCESSES)
+Measure solve time!
+Polynomial basis degree: 4
+Minimum mesh size: 0.00051
+Degrees of freedom: 70863393
+CFL number: 0.25
+Time step size: 2.8e-09
+Number of steps per period: 702
+Total number of steps: 201
+Solve time: 117.161270

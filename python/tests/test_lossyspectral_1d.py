@@ -15,11 +15,11 @@ def test_lossyspectral_explicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     w0 = 2 * np.pi * f0  # angular frequency (rad/s)
-    u0 = 1  # velocity amplitude (m / s)
+    u0 = 1  # velocity amplitude (m/s)
 
     # Material parameters
     c0 = 1  # speed of sound (m/s)
-    rho0 = 4  # density of medium (kg / m^3)
+    rho0 = 4  # density of medium (kg/m^3)
     alphadB = 5  # (dB/m)
     alphaNp = alphadB / 20 * np.log(10)  # (Np/m/MHz^2)
     delta0 = compute_diffusivity_of_sound(
@@ -118,11 +118,11 @@ def test_lossyspectral_implicit(degree, epw):
     # Source parameters
     f0 = 10  # source frequency (Hz)
     w0 = 2 * np.pi * f0  # angular frequency (rad/s)
-    u0 = 1  # velocity amplitude (m / s)
+    u0 = 1  # velocity amplitude (m/s)
 
     # Material parameters
     c0 = 1  # speed of sound (m/s)
-    rho0 = 4  # density of medium (kg / m^3)
+    rho0 = 4  # density of medium (kg/m^3)
     alphadB = 5  # (dB/m)
     alphaNp = alphadB / 20 * np.log(10)  # (Np/m/MHz^2)
     delta0 = compute_diffusivity_of_sound(

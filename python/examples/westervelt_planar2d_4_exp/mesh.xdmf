@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="planar_2d_4" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="8330" NodesPerElement="4">
+        <DataItem Dimensions="8330 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planar_2d_4/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="8520 2" Format="HDF">mesh.h5:/Mesh/planar_2d_4/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="planar_2d_4_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planar_2d_4']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="8330" NodesPerElement="4">
+        <DataItem Dimensions="8330 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planar_2d_4_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="planar_2d_4_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="8330 1" Format="HDF">mesh.h5:/MeshTags/planar_2d_4_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="planar_2d_4_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planar_2d_4']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="378" NodesPerElement="2">
+        <DataItem Dimensions="378 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planar_2d_4_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="planar_2d_4_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="378 1" Format="HDF">mesh.h5:/MeshTags/planar_2d_4_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
