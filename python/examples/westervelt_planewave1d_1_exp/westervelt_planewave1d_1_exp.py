@@ -25,13 +25,13 @@ from hifusim.utils import compute_eval_params, compute_diffusivity_of_sound
 # Source parameters
 f0 = 0.5e6  # source frequency (Hz)
 w0 = 2 * np.pi * f0
-p0 = 1000000  # pressure amplitude (Pa)
+p0 = 1500000  # pressure amplitude (Pa)
 
 # Material parameters
 c0 = 1500  # speed of sound (m/s)
 rho0 = 1000  # density (kg / m^3)
 beta0 = 3.5  # nonlinearity coefficient
-alphadB = 1
+alphadB = 0
 alphaNp = alphadB / 20 * np.log(10)
 delta0 = compute_diffusivity_of_sound(
     w0, c0, alphadB)
@@ -108,6 +108,8 @@ with Timer() as t_solve:
     u_e, _, tf, = model.rk(tstart, tend)
 
 print("Solver time: ", t_solve.elapsed()[0])
+print("Shock formation distance: ", xsh)
+print("Domain length: ", L)
 
 # Plot solution
 npts = 3 * degree * (nx+1)
@@ -142,7 +144,7 @@ class Nonlinear:
         sigma = (x[0]+0.0000001) / xsh
 
         val = np.zeros(sigma.shape[0])
-        for term in range(1, 50):
+        for term in range(1, 100):
             val += 2/term/sigma * jv(term, term*sigma) * \
                 np.sin(term*self.w0*(self.t - x[0]/self.c0)) * \
                 np.exp(-self.a0*x[0])
@@ -192,14 +194,14 @@ plt.savefig("u_1.png", bbox_inches="tight")
 plt.close()
 
 idx = np.argwhere(x.T[0] > 0.12 - 10 * lmbda)
-plt.figure(figsize=(14, 8))
+plt.figure(figsize=(16, 8))
 plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
 plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
 plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
-plt.xlim([0.12 - 10 * lmbda, 0.12])
+plt.xlim([0.12 - 10 * lmbda, 0.12 - 5 * lmbda])
 plt.tick_params(left = False, right = False , labelleft = False ,
                 labelbottom = False, bottom = False)
-plt.legend(bbox_to_anchor=(1.125, 1.0))
+plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.title(f"Attenuation = {alphadB}")
 plt.savefig(f"u_2_{str(alphadB).zfill(3)}.png", bbox_inches="tight")
 plt.close()
