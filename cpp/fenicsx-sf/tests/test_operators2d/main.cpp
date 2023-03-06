@@ -11,7 +11,8 @@
 #include <dolfinx/io/XDMFFile.h>
 
 using namespace dolfinx;
-using T = float;
+using T = double;
+
 
 int main(int argc, char* argv[]) 
 {
@@ -28,6 +29,9 @@ int main(int argc, char* argv[])
     // Set polynomial degree
     const int P = 4;
 
+    // Define mesh order
+    const int G = 2;
+
     /*
     // Create mesh and function space
     const std::size_t N = 20;
@@ -42,8 +46,8 @@ int main(int argc, char* argv[])
     */
 
     // Read mesh and tags
-    auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
+    auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, G);
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh_2/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "quad"));
     mesh->topology().create_connectivity(1, 2);

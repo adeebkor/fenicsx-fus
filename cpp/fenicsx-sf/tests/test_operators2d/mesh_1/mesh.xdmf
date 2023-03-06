@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="quad" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="265" NodesPerElement="4">
+        <DataItem Dimensions="265 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/quad/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="296 2" Format="HDF">mesh.h5:/Mesh/quad/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="quad_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='quad']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="265" NodesPerElement="4">
+        <DataItem Dimensions="265 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/quad_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="quad_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="265 1" Format="HDF">mesh.h5:/MeshTags/quad_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="quad_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='quad']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="60" NodesPerElement="2">
+        <DataItem Dimensions="60 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/quad_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="quad_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="60 1" Format="HDF">mesh.h5:/MeshTags/quad_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

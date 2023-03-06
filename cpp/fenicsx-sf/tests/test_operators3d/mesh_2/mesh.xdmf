@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="hex" GridType="Uniform">
+      <Topology TopologyType="Hexahedron_27" NumberOfElements="47508" NodesPerElement="27">
+        <DataItem Dimensions="47508 27" NumberType="Int" Format="HDF">mesh.h5:/Mesh/hex/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XYZ">
+        <DataItem Dimensions="388265 3" Format="HDF">mesh.h5:/Mesh/hex/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="hex_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='hex']/Geometry)" />
+      <Topology TopologyType="Hexahedron_27" NumberOfElements="47508" NodesPerElement="27">
+        <DataItem Dimensions="47508 27" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/hex_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="hex_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="47508 1" Format="HDF">mesh.h5:/MeshTags/hex_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="hex_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='hex']/Geometry)" />
+      <Topology TopologyType="Quadrilateral_9" NumberOfElements="1072" NodesPerElement="9">
+        <DataItem Dimensions="1072 9" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/hex_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="hex_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="1072 1" Format="HDF">mesh.h5:/MeshTags/hex_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

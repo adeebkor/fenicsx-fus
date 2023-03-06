@@ -4,9 +4,10 @@ from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction,
 
 P = 4  # Degree of polynomial basis
 Q = 5  # Number of quadrature points
+G = 2  # Mesh geometry order
 
 # Define mesh and finite element
-coord_element = VectorElement("Lagrange", quadrilateral, 1)
+coord_element = VectorElement("Lagrange", quadrilateral, G)
 mesh = Mesh(coord_element)
 element = basix.ufl_wrapper.create_element(
     basix.ElementFamily.P, basix.CellType.quadrilateral, P,
