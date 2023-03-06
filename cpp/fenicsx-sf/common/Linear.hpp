@@ -616,7 +616,8 @@ public:
         if (mpi_rank == 0) {
           std::cout << "t: " << t 
                     << ",\t Steps: " << step 
-                    << "/" << totalStep << std::endl;
+                    << "/" << totalStep 
+                    << "\t" << u_->array()[0] << std::endl;
         }
       }
       // ----------------------------------------------------------------------
