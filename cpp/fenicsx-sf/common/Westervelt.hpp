@@ -36,16 +36,6 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
 }
 
-/// Compute vector r = x*x
-/// @param r Result
-/// @param x
-template <typename T>
-void square(const la::Vector<T>& x, la::Vector<T>& r) {
-  std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(),
-                 r.mutable_array().begin(),
-                 [&](const T& vx) { return vx * vx; });
-}
-
 } // namespace kernels
 
 
@@ -123,10 +113,10 @@ public:
         {},
         {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     
-    m1 = std::make_shared<la::Vector<T>>(index_map, bs);
-    m1_ = m1->mutable_array();
-    std::fill(m1_.begin(), m1_.end(), 0.0);
-    fem::assemble_vector(m1_, *a);
+    m0 = std::make_shared<la::Vector<T>>(index_map, bs);
+    m0_ = m0->mutable_array();
+    std::fill(m0_.begin(), m0_.end(), 0.0);
+    fem::assemble_vector(m0_, *a);
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -171,7 +161,7 @@ public:
       lin_coeff_[i] = - 1.0 / rho0_[i];
       att_coeff_[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
       nlin1_coeff_[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
-        / c0_[i] / c0_[i];
+        / c0_[i] / c0_[i] / c0_[i];
       nlin2_coeff_[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
         / c0_[i] / c0_[i] / c0_[i];
     }
@@ -235,12 +225,16 @@ public:
     v->scatter_fwd();
     kernels::copy<T>(*v, *v_n->x());
 
-    kernels::square<T>(*v, *w_n->x());
+    std::transform(v_n->x()->array().begin(), v_n->x()->array().end(),
+                   w_n->x()->mutable_array().begin(),
+                   [&](const T& vx) { return vx * vx; });
 
     // Assemble LHS
     std::fill(m_.begin(), m_.end(), 0.0);
     nlin1_op->operator()(*u_n->x(), nlin1_coeff_, *m);
-    kernels::axpy<T>(*m, 1.0, *m, *m1);
+    std::transform(m0->array().begin(), m0->array().end(), m->array().begin(),
+                   m->mutable_array().begin(),
+                   [&](const T& x, const T& y) { return x + y; }); 
     m->scatter_rev(std::plus<T>());
 
     // Assemble RHS
@@ -385,9 +379,9 @@ private:
   std::shared_ptr<fem::FunctionSpace> V;
   std::shared_ptr<fem::Function<T>> u, u_n, v_n, w_n, g, dg, c0, rho0, delta0, beta0;
   std::shared_ptr<fem::Form<T>> a, L;
-  std::shared_ptr<la::Vector<T>> m, m1, b;
+  std::shared_ptr<la::Vector<T>> m, m0, b;
 
-  std::span<T> g_, dg_, m_, m1_, b_, out;
+  std::span<T> g_, dg_, m_, m0_, b_, out;
   std::span<const T> _m, _b;
 
   // Operators
