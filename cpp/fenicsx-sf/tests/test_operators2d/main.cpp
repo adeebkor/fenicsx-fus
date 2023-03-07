@@ -10,6 +10,8 @@
 #include <dolfinx.h>
 #include <dolfinx/io/XDMFFile.h>
 
+#define T_MPI MPI_DOUBLE
+
 using namespace dolfinx;
 using T = double;
 
@@ -59,7 +61,6 @@ int main(int argc, char* argv[])
 
     // Get index map and block size
     auto index_map = V->dofmap()->index_map;
-    int bs = V->dofmap()->index_map_bs();
 
     // Create functions
     auto u = std::make_shared<fem::Function<T>>(V);
@@ -136,9 +137,10 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-
+    /*
     for (std::size_t i = 0; i < 10; ++i)
       std::cout << m1_[i] << " " << ms1_[i] << "\n";
+    */
 
     // ------------------------------------------------------------------------
     // Equality check (Mass 1)
@@ -146,9 +148,13 @@ int main(int argc, char* argv[])
     auto Em1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_E, {}, {{"f0", m1}, {"f1", ms1}}, {}, {}, mesh));
     T error_m1 = fem::assemble_scalar(*Em1);
+    T error_m1_sum;
+    MPI_Reduce(&error_m1, &error_m1_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    std::cout << "Relative L2 error (mass 1), " 
-              << "PROC" << mpi_rank << " : " << error_m1 << std::endl;
+    if (mpi_rank == 0)
+    {
+      std::cout << "Relative L2 error (mass 1): " << error_m1_sum << std::endl;
+    }
 
     // ------------------------------------------------------------------------
     // M2 coefficients
@@ -182,9 +188,10 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-
+    /*
     for (std::size_t i = 0; i < 10; ++i)
       std::cout << m2_[i] << " " << ms2_[i] << "\n";
+    */
 
     // ------------------------------------------------------------------------
     // Equality check (Mass 2)
@@ -192,9 +199,13 @@ int main(int argc, char* argv[])
     auto Em2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_E, {}, {{"f0", m2}, {"f1", ms2}}, {}, {}, mesh));
     T error_m2 = fem::assemble_scalar(*Em2);
+    T error_m2_sum;
+    MPI_Reduce(&error_m2, &error_m2_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    std::cout << "Relative L2 error (mass 2), " 
-              << "PROC" << mpi_rank << " : " << error_m2 << std::endl;
+    if (mpi_rank == 0)
+    {
+      std::cout << "Relative L2 error (mass 2): " << error_m2_sum << std::endl;
+    }
 
     // ------------------------------------------------------------------------
     // M3 coefficients
@@ -228,9 +239,10 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-
+    /*
     for (std::size_t i = 0; i < 10; ++i)
       std::cout << m3_[i] << " " << ms3_[i] << "\n";
+    */
 
     // ------------------------------------------------------------------------
     // Equality check (Mass 3)
@@ -238,9 +250,13 @@ int main(int argc, char* argv[])
     auto Em3 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_E, {}, {{"f0", m3}, {"f1", ms3}}, {}, {}, mesh));
     T error_m3 = fem::assemble_scalar(*Em3);
+    T error_m3_sum;
+    MPI_Reduce(&error_m3, &error_m3_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    std::cout << "Relative L2 error (mass 3), " 
-              << "PROC" << mpi_rank << " : " << error_m3 << std::endl;
+    if (mpi_rank == 0)
+    {
+      std::cout << "Relative L2 error (mass 3): " << error_m3_sum << std::endl;
+    }
 
     // ------------------------------------------------------------------------
     // S1 coefficients
@@ -273,9 +289,10 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-    
+    /*
     for (std::size_t i = 0; i < 10; ++i)
       std::cout << b1_[i] << " " << bs1_[i] << "\n";
+    */
 
     // ------------------------------------------------------------------------
     // Equality check (Stiffness 1)
@@ -283,9 +300,13 @@ int main(int argc, char* argv[])
     auto Es1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_E, {}, {{"f0", b1}, {"f1", bs1}}, {}, {}, mesh));
     T error_s1 = fem::assemble_scalar(*Es1);
+    T error_s1_sum;
+    MPI_Reduce(&error_s1, &error_s1_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    std::cout << "Relative L2 error (stiffness 1), " 
-              << "PROC" << mpi_rank << " : " << error_s1 << std::endl;
+    if (mpi_rank == 0)
+    {
+      std::cout << "Relative L2 error (stiffness 1): " << error_s1_sum << std::endl;
+    }
 
     // ------------------------------------------------------------------------
     // S2 coefficients
@@ -319,9 +340,10 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-    
+    /*
     for (std::size_t i = 0; i < 10; ++i)
       std::cout << b2_[i] << " " << bs2_[i] << "\n";
+    */
 
     // ------------------------------------------------------------------------
     // Equality check (Stiffness 2)
@@ -329,9 +351,13 @@ int main(int argc, char* argv[])
     auto Es2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_E, {}, {{"f0", b2}, {"f1", bs2}}, {}, {}, mesh));
     T error_s2 = fem::assemble_scalar(*Es2);
+    T error_s2_sum;
+    MPI_Reduce(&error_s2, &error_s2_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    std::cout << "Relative L2 error (stiffness 2), " 
-              << "PROC" << mpi_rank << " : " << error_s2 << std::endl;
+    if (mpi_rank == 0)
+    {
+      std::cout << "Relative L2 error (stiffness 2): " << error_s2_sum << std::endl;
+    }
   }
 
   PetscFinalize();
