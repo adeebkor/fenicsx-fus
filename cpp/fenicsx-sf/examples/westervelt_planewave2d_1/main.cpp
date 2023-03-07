@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.4;
+    const double CFL = 0.8;
     double timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
