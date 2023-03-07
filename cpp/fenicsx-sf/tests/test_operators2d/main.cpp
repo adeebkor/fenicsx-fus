@@ -13,7 +13,6 @@
 using namespace dolfinx;
 using T = double;
 
-
 int main(int argc, char* argv[]) 
 {
 
@@ -220,9 +219,6 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Compute spectral mass 3 vector
     MassSpectral2D<T, P> mass_spectral_3(V);
-
-    // Square the function
-    
 
     auto ms3 = std::make_shared<fem::Function<T>>(V);
     mass_spectral_3(*w_n->x(), m3_coeffs, *ms3->x());
