@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     const int P = 4;
 
     // Define mesh order
-    const int G = 2;
+    const int G = 1;
 
     /*
     // Create mesh and function space
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 
     // Read mesh and tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, G);
-    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh_2/mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh_1/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "hex"));
     mesh->topology().create_connectivity(2, 3);
@@ -55,167 +55,284 @@ int main(int argc, char* argv[])
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_m, "u", mesh));
+      fem::create_functionspace(functionspace_form_forms_m1, "u", mesh));
 
     // Get index map and block size
     auto index_map = V->dofmap()->index_map;
     int bs = V->dofmap()->index_map_bs();
 
-    // Create input function
+    // Create functions
     auto u = std::make_shared<fem::Function<T>>(V);
-    u->interpolate(
+    std::span<T> u_ = u->x()->mutable_array();
+    std::fill(u_.begin(), u_.end(), 1.0);
+
+    auto u_n = std::make_shared<fem::Function<T>>(V);
+    std::span<T> un_ = u_n->x()->mutable_array();
+    std::fill(un_.begin(), un_.end(), 2.0);
+
+    auto v_n = std::make_shared<fem::Function<T>>(V);
+    v_n->interpolate(
       [](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>>
       {
-        std::vector<T> u(x.extent(1));
+        std::vector<T> v_n(x.extent(1));
         
         for (std::size_t p = 0; p < x.extent(1); ++p)
-          u[p] = std::sin(x(0, p)) * std::cos(std::numbers::pi * x(1, p));
+          v_n[p] = std::cos(x(0, p)) * std::sin(std::numbers::pi * x(1, p)) * std::cos(2.0 * std::numbers::pi * x(2, p));
 
-        return {u, {u.size()}};
+        return {v_n, {v_n.size()}};
       });
+
+      auto w_n = std::make_shared<fem::Function<T>>(V);
+      std::transform(u_n->x()->array().begin(), u_n->x()->array().end(),
+                     w_n->x()->mutable_array().begin(),
+                     [&](const T& vx) { return vx * vx; }); 
 
     // Create DG functions
     auto V_DG = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_m, "c0", mesh));
+      fem::create_functionspace(functionspace_form_forms_m1, "c0", mesh));
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto beta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     std::span<T> c0_ = c0->x()->mutable_array();
     std::span<T> rho0_ = rho0->x()->mutable_array();
+    std::span<T> delta0_ = delta0->x()->mutable_array();
+    std::span<T> beta0_ = beta0->x()->mutable_array();
     
-    std::fill(c0_.begin(), c0_.end(), 1500);
-    std::fill(rho0_.begin(), rho0_.end(), 1000);
+    std::fill(c0_.begin(), c0_.end(), 1.5);
+    std::fill(rho0_.begin(), rho0_.end(), 1);
+    std::fill(delta0_.begin(), delta0_.end(), 10);
+    std::fill(beta0_.begin(), beta0_.end(), 10);
 
     // ------------------------------------------------------------------------
-    // Mass coefficients
-    std::vector<T> m_coeffs(c0_.size());
-    for (std::size_t i = 0; i < m_coeffs.size(); ++i)
-      m_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
+    // M1 coefficients
+    std::vector<T> m1_coeffs(c0_.size());
+    for (std::size_t i = 0; i < m1_coeffs.size(); ++i)
+      m1_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
 
     // ------------------------------------------------------------------------
-    // Compute dolfinx mass vector
-    auto m = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_m, {V}, 
+    // Compute dolfinx m1 vector
+    auto M1 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_m1, {V}, 
                                {{"u", u}, {"c0", c0}, {"rho0", rho0}}, 
                                {}, {}));
     
-    // la::Vector<T> m0(index_map, bs);
-    // fem::assemble_vector(m0.mutable_array(), *m);
-    // m0.scatter_rev(std::plus<T>());
-
-    auto m0 = std::make_shared<fem::Function<T>>(V);
-    fem::assemble_vector(m0->x()->mutable_array(), *m);
-    m0->x()->scatter_rev(std::plus<T>());
-
-    auto m0_ = m0->x()->array();
-
-    // ------------------------------------------------------------------------
-    // Compute spectral mass vector
-    MassSpectral3D<T, P> mass_spectral(V);
-
-    // la::Vector<T> m1(index_map, bs);
-    // mass_spectral(*u->x(), m_coeffs, m1);
-    // m1.scatter_rev(std::plus<T>());
-
     auto m1 = std::make_shared<fem::Function<T>>(V);
-    mass_spectral(*u->x(), m_coeffs, *m1->x());
+    fem::assemble_vector(m1->x()->mutable_array(), *M1);
     m1->x()->scatter_rev(std::plus<T>());
 
     auto m1_ = m1->x()->array();
 
     // ------------------------------------------------------------------------
+    // Compute spectral mass 1 vector
+    MassSpectral3D<T, P> mass_spectral_1(V);
+
+
+    auto ms1 = std::make_shared<fem::Function<T>>(V);
+    mass_spectral_1(*u->x(), m1_coeffs, *ms1->x());
+    ms1->x()->scatter_rev(std::plus<T>());
+
+    auto ms1_ = ms1->x()->array();
+
+    // ------------------------------------------------------------------------
     // Print the first 10 values
 
     for (std::size_t i = 0; i < 10; ++i)
-      std::cout << m0_[i] << " " << m1_[i] << "\n";
+      std::cout << m1_[i] << " " << ms1_[i] << "\n";
 
     // ------------------------------------------------------------------------
-    // Equality check (Mass)
+    // Equality check (Mass 1)
 
-    // float rel_err1 = 0;
+    auto Em1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_E, {}, {{"f0", m1}, {"f1", ms1}}, {}, {}, mesh));
+    T error_m1 = fem::assemble_scalar(*Em1);
 
-    // for (std::size_t i = 0; i < m0.array().size(); ++i)
-    // {
-    //   rel_err1 += (m1.array()[i] - m0.array()[i]) 
-    //     * (m1.array()[i] - m0.array()[i])
-    //     / (m0.array()[i] * m0.array()[i] + 1e-10);
-    // }
-
-    // std::cout << "Relative L2 error (mass), " 
-    //           << "PROC" << mpi_rank << " : " << rel_err1 << std::endl;
-
-    auto Em = std::make_shared<fem::Form<T>>(fem::create_form<T>(
-        *form_forms_E, {}, {{"f0", m0}, {"f1", m1}}, {}, {}, mesh));
-    T error_m = fem::assemble_scalar(*Em);
-
-    std::cout << "Relative L2 error (mass), " 
-              << "PROC" << mpi_rank << " : " << error_m << std::endl;
+    std::cout << "Relative L2 error (mass 1), " 
+              << "PROC" << mpi_rank << " : " << error_m1 << std::endl;
 
     // ------------------------------------------------------------------------
-    // Stiffness coefficients
-    std::vector<T> s_coeffs(c0_.size());
-    for (std::size_t i = 0; i < s_coeffs.size(); ++i)
-      s_coeffs[i] = - 1.0 / rho0_[i];
+    // M2 coefficients
+    std::vector<T> m2_coeffs(c0_.size());
+    for (std::size_t i = 0; i < m2_coeffs.size(); ++i)
+      m2_coeffs[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
 
     // ------------------------------------------------------------------------
-    // Compute dolfinx stiffness vector
-    auto s = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_s, {V},
-                               {{"u", u}, {"rho0", rho0}},
+    // Compute dolfinx m2 vector
+    auto M2 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_m2, {V}, 
+                               {{"u", u}, {"u_n", u_n}, 
+                                {"c0", c0}, {"rho0", rho0}, {"beta0", beta0}}, 
+                               {}, {}));
+    
+    auto m2 = std::make_shared<fem::Function<T>>(V);
+    fem::assemble_vector(m2->x()->mutable_array(), *M2);
+    m2->x()->scatter_rev(std::plus<T>());
+
+    auto m2_ = m2->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Compute spectral mass 2 vector
+    MassSpectral3D<T, P> mass_spectral_2(V);
+
+    auto ms2 = std::make_shared<fem::Function<T>>(V);
+    mass_spectral_2(*u_n->x(), m2_coeffs, *ms2->x());
+    ms2->x()->scatter_rev(std::plus<T>());
+
+    auto ms2_ = ms2->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Print the first 10 values
+
+    for (std::size_t i = 0; i < 10; ++i)
+      std::cout << m2_[i] << " " << ms2_[i] << "\n";
+
+    // ------------------------------------------------------------------------
+    // Equality check (Mass 2)
+
+    auto Em2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_E, {}, {{"f0", m2}, {"f1", ms2}}, {}, {}, mesh));
+    T error_m2 = fem::assemble_scalar(*Em2);
+
+    std::cout << "Relative L2 error (mass 2), " 
+              << "PROC" << mpi_rank << " : " << error_m2 << std::endl;
+
+    // ------------------------------------------------------------------------
+    // M3 coefficients
+    std::vector<T> m3_coeffs(c0_.size());
+    for (std::size_t i = 0; i < m3_coeffs.size(); ++i)
+      m3_coeffs[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+
+    // ------------------------------------------------------------------------
+    // Compute dolfinx m3 vector
+    auto M3 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_m3, {V}, 
+                               {{"u_n", u_n}, 
+                                {"c0", c0}, {"rho0", rho0}, {"beta0", beta0}}, 
+                               {}, {}));
+    
+    auto m3 = std::make_shared<fem::Function<T>>(V);
+    fem::assemble_vector(m3->x()->mutable_array(), *M3);
+    m3->x()->scatter_rev(std::plus<T>());
+
+    auto m3_ = m3->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Compute spectral mass 3 vector
+    MassSpectral3D<T, P> mass_spectral_3(V);
+
+    auto ms3 = std::make_shared<fem::Function<T>>(V);
+    mass_spectral_3(*w_n->x(), m3_coeffs, *ms3->x());
+    ms3->x()->scatter_rev(std::plus<T>());
+
+    auto ms3_ = ms3->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Print the first 10 values
+
+    for (std::size_t i = 0; i < 10; ++i)
+      std::cout << m3_[i] << " " << ms3_[i] << "\n";
+
+    // ------------------------------------------------------------------------
+    // Equality check (Mass 3)
+
+    auto Em3 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_E, {}, {{"f0", m3}, {"f1", ms3}}, {}, {}, mesh));
+    T error_m3 = fem::assemble_scalar(*Em3);
+
+    std::cout << "Relative L2 error (mass 3), " 
+              << "PROC" << mpi_rank << " : " << error_m3 << std::endl;
+
+    // ------------------------------------------------------------------------
+    // S1 coefficients
+    std::vector<T> s1_coeffs(c0_.size());
+    for (std::size_t i = 0; i < s1_coeffs.size(); ++i)
+      s1_coeffs[i] = - 1.0 / rho0_[i];
+
+    // ------------------------------------------------------------------------
+    // Compute dolfinx s1 vector
+    auto s1 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_b1, {V},
+                               {{"v_n", v_n}, {"rho0", rho0}},
                                {}, {}));
 
-    // la::Vector<T> s0(index_map, bs);
-    // fem::assemble_vector(s0.mutable_array(), *s);
-    // s0.scatter_rev(std::plus<T>());
+    auto b1 = std::make_shared<fem::Function<T>>(V);
+    fem::assemble_vector(b1->x()->mutable_array(), *s1);
+    b1->x()->scatter_rev(std::plus<T>());
 
-    auto s0 = std::make_shared<fem::Function<T>>(V);
-    fem::assemble_vector(s0->x()->mutable_array(), *s);
-    s0->x()->scatter_rev(std::plus<T>());
-
-    auto s0_ = s0->x()->array();
+    auto b1_ = b1->x()->array();
 
     // ------------------------------------------------------------------------
-    // Compute spectral stiffness vector
-    StiffnessSpectral3D<T, P> stiffness_spectral(V);
+    // Compute spectral stiffness 1 vector
+    StiffnessSpectral3D<T, P> stiffness_spectral_1(V);
 
-    // la::Vector<T> s1(index_map, bs);
-    // stiffness_spectral(*u->x(), s_coeffs, s1);
-    // s1.scatter_rev(std::plus<T>());
+    auto bs1 = std::make_shared<fem::Function<T>>(V);
+    stiffness_spectral_1(*v_n->x(), s1_coeffs, *bs1->x());
+    bs1->x()->scatter_rev(std::plus<T>());
 
-    auto s1 = std::make_shared<fem::Function<T>>(V);
-    stiffness_spectral(*u->x(), s_coeffs, *s1->x());
-    s1->x()->scatter_rev(std::plus<T>());
-
-    auto s1_ = s1->x()->array();
+    auto bs1_ = bs1->x()->array();
 
     // ------------------------------------------------------------------------
     // Print the first 10 values
-    /*
+    
     for (std::size_t i = 0; i < 10; ++i)
-      std::cout << s0.array()[i] << " " << s1.array()[i] << "\n";
-    */
+      std::cout << b1_[i] << " " << bs1_[i] << "\n";
 
     // ------------------------------------------------------------------------
-    // Equality check (Stiffness)
+    // Equality check (Stiffness 1)
 
-    // float rel_err2 = 0;
+    auto Es1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_E, {}, {{"f0", b1}, {"f1", bs1}}, {}, {}, mesh));
+    T error_s1 = fem::assemble_scalar(*Es1);
 
-    // for (std::size_t i = 0; i < s0.array().size(); ++i)
-    // {
-    //   rel_err2 += (s1.array()[i] - s0.array()[i]) 
-    //     * (s1.array()[i] - s0.array()[i])
-    //     / (s0.array()[i] * s0.array()[i] + 1e-10);
-    // }
+    std::cout << "Relative L2 error (stiffness 1), " 
+              << "PROC" << mpi_rank << " : " << error_s1 << std::endl;
 
-    // std::cout << "Relative L2 error (stiffness), " 
-    //           << "PROC" << mpi_rank << " : " << rel_err2 << std::endl;
+    // ------------------------------------------------------------------------
+    // S2 coefficients
+    std::vector<T> s2_coeffs(c0_.size());
+    for (std::size_t i = 0; i < s2_coeffs.size(); ++i)
+      s2_coeffs[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
 
-    auto Es = std::make_shared<fem::Form<T>>(fem::create_form<T>(
-        *form_forms_E, {}, {{"f0", s0}, {"f1", s1}}, {}, {}, mesh));
-    T error_s = fem::assemble_scalar(*Es);
+    // ------------------------------------------------------------------------
+    // Compute dolfinx s1 vector
+    auto s2 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_b2, {V},
+                               {{"v_n", v_n}, 
+                                {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
+                               {}, {}));
 
-    std::cout << "Relative L2 error (stiffness), " 
-              << "PROC" << mpi_rank << " : " << error_s << std::endl;
+    auto b2 = std::make_shared<fem::Function<T>>(V);
+    fem::assemble_vector(b2->x()->mutable_array(), *s2);
+    b2->x()->scatter_rev(std::plus<T>());
+
+    auto b2_ = b2->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Compute spectral stiffness 2 vector
+    StiffnessSpectral3D<T, P> stiffness_spectral_2(V);
+
+    auto bs2 = std::make_shared<fem::Function<T>>(V);
+    stiffness_spectral_2(*v_n->x(), s2_coeffs, *bs2->x());
+    bs2->x()->scatter_rev(std::plus<T>());
+
+    auto bs2_ = bs2->x()->array();
+
+    // ------------------------------------------------------------------------
+    // Print the first 10 values
+    
+    for (std::size_t i = 0; i < 10; ++i)
+      std::cout << b2_[i] << " " << bs2_[i] << "\n";
+
+    // ------------------------------------------------------------------------
+    // Equality check (Stiffness 2)
+
+    auto Es2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_E, {}, {{"f0", b2}, {"f1", bs2}}, {}, {}, mesh));
+    T error_s2 = fem::assemble_scalar(*Es2);
+
+    std::cout << "Relative L2 error (stiffness 2), " 
+              << "PROC" << mpi_rank << " : " << error_s2 << std::endl;
   }
 
   PetscFinalize();
