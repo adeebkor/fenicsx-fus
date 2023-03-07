@@ -13,7 +13,7 @@ from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
-from dolfinx import cpp
+from dolfinx import cpp, common
 
 from hifusim import WesterveltSpectralExplicit
 from hifusim.utils import compute_diffusivity_of_sound
@@ -110,8 +110,13 @@ model = WesterveltSpectralExplicit(
 
 # Solve
 model.init()
-u_n, v_n, tf = model.rk(startTime, finalTime)
 
+with common.Timer() as tsolve:
+    u_n, v_n, tf = model.rk(startTime, finalTime)
+
+if mpi_rank == 0:
+    print("Solve time: ", tsolve.elapsed()[0])
+    print("Time per step: ", tsolve.elapsed()[0]/numberOfStep)
 
 # Best approximation
 class Analytical:
