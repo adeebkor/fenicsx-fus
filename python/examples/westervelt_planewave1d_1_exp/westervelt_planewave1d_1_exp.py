@@ -23,15 +23,15 @@ from hifusim import WesterveltSpectralExplicit
 from hifusim.utils import compute_eval_params, compute_diffusivity_of_sound
 
 # Source parameters
-f0 = 0.5e6  # source frequency (Hz)
+f0 = 1e6  # source frequency (Hz)
 w0 = 2 * np.pi * f0
-p0 = 1500000  # pressure amplitude (Pa)
+p0 = 125000  # pressure amplitude (Pa)
 
 # Material parameters
-c0 = 1500  # speed of sound (m/s)
-rho0 = 1000  # density (kg / m^3)
+c0 = 1482.32  # speed of sound (m/s)
+rho0 = 998.2  # density (kg / m^3)
 beta0 = 3.5  # nonlinearity coefficient
-alphadB = 0
+alphadB = 0.217  # attenuation (dB/m)
 alphaNp = alphadB / 20 * np.log(10)
 delta0 = compute_diffusivity_of_sound(
     w0, c0, alphadB)
@@ -50,7 +50,7 @@ degree = 4
 rk = 4
 
 # Mesh parameters
-epw = 8
+epw = 3
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -193,14 +193,16 @@ plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.savefig("u_1.png", bbox_inches="tight")
 plt.close()
 
-idx = np.argwhere(x.T[0] > 0.12 - 10 * lmbda)
+data_range = [0.06, 0.06 + 2 * lmbda]
+idx = np.argwhere(np.logical_and(
+    x.T[0] > data_range[0], x.T[0] < data_range[1]))
 plt.figure(figsize=(16, 8))
 plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
 plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
 plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
-plt.xlim([0.12 - 10 * lmbda, 0.12 - 5 * lmbda])
+plt.xlim([data_range[0], data_range[1]])
 plt.tick_params(left = False, right = False , labelleft = False ,
-                labelbottom = False, bottom = False)
+                labelbottom = True, bottom = True)
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.title(f"Attenuation = {alphadB}")
 plt.savefig(f"u_2_{str(alphadB).zfill(3)}.png", bbox_inches="tight")
