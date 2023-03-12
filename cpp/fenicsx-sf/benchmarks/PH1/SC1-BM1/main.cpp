@@ -51,14 +51,14 @@ int main(int argc, char* argv[])
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, orderOfGeometry);
     io::XDMFFile fmesh(MPI_COMM_WORLD, 
-    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_1/mesh.xdmf", "r");
+    "/home/mabm4/rds/hpc-work/mesh/PH1/transducer_3d_2/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
-      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_1"));
+      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_2"));
     mesh->topology().create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_1_cells"));
+      fmesh.read_meshtags(mesh, "transducer_3d_2_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_1_facets"));
+      fmesh.read_meshtags(mesh, "transducer_3d_2_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology().dim();

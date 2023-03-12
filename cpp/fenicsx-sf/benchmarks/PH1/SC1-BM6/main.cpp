@@ -15,8 +15,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_FLOAT
-using T = float;
+#define T_MPI MPI_DOUBLE
+using T = double;
 
 int main(int argc, char* argv[])
 {
@@ -84,10 +84,13 @@ int main(int argc, char* argv[])
     // FE parameters
     const int degreeOfBasis = 4;
 
+    // Mesh parameters
+    const int orderOfGeometry = 1;
+
     // Read mesh and mesh tags
-    auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
+    auto element = fem::CoordinateElement(mesh::CellType::hexahedron, orderOfGeometry);
     io::XDMFFile fmesh(MPI_COMM_WORLD,
-    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_8/mesh.xdmf", "r");
+    "/home/mabm4/rds/hpc-work/mesh/PH1/transducer_3d_8/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
       fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_8"));
     mesh->topology().create_connectivity(2, 3);

@@ -4,9 +4,10 @@ from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction,
 
 P = 4  # Degree of polynomial basis
 Q = 5  # Number of quadrature points
+G = 1  # Order of mesh geometry
 
 # Define mesh and finite element
-coord_element = VectorElement("Lagrange", hexahedron, 1)
+coord_element = VectorElement("Lagrange", hexahedron, G)
 mesh = Mesh(coord_element)
 element = basix.ufl_wrapper.create_element(
     basix.ElementFamily.P, basix.CellType.hexahedron, P,
@@ -38,7 +39,7 @@ md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 a = inner(u/rho0/c0/c0, v) * dx(metadata=md) \
     + inner(delta0/rho0/c0/c0/c0*u, v) * ds(metadata=md)
 
-L = inner(1/rho0*g, v)*ds(1, metadata=md) \
+L = inner(1/rho0*g, v) * ds(1, metadata=md) \
     - inner(1/rho0/c0*v_n, v) * ds(metadata=md) \
     + inner(delta0/rho0/c0/c0*dg, v) * ds(1, metadata=md)
 
