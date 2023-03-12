@@ -503,16 +503,16 @@ public:
     }
 
     // Update boundary condition (homogenous domain)
-    std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
-    std::fill(dg_.begin(), dg_.end(), 
-              dwindow * p0 * w0 / s0 * cos(w0 * t) 
-                - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+    // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
+    // std::fill(dg_.begin(), dg_.end(), 
+    //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
+    //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update boundary condition (heterogenous domain)
-    // std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
-    // std::fill(dg_.begin(), dg_.end(), 
-    //           dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
-    //             - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
+    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
+    std::fill(dg_.begin(), dg_.end(), 
+              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
+                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update fields
     u->scatter_fwd();
