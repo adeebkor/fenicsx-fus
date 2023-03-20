@@ -555,16 +555,19 @@ public:
     std::string fname;
 
     // Grid parameters
-    const std::size_t Nr = 141;
-    const std::size_t Nz = 241;
+    const std::size_t Nx = 241;
+    const std::size_t Ny = 141;
+    const std::size_t Nz = 141;
 
     // Create evaluation point coordinates
-    std::vector<T> point_coordinates(3 * Nr * Nz);
-    for (std::size_t i = 0; i < Nz; ++i) {
-      for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = j * 0.07 / (Nr - 1) - 0.035;
-        point_coordinates[3*j + 3*i*Nr + 1] = 0.0;
-        point_coordinates[3*j + 3*i*Nr + 2] = i * 0.12 / (Nz - 1);
+    std::vector<T> point_coordinates(3 * Nx * Ny * Nz);
+    for (std::size_t i = 0; i < Nx; ++i) {
+      for (std::size_t j = 0; j < Ny; ++j) {
+        for (std::size_t k = 0; k < Nz; ++k) {
+          point_coordinates[3*(k + j*Nz + i*Ny*Nz)] = i * 0.12 / (Nx - 1);
+          point_coordinates[3*(k + j*Nz + i*Ny*Nz) + 1] = j * 0.07 / (Ny - 1) - 0.035;
+          point_coordinates[3*(k + j*Nz + i*Ny*Nz) + 2] = k * 0.07 / (Nz - 1) - 0.035;
+        }
       }
     }
 
@@ -577,7 +580,7 @@ public:
     std::vector<std::int32_t> cells;
     std::vector<T> points_on_proc;
 
-    for (std::size_t i = 0; i < Nr*Nz; ++i) {
+    for (std::size_t i = 0; i < Nx*Ny*Nz; ++i) {
       auto link = colliding_cells.links(i);
       if (link.size() > 0) {
         points_on_proc.push_back(point_coordinates[3*i]);
@@ -692,11 +695,12 @@ public:
 
         for (int i = 0; i < mpi_size; ++i) {
           if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_on_xz_plane_" + 
+            fname = "/home/mabm4/data/pressure_field_" + 
                     std::to_string(step_period) + ".txt";
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
               txt_file << *(p_value + 3 * i) << ","
+                       << *(p_value + 3 * i + 1) << ","
                        << *(p_value + 3 * i + 2) << "," 
                        << *(u_value + i) << std::endl;
             }
