@@ -630,7 +630,7 @@ public:
     const std::size_t Nz = 357;
 
     // Create evaluation point coordinates
-    std::vector<T> point_coordinates(3 * Nr * Nz);
+    std::vector<double> point_coordinates(3 * Nr * Nz);
     for (std::size_t i = 0; i < Nz; ++i) {
       for (std::size_t j = 0; j < Nr; ++j) {
         point_coordinates[3*j + 3*i*Nr] = j * 0.04 / (Nr - 1) - 0.02;
@@ -646,7 +646,7 @@ public:
       *mesh, cell_candidates, point_coordinates);
 
     std::vector<std::int32_t> cells;
-    std::vector<T> points_on_proc;
+    std::vector<double> points_on_proc;
 
     for (std::size_t i = 0; i < Nr*Nz; ++i) {
       auto link = colliding_cells.links(i);
@@ -662,7 +662,7 @@ public:
     std::vector<T> u_eval(num_points_local);
 
     T* u_value = u_eval.data();
-    T* p_value = points_on_proc.data();
+    double* p_value = points_on_proc.data();
 
     int numStepPerPeriod = period / timeStep + 3;
     int step_period = 0;
@@ -763,7 +763,7 @@ public:
 
         for (int i = 0; i < mpi_size; ++i) {
           if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_field_" + 
+            fname = "/home/mabm4/rds/hpc-work/data/pressure_field_" + 
                     std::to_string(step_period) + ".txt";
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
