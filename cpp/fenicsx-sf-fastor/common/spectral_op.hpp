@@ -15,6 +15,104 @@ using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
 
 using namespace Fastor;
 
+// -------------- //
+// Mass operators //
+// -------------- //
+
+namespace mass {
+  template <typename T, int P, int Nq>
+  inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
+    
+    for (int iq = 0; iq < Nq; ++iq)
+      fw[iq] = coeff * fw[iq] * detJ[iq];
+  }
+}
+
+/// 3D Spectral Mass operator
+template <typename T, int P>
+class MassSpectral3D {
+public:
+  MassSpectral3D(std::shared_ptr<fem::FunctionSpace>& V) {
+
+    // Create a map between polynomial degree and basix quadrature degree
+    std::map<int, int> Qdegree;
+    Qdegree[2] = 3;
+    Qdegree[3] = 4;
+    Qdegree[4] = 6;
+    Qdegree[5] = 8;
+    Qdegree[6] = 10;
+    Qdegree[7] = 12;
+    Qdegree[8] = 14;
+    Qdegree[9] = 16;
+    Qdegree[10] = 18;
+
+    // Get mesh and mesh attributes
+    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
+    int tdim = mesh->topology().dim();
+    Nc = mesh->topology().index_map(tdim)->size_local();
+
+    // Get dofmap and reorder
+    dofmap_ = V->dofmap()->list().array();
+    tensor_dofmap_.resize(dofmap_.size());
+    reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+
+    // Tabulate quadrature points and weights
+    auto [points, weights]
+      = basix::quadrature::make_quadrature(
+          basix::quadrature::type::gll,
+          basix::cell::type::hexahedron,
+          Qdegree[P]);
+
+    // Compute the scaled of the Jacobian determinant
+    detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
+  }
+
+  /// Operator y = Mx
+  /// @param[in] x Input vector
+  /// @param[in] coeffs Coefficients
+  /// @param[out] y Output vector
+  template <typename Alloc>
+  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs,
+                  la::Vector<T, Alloc>& y) {
+
+    std::span<const T> x_array = x.array();
+    std::span<T> y_array = y.mutable_array();
+
+    for (std::int32_t c = 0; c < Nc; ++c)
+    {
+      // Pack coefficients
+      for (std::int32_t i = 0; i < Nd; ++i)
+        x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
+
+      T* sdetJ = detJ_.data() + c * Nd;
+      mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
+
+      for (std::int32_t i = 0; i < Nd; ++i)
+        y_array[tensor_dofmap_[c * Nd + i]] += x_[i];
+    }
+  }
+
+private:
+  // Number of dofs and quadrature points in 1D
+  static constexpr int N = (P + 1);
+
+  // Number of dofs and quadrature points per element
+  static constexpr int Nd = N * N * N;
+
+  // Number of cells in the mesh
+  std::int32_t Nc;
+
+  // Scaled Jacobian determinant
+  std::vector<T> detJ_;
+
+  // Dofmap
+  std::vector<std::int32_t> dofmap_;
+  std::vector<std::int32_t> tensor_dofmap_;
+
+  // Local input array
+  std::array<T, Nd> x_;
+};
+
 // ------------------- //
 // Stiffness operators //
 // ------------------- //
