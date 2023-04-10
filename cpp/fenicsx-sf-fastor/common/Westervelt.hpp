@@ -271,16 +271,16 @@ public:
     std::string fname;
 
     // Grid parameters
-    const std::size_t Nr = 179;
-    const std::size_t Nz = 357;
+    const std::size_t Nr = 286;
+    const std::size_t Nz = 536;
 
     // Create evaluation point coordinates
     std::vector<double> point_coordinates(3 * Nr * Nz);
     for (std::size_t i = 0; i < Nz; ++i) {
       for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = j * 0.04 / (Nr - 1) - 0.02;
-        point_coordinates[3*j + 3*i*Nr + 1] = 0.0;
-        point_coordinates[3*j + 3*i*Nr + 2] = i * 0.08 / (Nz - 1);
+        point_coordinates[3*j + 3*i*Nr] = i * 0.12 / (Nz - 1);
+        point_coordinates[3*j + 3*i*Nr + 1] = j * 0.064 / (Nr - 1) - 0.032;
+        point_coordinates[3*j + 3*i*Nr + 2] = 0.0;
       }
     }
 
@@ -394,7 +394,7 @@ public:
       }
       // ----------------------------------------------------------------------
       // Collect data
-      if (t > 0.08 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
+      if (t > 0.12 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
 
@@ -413,7 +413,7 @@ public:
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
               txt_file << *(p_value + 3 * i) << ","
-                       << *(p_value + 3 * i + 2) << "," 
+                       << *(p_value + 3 * i + 1) << "," 
                        << *(u_value + i) << std::endl;
             }
             txt_file.close();
