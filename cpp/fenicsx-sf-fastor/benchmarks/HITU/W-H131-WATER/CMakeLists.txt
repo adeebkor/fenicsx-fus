@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(PROJECT_NAME W-H131-50W-WATER)
+set(PROJECT_NAME W-H131-WATER)
 project(${PROJECT_NAME} LANGUAGES C CXX)
 
 # Set standard

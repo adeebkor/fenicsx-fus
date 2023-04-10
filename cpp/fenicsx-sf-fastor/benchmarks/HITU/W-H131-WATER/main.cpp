@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     const T speedOfSound = 1480.0;  // (m/s)
     const T density = 1000.0;  // (kg/m^3)
     const T sourceFrequency = 1.1e6;  // (Hz)
-    const T sourceVelocity = 0.2726427949247581;  // (m/s)
+    const T sourceVelocity = 0.38557513826589934;  // (m/s)
     const T sourceAmplitude = density*speedOfSound*sourceVelocity;  // (Pa)
     const T period = 1 / sourceFrequency;  // (s)
     const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
@@ -49,19 +49,19 @@ int main(int argc, char* argv[])
     const T domainLength = 0.08;  // (m)
 
     // FE parameters
-    const int degreeOfBasis = 8;
+    const int degreeOfBasis = 6;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD,
     "/home/mabm4/rds/hpc-work/mesh/HITU/H131/mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh>(
-      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_2"));
+      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_W"));
     mesh->topology().create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_2_cells"));
+      fmesh.read_meshtags(mesh, "transducer_3d_W_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_2_facets"));
+      fmesh.read_meshtags(mesh, "transducer_3d_W_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology().dim();
@@ -88,29 +88,47 @@ int main(int argc, char* argv[])
     auto beta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
+    auto cells_2 = mt_cell->find(2);
+    auto cells_3 = mt_cell->find(3);
     
     std::span<T> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSound; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { c0_[i] = speedOfSound; });
+    std::for_each(cells_3.begin(), cells_3.end(),
       [&](std::int32_t &i) { c0_[i] = speedOfSound; });
     c0->x()->scatter_fwd();
 
     std::span<T> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { rho0_[i] = density; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { rho0_[i] = density; });
+    std::for_each(cells_3.begin(), cells_3.end(),
+      [&](std::int32_t &i) { rho0_[i] = density; });
     rho0->x()->scatter_fwd();
 
     std::span<T> beta0_ = beta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficient; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficient; });
+    std::for_each(cells_3.begin(), cells_3.end(),
       [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficient; });
     beta0->x()->scatter_fwd();
 
     std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSound; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSound; });
+    std::for_each(cells_3.begin(), cells_3.end(),
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSound; });
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const T CFL = 0.50;
+    const T CFL = 0.20;
     T timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
