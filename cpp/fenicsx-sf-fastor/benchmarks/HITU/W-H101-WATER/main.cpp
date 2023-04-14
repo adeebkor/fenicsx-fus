@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     const T speedOfSound = 1480.0;  // (m/s)
     const T density = 1000.0;  // (kg/m^3)
     const T sourceFrequency = 1.1e6;  // (Hz)
-    const T sourceVelocity = 0.38557513826589934;  // (m/s)
+    const T sourceVelocity = 0.13984880278551745;  // (m/s)
     const T sourceAmplitude = density*speedOfSound*sourceVelocity;  // (Pa)
     const T period = 1 / sourceFrequency;  // (s)
     const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const T CFL = 0.50;
+    const T CFL = 0.40;
     T timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
