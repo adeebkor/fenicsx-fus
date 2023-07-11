@@ -87,7 +87,7 @@ class LinearExplicit:
         self.v_n = Function(V)
 
         # Define forms
-        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v) * dx)
+        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v) * dx, dtype=np.float64)
         self.M = assemble_matrix(self.a)
         self.M.assemble()
 
