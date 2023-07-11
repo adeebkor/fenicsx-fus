@@ -32,7 +32,7 @@ def test_linear_explicit(degree, epw):
     h = L / nx
 
     # Generate mesh
-    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L], dtype=np.float64)
+    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
 
     # Tag boundaries
     tdim = mesh.topology.dim

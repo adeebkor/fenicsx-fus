@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx import default_scalar_type
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
@@ -33,8 +32,7 @@ def test_linearspectral_explicit(degree, epw):
     h = L / nx
 
     # Generate mesh
-    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L],
-                           dtype=default_scalar_type)
+    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
 
     # Tag boundaries
     tdim = mesh.topology.dim
