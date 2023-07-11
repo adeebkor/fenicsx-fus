@@ -33,7 +33,7 @@ def test_linearspectral_explicit(degree, epw):
     h = L / nx
 
     # Generate mesh
-    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L], 
+    mesh = create_interval(MPI.COMM_WORLD, nx, [0, L],
                            dtype=default_scalar_type)
 
     # Tag boundaries
