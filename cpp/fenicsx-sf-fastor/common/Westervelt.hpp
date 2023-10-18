@@ -271,7 +271,7 @@ public:
     std::string fname;
 
     // Grid parameters
-    const std::size_t Nr = 286;
+    const std::size_t Nr = 287;
     const std::size_t Nz = 536;
 
     // Create evaluation point coordinates

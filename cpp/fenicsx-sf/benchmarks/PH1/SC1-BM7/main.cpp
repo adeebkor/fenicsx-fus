@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     const T densityCortBone = 1000.0; // 1850.0;  // (kg/m^3)
 
     // Compute attenuation parameter
-    const T attenuationCoefficientdBCortBone = 0.0; // 400.0; // (dB/m)
+    const T attenuationCoefficientdBCortBone = 100.0; // 400.0; // (dB/m)
     const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 
     std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { delta0_[i] = 0.0; });
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
     delta0->x()->scatter_fwd();
