@@ -5,7 +5,7 @@ from petsc4py import PETSc
 
 import basix
 import basix.ufl
-from dolfinx.fem import FunctionSpace, Function, form
+from dolfinx.fem import functionspace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
@@ -52,7 +52,7 @@ class LinearSpectralNewmark:
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)
@@ -268,7 +268,7 @@ class LinearSpectralS2:
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)
@@ -556,7 +556,7 @@ class LinearSpectralSciPy:
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)
@@ -729,7 +729,7 @@ class LinearSpectralSponge:
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)
@@ -964,7 +964,7 @@ class WesterveltSpectralSciPy:
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        self.V = FunctionSpace(mesh, FE)
+        self.V = functionspace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
         self.g = Function(self.V)

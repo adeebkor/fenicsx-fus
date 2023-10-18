@@ -50,7 +50,7 @@ def test_diagonal(dimension, p):
     cell_type = basix.cell.string_to_type(cell_type.cellname())
     FE = basix.ufl.element(basix.ElementFamily.P, cell_type, p,
                            basix.LagrangeVariant.gll_warped)
-    V = dolfinx.fem.FunctionSpace(mesh, FE)
+    V = dolfinx.fem.functionspace(mesh, FE)
     ndof = V.dofmap.index_map.size_global
 
     # Define variational form
