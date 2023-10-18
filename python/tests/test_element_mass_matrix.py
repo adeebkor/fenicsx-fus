@@ -3,7 +3,7 @@ import numpy as np
 from mpi4py import MPI
 
 import basix
-import basix.ufl_wrapper
+import basix.ufl
 import dolfinx.fem.petsc
 import dolfinx.mesh
 import ufl
@@ -48,11 +48,9 @@ def test_diagonal(dimension, p):
 
     # Create function space
     cell_type = basix.cell.string_to_type(cell_type.cellname())
-    element = basix.create_element(
-        basix.ElementFamily.P, cell_type, p,
-        basix.LagrangeVariant.gll_warped)
-    FE = basix.ufl_wrapper.BasixElement(element)
-    V = dolfinx.fem.FunctionSpace(mesh, FE)
+    FE = basix.ufl.element(basix.ElementFamily.P, cell_type, p,
+                           basix.LagrangeVariant.gll_warped)
+    V = dolfinx.fem.functionspace(mesh, FE)
     ndof = V.dofmap.index_map.size_global
 
     # Define variational form

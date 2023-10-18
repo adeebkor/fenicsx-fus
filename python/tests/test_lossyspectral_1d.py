@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
+from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
@@ -54,7 +54,7 @@ def test_lossyspectral_explicit(degree, epw):
     mt = meshtags(mesh, tdim-1, indices, values[pos])
 
     # Define DG function for physical parameters
-    V_DG = FunctionSpace(mesh, ("DG", 0))
+    V_DG = functionspace(mesh, ("DG", 0))
     c = Function(V_DG)
     c.x.array[:] = c0
 
@@ -97,7 +97,7 @@ def test_lossyspectral_explicit(degree, epw):
 
             return val.imag
 
-    V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
+    V_e = functionspace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
     u_e.interpolate(Analytical(c0, alphaNp, f0, p0, tf))
 
@@ -157,7 +157,7 @@ def test_lossyspectral_implicit(degree, epw):
     mt = meshtags(mesh, tdim-1, indices, values[pos])
 
     # Define DG function for physical parameters
-    V_DG = FunctionSpace(mesh, ("DG", 0))
+    V_DG = functionspace(mesh, ("DG", 0))
     c = Function(V_DG)
     c.x.array[:] = c0
 
@@ -200,7 +200,7 @@ def test_lossyspectral_implicit(degree, epw):
 
             return val.imag
 
-    V_e = FunctionSpace(mesh, ("Lagrange", degree+3))
+    V_e = functionspace(mesh, ("Lagrange", degree+3))
     u_e = Function(V_e)
     u_e.interpolate(Analytical(c0, alphaNp, f0, p0, tf))
 

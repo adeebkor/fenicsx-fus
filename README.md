@@ -36,7 +36,7 @@ periodic source field.
 ## Solver method
 
 * Spatial discretisation:
-    * P4 spectral element method.
+    * Spectral element method.
 * Time discretisation:
     * Classical Runge-Kutta 4th order method.
 

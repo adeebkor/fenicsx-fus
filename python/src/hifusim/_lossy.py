@@ -3,8 +3,8 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
-import basix.ufl_wrapper
-from dolfinx.fem import FunctionSpace, Function, form
+import basix.ufl
+from dolfinx.fem import functionspace, Function, form
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector
 from ufl import TestFunction, TrialFunction, Measure, inner, grad, dx
 
@@ -75,11 +75,10 @@ class LossySpectralExplicit:
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
-        element = basix.create_element(
+        FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        FE = basix.ufl_wrapper.BasixElement(element)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)
@@ -356,11 +355,10 @@ class LossySpectralImplicit:
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
-        element = basix.create_element(
+        FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k,
             basix.LagrangeVariant.gll_warped)
-        FE = basix.ufl_wrapper.BasixElement(element)
-        V = FunctionSpace(mesh, FE)
+        V = functionspace(mesh, FE)
 
         # Define functions
         self.v = TestFunction(V)

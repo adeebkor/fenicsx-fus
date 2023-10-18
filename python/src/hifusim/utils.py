@@ -1,6 +1,6 @@
 import numpy as np
 
-from dolfinx.geometry import (BoundingBoxTree, compute_collisions,
+from dolfinx.geometry import (BoundingBoxTree, compute_collisions_points,
                               compute_colliding_cells)
 
 
@@ -30,7 +30,7 @@ def compute_eval_params(mesh, points):
     tree = BoundingBoxTree(mesh, mesh.topology.dim, padding=1e-12)
     cells = []
     points_on_proc = []
-    cell_candidates = compute_collisions(tree, points.T)
+    cell_candidates = compute_collisions_points(tree, points.T)
     cell_collisions = compute_colliding_cells(mesh, cell_candidates, points.T)
 
     for i, point in enumerate(points.T):
