@@ -13,7 +13,6 @@ namespace stdex = std::experimental;
 using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
 using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
 
-
 // -------------- //
 // Mass operators //
 // -------------- //
@@ -196,7 +195,6 @@ private:
   // Local input array
   std::array<T, Nd> x_;
 };
-
 
 // ------------------- //
 // Stiffness operators //
