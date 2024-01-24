@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set flags
-set(CMAKE_CXX_FLAGS "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_C_FLAGS "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "-Ofast -march=native ${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "-Ofast -march=native ${CMAKE_C_FLAGS} -Wall")
 
 if (NOT TARGET dolfinx)
   find_package(DOLFINX REQUIRED)
