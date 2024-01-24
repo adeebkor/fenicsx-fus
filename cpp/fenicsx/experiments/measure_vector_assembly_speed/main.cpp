@@ -1,8 +1,8 @@
 
 //
-// The code to measure the time of assemble of each kernels
-// ========================================================
-// Copyright (C) 2023 Adeeb Arif Kor
+// The code to measure the time of assemble of each vector assembly
+// ================================================================
+// Copyright (C) 2024 Adeeb Arif Kor
 
 #include "forms.h"
 
@@ -13,21 +13,23 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
+#define T_MPI MPI_DOUBLE
 using T = double;
 
+using namespace dolfinx;
 
 template <typename T>
 const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2*alpha*c0*c0*c0/w0/w0;
+  const T diffusivity = 2.0*alpha*c0*c0*c0/w0/w0;
 
   return diffusivity;
 }
-
 
 int main(int argc, char* argv[])
 {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
+
   {
     // MPI
     int mpi_rank, mpi_size;
@@ -36,18 +38,21 @@ int main(int argc, char* argv[])
 
     // Source parameters
     const T sourceFrequency = 0.5e6;  // (Hz)
-    const T sourceAmplitude = 60000;  // (Pa)
-    const T period = 1 / sourceFrequency;  // (s)
+    // const T sourceAmplitude = 60000;  // (Pa)
+    // const T period = 1 / sourceFrequency;  // (s)
     const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
     // Material parameters (Water)
     const T speedOfSoundWater = 1500.0;  // (m/s)
     const T densityWater = 1000.0;  // (kg/m^3)
+    const T nonlinearCoefficientWater = 3.5;
+    const T diffusivityOfSoundWater = 0.0;
     
     // Material parameters (Skin)
     const T speedOfSoundSkin = 1610.0;  // (m/s)
     const T densitySkin = 1090.0;  // (kg/m^3)
     const T attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const T nonlinearCoefficientSkin = 4.9;
     const T attenuationCoefficientNpSkin
       = attenuationCoefficientdBSkin / 20 * log(10);
     const T diffusivityOfSoundSkin = compute_diffusivity_of_sound(
@@ -57,6 +62,7 @@ int main(int argc, char* argv[])
     const T speedOfSoundCortBone = 2800.0;  // (m/s)
     const T densityCortBone = 1850.0;  // (kg/m^3)
     const T attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const T nonlinearCoefficientCortBone = 8.0;
     const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
@@ -67,6 +73,7 @@ int main(int argc, char* argv[])
     const T speedOfSoundTrabBone = 2300.0;  // (m/s)
     const T densityTrabBone = 1700.0;  // (kg/m^3)
     const T attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const T nonlinearCoefficientTrabBone = 7.0;
     const T attenuationCoefficientNpTrabBone
       = attenuationCoefficientdBTrabBone / 20 * log(10);
     const T diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
@@ -77,13 +84,14 @@ int main(int argc, char* argv[])
     const T speedOfSoundBrain = 1560.0;  // (m/s)
     const T densityBrain = 1040.0;  // (kg/m^3)
     const T attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const T nonlinearCoefficientBrain = 4.3;
     const T attenuationCoefficientNpBrain
       = attenuationCoefficientdBBrain / 20 * log(10);
     const T diffusivityOfSoundBrain = compute_diffusivity_of_sound(
       angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
 
     // FE parameters
-    const int degreeOfBasis = 4;
+    // const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -109,9 +117,9 @@ int main(int argc, char* argv[])
       mesh_size_local.begin(), min_mesh_size_local);
     T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
     T meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN,
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN,
                0, MPI_COMM_WORLD);
-    MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
@@ -119,6 +127,7 @@ int main(int argc, char* argv[])
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto beta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -159,7 +168,7 @@ int main(int argc, char* argv[])
 
     std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { delta0_[i] = 0.0; });
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
@@ -171,6 +180,21 @@ int main(int argc, char* argv[])
     std::for_each(cells_6.begin(), cells_6.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundBrain; });
     delta0->x()->scatter_fwd();
+
+    std::span<T> beta0_ = beta0->x()->mutable_array();
+    std::for_each(cells_1.begin(), cells_1.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientWater; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientSkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientBrain; });
+    beta0->x()->scatter_fwd();
 
     // Define function space
     auto V = std::make_shared<fem::FunctionSpace>(
@@ -233,6 +257,27 @@ int main(int argc, char* argv[])
     m1->scatter_rev(std::plus<T>());
 
     m1_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of a2
+    auto a2 = std::make_shared<fem::Form<T>>(
+                fem::create_form<T>(*form_forms_a2, {V}, 
+                {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0},
+                 {"u_n", u_n}},
+                {},
+                {}));
+
+    auto m2 = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m2_ = m2->mutable_array();
+
+    common::Timer m2_assembly("~ m2 assembly");
+    m2_assembly.start();
+
+    std::fill(m2_.begin(), m2_.end(), 0.0);
+    fem::assemble_vector(m2_, *a2);
+    m2->scatter_rev(std::plus<T>());
+
+    m2_assembly.stop();
 
     // ------------------------------------------------------------------------
     // Assembly of L0
@@ -334,10 +379,31 @@ int main(int argc, char* argv[])
 
     b4_assembly.stop();
 
+    // ------------------------------------------------------------------------
+    // Assembly of L5
+    auto L5 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_L5, {V}, 
+                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, 
+                           {"beta0", beta0}},
+                          {}, 
+                          {}));
+
+    auto b5 = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto b5_ = b5->mutable_array();
+
+    common::Timer b5_assembly("~ b5 assembly");
+    b5_assembly.start();
+
+    std::fill(b5_.begin(), b5_.end(), 0.0);
+    fem::assemble_vector(b5_, *L5);
+    b5->scatter_rev(std::plus<T>());
+
+    b5_assembly.stop();
+
+    // ------------------------------------------------------------------------
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
   }
   PetscFinalize();
-
 }
