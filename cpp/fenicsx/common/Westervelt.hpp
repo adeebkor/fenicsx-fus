@@ -257,31 +257,52 @@ public:
     // RK variables
     T tn;
 
+    // Timers
+    common::Timer axpy_a("RK (axpy a)");
+    common::Timer axpy_b("RK (axpy b)");
+    common::Timer copy_ext("RK (copy ext)");
+    common::Timer copy_int("RK (copy int)");
+    common::Timer rk_f0("RK (f0)");
+    common::Timer rk_f1("RK (f1)");
+
     while (t < tf) {
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
+      copy_ext.start();
       kernels::copy<T>(*u_, *u0);
       kernels::copy<T>(*v_, *v0);
+      copy_ext.stop();
 
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
+        copy_int.start();
         kernels::copy<T>(*u0, *un);
         kernels::copy<T>(*v0, *vn);
+        copy_int.stop();
 
+        axpy_a.start();
         kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);
         kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);
+        axpy_a.stop();
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
 
         // Compute RHS vector
+        rk_f0.start();
         f0(tn, un, vn, ku);
+        rk_f0.stop();
+
+        rk_f1.start();
         f1(tn, un, vn, kv);
+        rk_f1.stop();
 
         // Update solution
+        axpy_b.start();
         kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);
         kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);
+        axpy_b.stop();
       }
 
       // Update time

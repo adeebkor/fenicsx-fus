@@ -3,7 +3,7 @@
 // ==========================================================================
 // Copyright (C) 2023 Adeeb Arif Kor
 
-#include "Lossy.hpp"
+#include "Westervelt.hpp"
 #include "forms.h"
 
 #include <cmath>
@@ -19,7 +19,6 @@ int main(int argc, char* argv[])
   PetscInitialize(&argc, &argv, nullptr, nullptr);
 
   {
-
     // MPI
     int mpi_rank, mpi_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -34,11 +33,14 @@ int main(int argc, char* argv[])
     // Material parameters (Water)
     const double speedOfSoundWater = 1500.0;  // (m/s)
     const double densityWater = 1000.0;  // (kg/m^3)
+    const double nonlinearCoefficientWater = 3.5;
+    const double diffusivityOfSoundWater = 0.0;
     
     // Material parameters (Skin)
     const double speedOfSoundSkin = 1610.0;  // (m/s)
     const double densitySkin = 1090.0;  // (kg/m^3)
     const double attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const double nonlinearCoefficientSkin = 4.9;
     const double attenuationCoefficientNpSkin
       = attenuationCoefficientdBSkin / 20 * log(10);
     const double diffusivityOfSoundSkin = compute_diffusivity_of_sound(
@@ -48,6 +50,7 @@ int main(int argc, char* argv[])
     const double speedOfSoundCortBone = 2800.0;  // (m/s)
     const double densityCortBone = 1850.0;  // (kg/m^3)
     const double attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const double nonlinearCoefficientCortBone = 8.0;
     const double attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
@@ -58,6 +61,7 @@ int main(int argc, char* argv[])
     const double speedOfSoundTrabBone = 2300.0;  // (m/s)
     const double densityTrabBone = 1700.0;  // (kg/m^3)
     const double attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const double nonlinearCoefficientTrabBone = 7.0;
     const double attenuationCoefficientNpTrabBone
       = attenuationCoefficientdBTrabBone / 20 * log(10);
     const double diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
@@ -68,6 +72,7 @@ int main(int argc, char* argv[])
     const double speedOfSoundBrain = 1560.0;  // (m/s)
     const double densityBrain = 1040.0;  // (kg/m^3)
     const double attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const double nonlinearCoefficientBrain = 4.3;
     const double attenuationCoefficientNpBrain
       = attenuationCoefficientdBBrain / 20 * log(10);
     const double diffusivityOfSoundBrain = compute_diffusivity_of_sound(
@@ -110,6 +115,7 @@ int main(int argc, char* argv[])
     auto c0 = std::make_shared<fem::Function<double>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<double>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<double>>(V_DG);
+    auto beta0 = std::make_shared<fem::Function<double>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -150,7 +156,7 @@ int main(int argc, char* argv[])
 
     std::span<double> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { delta0_[i] = 0.0; });
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
@@ -163,6 +169,21 @@ int main(int argc, char* argv[])
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundBrain; });
     delta0->x()->scatter_fwd();
 
+    std::span<double> beta0_ = beta0->x()->mutable_array();
+    std::for_each(cells_1.begin(), cells_1.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientWater; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientSkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientBrain; });
+    beta0->x()->scatter_fwd();
+
     // Temporal parameters
     const double CFL = 0.25;
     double timeStepSize = CFL * meshSizeMinGlobal / 
@@ -174,15 +195,15 @@ int main(int argc, char* argv[])
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
-    auto model = LossySpectral<double, 4>(
+    auto model = WesterveltSpectral<double, 4>(
       mesh, mt_facet, c0, rho0, delta0, sourceFrequency, sourceAmplitude,
       speedOfSoundWater);
 
     auto nDofs = model.number_of_dofs();
     
     if (mpi_rank == 0){
-      std::cout << "Benchmark: 4" << "\n";
-      std::cout << "Source: 1" << "\n";
+      std::cout << "Bottleneck experiment" << "\n";
+      std::cout << "Source: Bowl transducer" << "\n";
       std::cout << "Polynomial basis degree: " << degreeOfBasis << "\n";
       std::cout << "Minimum mesh size: ";
       std::cout << std::setprecision(2) << meshSizeMinGlobal << "\n";
