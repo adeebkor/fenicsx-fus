@@ -1,23 +1,51 @@
-RUN 1 (16:34 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+RUN 1 (16:34 UK 2023/1/19 - SKYLAKE 32 CPUS, DOFS 59837345, NSTEP 21)
 ~ F1 (assemble rhs)                                                         |    80   0.739242  59.139347
 ~ F1 (solve)                                                                |    80   0.003690   0.295219
 ~ F1 (update field)                                                         |    80   0.013969   1.117522
 ~ F1 (update source)                                                        |    80   0.006088   0.487072
 
-RUN 2 (16:39 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+RUN 2 (16:39 UK 2023/1/19 - SKYLAKE 32 CPUS, DOFS 59837345, NSTEP 21)
 ~ F1 (assemble rhs)                                                         |    80   0.739572  59.165791
 ~ F1 (solve)                                                                |    80   0.003697   0.295768
 ~ F1 (update field)                                                         |    80   0.014139   1.131103
 ~ F1 (update source)                                                        |    80   0.005958   0.476647
 
-RUN 3 (16:42 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+RUN 3 (16:42 UK 2023/1/19 - SKYLAKE 32 CPUS, DOFS 59837345, NSTEP 21)
 ~ F1 (assemble rhs)                                                         |    80   0.739686  59.174859
 ~ F1 (solve)                                                                |    80   0.003673   0.293877
 ~ F1 (update field)                                                         |    80   0.013681   1.094443
 ~ F1 (update source)                                                        |    80   0.006166   0.493243
 
-RUN 4 (16:45 2023/1/19 - SKYLAKE 32 NODES, DOFS 59837345, NSTEP 21)
+RUN 4 (16:45 UK 2023/1/19 - SKYLAKE 32 CPUS, DOFS 59837345, NSTEP 21)
 ~ F1 (assemble rhs)                                                         |    80   0.738963  59.117001
 ~ F1 (solve)                                                                |    80   0.003673   0.293872
 ~ F1 (update field)                                                         |    80   0.014483   1.158622
 ~ F1 (update source)                                                        |    80   0.006297   0.503761
+
+RUN 5 (12:57 MY 2024/1/24 - ICELAKE 76 CPUS, DOFS 59837345, NSTEP 21)
+~ F1 (assemble lhs)                                                         |    80   0.145333  11.626625
+~ F1 (assemble rhs)                                                         |    80   0.287912  23.032953
+~ F1 (solve)                                                                |    80   0.001416   0.113272
+~ F1 (update field)                                                         |    80   0.006878   0.550214
+~ F1 (update source)                                                        |    80   0.003426   0.274059
+
+RUN 6 (13:00 MY 2024/1/24 - ICELAKE 76 CPUS, DOFS 59837345, NSTEP 21)
+~ F1 (assemble lhs)                                                         |    80   0.144737  11.578974
+~ F1 (assemble rhs)                                                         |    80   0.287002  22.960139
+~ F1 (solve)                                                                |    80   0.001499   0.119890
+~ F1 (update field)                                                         |    80   0.007092   0.567390
+~ F1 (update source)                                                        |    80   0.003440   0.275210
+
+RUN 7 (13:03 MY 2024/1/24 - ICELAKE 76 CPUS, DOFS 59837345, NSTEP 21)
+~ F1 (assemble lhs)                                                         |    80   0.144542  11.563342
+~ F1 (assemble rhs)                                                         |    80   0.284827  22.786132
+~ F1 (solve)                                                                |    80   0.001516   0.121260
+~ F1 (update field)                                                         |    80   0.007123   0.569812
+~ F1 (update source)                                                        |    80   0.003369   0.269509
+
+RUN 8 (13:06 MY 2024/1/24 - ICELAKE 76 CPUS, DOFS 59837345, NSTEP 21)
+~ F1 (assemble lhs)                                                         |    80   0.145054  11.604284
+~ F1 (assemble rhs)                                                         |    80   0.287095  22.967629
+~ F1 (solve)                                                                |    80   0.001506   0.120504
+~ F1 (update field)                                                         |    80   0.006386   0.510879
+~ F1 (update source)                                                        |    80   0.003627   0.290125
