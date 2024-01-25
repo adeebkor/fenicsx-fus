@@ -1,4 +1,3 @@
-
 //
 // The code to measure the time of assemble of each vector assembly
 // ================================================================
@@ -29,7 +28,6 @@ int main(int argc, char* argv[])
 {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
-
   {
     // MPI
     int mpi_rank, mpi_size;
@@ -61,7 +59,7 @@ int main(int argc, char* argv[])
     // Material parameters (Cortical bone)
     const T speedOfSoundCortBone = 2800.0;  // (m/s)
     const T densityCortBone = 1850.0;  // (kg/m^3)
-    const T attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const T attenuationCoefficientdBCortBone = 400.0;  // (dB/m)
     const T nonlinearCoefficientCortBone = 8.0;
     const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
@@ -124,10 +122,14 @@ int main(int argc, char* argv[])
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
+    
+    // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
     auto beta0 = std::make_shared<fem::Function<T>>(V_DG);
+
+    auto ncells = V_DG->dofmap()->index_map->size_global();
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -200,6 +202,8 @@ int main(int argc, char* argv[])
     auto V = std::make_shared<fem::FunctionSpace>(
       fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
     
+    auto ndofs = V->dofmap()->index_map->size_global();
+
     // Define field functions
     auto index_map = V->dofmap()->index_map;
     auto bs = V->dofmap()->index_map_bs();
