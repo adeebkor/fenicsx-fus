@@ -1,0 +1,103 @@
+RUN 1 (08:30 UK 2023/1/26 - SKYLAKE 32 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.329325  0.329325
+~ b1 assembly                                                               |     1  0.005260  0.005260
+~ b2 assembly                                                               |     1  0.005974  0.005974
+~ b3 assembly                                                               |     1  0.331460  0.331460
+~ b4 assembly                                                               |     1  0.005283  0.005283
+~ m0 assembly                                                               |     1  0.297222  0.297222
+~ m0_pc assembly                                                            |     1  0.120999  0.120999
+~ m1 assembly                                                               |     1  0.006542  0.006542
+
+RUN 2 (08:33 UK 2023/1/26 - SKYLAKE 32 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.328804  0.328804
+~ b1 assembly                                                               |     1  0.005256  0.005256
+~ b2 assembly                                                               |     1  0.006474  0.006474
+~ b3 assembly                                                               |     1  0.330633  0.330633
+~ b4 assembly                                                               |     1  0.005164  0.005164
+~ m0 assembly                                                               |     1  0.298512  0.298512
+~ m0_pc assembly                                                            |     1  0.118908  0.118908
+~ m1 assembly                                                               |     1  0.005889  0.005889
+
+RUN 3 (08:36 UK 2023/1/26 - SKYLAKE 32 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.329434  0.329434
+~ b1 assembly                                                               |     1  0.005077  0.005077
+~ b2 assembly                                                               |     1  0.005925  0.005925
+~ b3 assembly                                                               |     1  0.331402  0.331402
+~ b4 assembly                                                               |     1  0.005341  0.005341
+~ m0 assembly                                                               |     1  0.297409  0.297409
+~ m0_pc assembly                                                            |     1  0.121527  0.121527
+~ m1 assembly                                                               |     1  0.006942  0.006942
+
+RUN 4 (08:39 UK 2023/1/26 - SKYLAKE 32 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.329561  0.329561
+~ b1 assembly                                                               |     1  0.005524  0.005524
+~ b2 assembly                                                               |     1  0.005756  0.005756
+~ b3 assembly                                                               |     1  0.331677  0.331677
+~ b4 assembly                                                               |     1  0.005400  0.005400
+~ m0 assembly                                                               |     1  0.297869  0.297869
+~ m0_pc assembly                                                            |     1  0.118843  0.118843
+~ m1 assembly                                                               |     1  0.005655  0.005655
+
+RUN 5 (13:55 MY 2024/1/25 - ICELAKE 76 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.179925  0.179925
+~ b0_pc assembly                                                            |     1  0.145397  0.145397
+~ b1 assembly                                                               |     1  0.002128  0.002128
+~ b2 assembly                                                               |     1  0.002091  0.002091
+~ b3 assembly                                                               |     1  0.179028  0.179028
+~ b3_pc assembly                                                            |     1  0.150749  0.150749
+~ b4 assembly                                                               |     1  0.002448  0.002448
+~ b5 assembly                                                               |     1  0.124826  0.124826
+~ b5_pc assembly                                                            |     1  0.087218  0.087218
+~ m0 assembly                                                               |     1  0.120102  0.120102
+~ m0_pc assembly                                                            |     1  0.080281  0.080281
+~ m1 assembly                                                               |     1  0.002125  0.002125
+~ m2 assembly                                                               |     1  0.151138  0.151138
+~ m2_pc assembly                                                            |     1  0.081004  0.081004
+
+RUN 6 (13:58 MY 2024/1/25 - ICELAKE 76 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.180938  0.180938
+~ b0_pc assembly                                                            |     1  0.147114  0.147114
+~ b1 assembly                                                               |     1  0.002412  0.002412
+~ b2 assembly                                                               |     1  0.002026  0.002026
+~ b3 assembly                                                               |     1  0.178846  0.178846
+~ b3_pc assembly                                                            |     1  0.151694  0.151694
+~ b4 assembly                                                               |     1  0.002409  0.002409
+~ b5 assembly                                                               |     1  0.124193  0.124193
+~ b5_pc assembly                                                            |     1  0.083368  0.083368
+~ m0 assembly                                                               |     1  0.119699  0.119699
+~ m0_pc assembly                                                            |     1  0.082451  0.082451
+~ m1 assembly                                                               |     1  0.002191  0.002191
+~ m2 assembly                                                               |     1  0.150387  0.150387
+~ m2_pc assembly                                                            |     1  0.080043  0.080043
+
+RUN 7 (14:01 MY 2024/1/25 - ICELAKE 76 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.180189  0.180189
+~ b0_pc assembly                                                            |     1  0.147655  0.147655
+~ b1 assembly                                                               |     1  0.002409  0.002409
+~ b2 assembly                                                               |     1  0.002157  0.002157
+~ b3 assembly                                                               |     1  0.180752  0.180752
+~ b3_pc assembly                                                            |     1  0.152329  0.152329
+~ b4 assembly                                                               |     1  0.002457  0.002457
+~ b5 assembly                                                               |     1  0.124655  0.124655
+~ b5_pc assembly                                                            |     1  0.083418  0.083418
+~ m0 assembly                                                               |     1  0.120820  0.120820
+~ m0_pc assembly                                                            |     1  0.082033  0.082033
+~ m1 assembly                                                               |     1  0.002170  0.002170
+~ m2 assembly                                                               |     1  0.150448  0.150448
+~ m2_pc assembly                                                            |     1  0.080644  0.080644
+
+RUN 8 (14:04 MY 2024/1/25 - ICELAKE 76 NODES, DOFS 59837345, CELLS 930816)
+~ b0 assembly                                                               |     1  0.180523  0.180523
+~ b0_pc assembly                                                            |     1  0.148102  0.148102
+~ b1 assembly                                                               |     1  0.002378  0.002378
+~ b2 assembly                                                               |     1  0.002132  0.002132
+~ b3 assembly                                                               |     1  0.178162  0.178162
+~ b3_pc assembly                                                            |     1  0.152497  0.152497
+~ b4 assembly                                                               |     1  0.002410  0.002410
+~ b5 assembly                                                               |     1  0.124477  0.124477
+~ b5_pc assembly                                                            |     1  0.080800  0.080800
+~ m0 assembly                                                               |     1  0.119233  0.119233
+~ m0_pc assembly                                                            |     1  0.081122  0.081122
+~ m1 assembly                                                               |     1  0.002425  0.002425
+~ m2 assembly                                                               |     1  0.150791  0.150791
+~ m2_pc assembly                                                            |     1  0.082637  0.082637
