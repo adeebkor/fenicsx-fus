@@ -268,6 +268,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of a1
+
     auto a1 = std::make_shared<fem::Form<T>>(
                 fem::create_form<T>(*form_forms_a1, {V}, 
                 {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
@@ -288,6 +289,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of a2
+
     auto a2 = std::make_shared<fem::Form<T>>(
                 fem::create_form<T>(*form_forms_a2, {V}, 
                 {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0},
@@ -309,6 +311,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of a2 (sum-factorisation)
+
     std::vector<T> a2_sf_coeffs(c0_.size());
     for (std::size_t i = 0; i < a2_sf_coeffs.size(); ++i)
       a2_sf_coeffs[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
@@ -329,6 +332,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L0
+
     auto L0 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L0, {V}, 
                           {{"u_n", u_n}, {"rho0", rho0}},
@@ -370,6 +374,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L1
+
     auto L1 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L1, {V}, 
                           {{"g", g}, {"rho0", rho0}},
@@ -390,6 +395,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L2
+
     auto L2 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L2, {V}, 
                           {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}},
@@ -410,6 +416,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L3
+
     auto L3 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L3, {V}, 
                           {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}},
@@ -451,6 +458,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L4
+
     auto L4 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L4, {V}, 
                           {{"dg", dg}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}},
@@ -471,6 +479,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L5
+
     auto L5 = std::make_shared<fem::Form<T>>(
       fem::create_form<T>(*form_forms_L5, {V}, 
                           {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, 
