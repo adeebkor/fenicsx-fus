@@ -1,7 +1,7 @@
 //
 // The code to measure the time of assemble of each kernels
 // ========================================================
-// Copyright (C) 2023 Adeeb Arif Kor
+// Copyright (C) 2024 Adeeb Arif Kor
 
 #include "forms.h"
 #include "spectral_op.hpp"
@@ -13,17 +13,17 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_FLOAT
-using T = float;
+#define T_MPI MPI_DOUBLE
+using T = double;
 
+using namespace dolfinx;
 
 template <typename T>
 const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2*alpha*c0*c0*c0/w0/w0;
+  const T diffusivity = 2.0*alpha*c0*c0*c0/w0/w0;
 
   return diffusivity;
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -37,18 +37,21 @@ int main(int argc, char* argv[])
 
     // Source parameters
     const T sourceFrequency = 0.5e6;  // (Hz)
-    const T sourceAmplitude = 60000;  // (Pa)
-    const T period = 1 / sourceFrequency;  // (s)
+    // const T sourceAmplitude = 60000;  // (Pa)
+    // const T period = 1 / sourceFrequency;  // (s)
     const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
 
     // Material parameters (Water)
     const T speedOfSoundWater = 1500.0;  // (m/s)
     const T densityWater = 1000.0;  // (kg/m^3)
+    const T nonlinearCoefficientWater = 3.5;
+    const T diffusivityOfSoundWater = 0.0;
     
     // Material parameters (Skin)
     const T speedOfSoundSkin = 1610.0;  // (m/s)
     const T densitySkin = 1090.0;  // (kg/m^3)
     const T attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const T nonlinearCoefficientSkin = 4.9;
     const T attenuationCoefficientNpSkin
       = attenuationCoefficientdBSkin / 20 * log(10);
     const T diffusivityOfSoundSkin = compute_diffusivity_of_sound(
@@ -57,7 +60,8 @@ int main(int argc, char* argv[])
     // Material parameters (Cortical bone)
     const T speedOfSoundCortBone = 2800.0;  // (m/s)
     const T densityCortBone = 1850.0;  // (kg/m^3)
-    const T attenuationCoefficientdBCortBone = 400.0;  //(dB/m)
+    const T attenuationCoefficientdBCortBone = 400.0;  // (dB/m)
+    const T nonlinearCoefficientCortBone = 8.0;
     const T attenuationCoefficientNpCortBone
       = attenuationCoefficientdBCortBone / 20 * log(10);
     const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
@@ -68,6 +72,7 @@ int main(int argc, char* argv[])
     const T speedOfSoundTrabBone = 2300.0;  // (m/s)
     const T densityTrabBone = 1700.0;  // (kg/m^3)
     const T attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const T nonlinearCoefficientTrabBone = 7.0;
     const T attenuationCoefficientNpTrabBone
       = attenuationCoefficientdBTrabBone / 20 * log(10);
     const T diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
@@ -78,6 +83,7 @@ int main(int argc, char* argv[])
     const T speedOfSoundBrain = 1560.0;  // (m/s)
     const T densityBrain = 1040.0;  // (kg/m^3)
     const T attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const T nonlinearCoefficientBrain = 4.3;
     const T attenuationCoefficientNpBrain
       = attenuationCoefficientdBBrain / 20 * log(10);
     const T diffusivityOfSoundBrain = compute_diffusivity_of_sound(
@@ -103,8 +109,8 @@ int main(int argc, char* argv[])
     const int num_cell = mesh->topology().index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<double>::iterator min_mesh_size_local = std::min_element(
+    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<T>::iterator min_mesh_size_local = std::min_element(
       mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(
       mesh_size_local.begin(), min_mesh_size_local);
@@ -122,6 +128,7 @@ int main(int argc, char* argv[])
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto beta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto ncells = V_DG->dofmap()->index_map->size_global();
 
@@ -164,7 +171,7 @@ int main(int argc, char* argv[])
 
     std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { delta0_[i] = 0.0; });
+      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
@@ -176,6 +183,21 @@ int main(int argc, char* argv[])
     std::for_each(cells_6.begin(), cells_6.end(),
       [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundBrain; });
     delta0->x()->scatter_fwd();
+
+    std::span<T> beta0_ = beta0->x()->mutable_array();
+    std::for_each(cells_1.begin(), cells_1.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientWater; });
+    std::for_each(cells_2.begin(), cells_2.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientSkin; });
+    std::for_each(cells_3.begin(), cells_3.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_4.begin(), cells_4.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientTrabBone; });
+    std::for_each(cells_5.begin(), cells_5.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+    std::for_each(cells_6.begin(), cells_6.end(),
+      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientBrain; });
+    beta0->x()->scatter_fwd();
 
     // Define function space
     auto V = std::make_shared<fem::FunctionSpace>(
@@ -201,6 +223,9 @@ int main(int argc, char* argv[])
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
+    std::span<T> u_n_ = u_n->x()->mutable_array();
+    std::fill(u_n_.begin(), u_n_.end(), 2.0);
+
     // ------------------------------------------------------------------------
     // Assembly of a0
     auto a0 = std::make_shared<fem::Form<T>>(
@@ -220,6 +245,26 @@ int main(int argc, char* argv[])
     m0->scatter_rev(std::plus<T>());
 
     m0_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of a0 (sum-factorisation)
+    std::vector<T> a0_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < a0_sf_coeffs.size(); ++i)
+      a0_sf_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
+
+    MassSpectral3D<T, degreeOfBasis> a0_sf_operator(V);
+
+    auto m0_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m0_sf_ = m0_sf->mutable_array();
+
+    common::Timer m0_sf_assembly("~ m0_sf assembly");
+    m0_sf_assembly.start();
+
+    std::fill(m0_sf_.begin(), m0_sf_.end(), 0.0);
+    a0_sf_operator(*u->x(), a0_sf_coeffs, *m0_sf);
+    m0_sf->scatter_rev(std::plus<T>());
+
+    m0_sf_assembly.stop();
 
     // ------------------------------------------------------------------------
     // Assembly of a1
@@ -242,13 +287,53 @@ int main(int argc, char* argv[])
     m1_assembly.stop();
 
     // ------------------------------------------------------------------------
-    // Assembly of L0
+    // Assembly of a2
+    auto a2 = std::make_shared<fem::Form<T>>(
+                fem::create_form<T>(*form_forms_a2, {V}, 
+                {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0},
+                 {"u_n", u_n}},
+                {},
+                {}));
 
-    std::vector<T> L0_coeffs(c0_.size());
-    for (std::size_t i = 0; i < L0_coeffs.size(); ++i)
-      L0_coeffs[i] = - 1.0 / rho0_[i];
-    
-    StiffnessSpectral3D<T, degreeOfBasis> L0_operator(V);
+    auto m2 = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m2_ = m2->mutable_array();
+
+    common::Timer m2_assembly("~ m2 assembly");
+    m2_assembly.start();
+
+    std::fill(m2_.begin(), m2_.end(), 0.0);
+    fem::assemble_vector(m2_, *a2);
+    m2->scatter_rev(std::plus<T>());
+
+    m2_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of a2 (sum-factorisation)
+    std::vector<T> a2_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < a2_sf_coeffs.size(); ++i)
+      a2_sf_coeffs[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+
+    MassSpectral3D<T, degreeOfBasis> a2_sf_operator(V);
+
+    auto m2_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto m2_sf_ = m2_sf->mutable_array();
+
+    common::Timer m2_sf_assembly("~ m2_sf assembly");
+    m2_sf_assembly.start();
+
+    std::fill(m2_sf_.begin(), m2_sf_.end(), 0.0);
+    a2_sf_operator(*u_n->x(), a2_sf_coeffs, *m2_sf);
+    m2_sf->scatter_rev(std::plus<T>());
+
+    m2_sf_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of L0
+    auto L0 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_L0, {V}, 
+                          {{"u_n", u_n}, {"rho0", rho0}},
+                          {}, 
+                          {}));
 
     auto b0 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b0_ = b0->mutable_array();
@@ -257,10 +342,31 @@ int main(int argc, char* argv[])
     b0_assembly.start();
 
     std::fill(b0_.begin(), b0_.end(), 0.0);
-    L0_operator(*u->x(), L0_coeffs, *b0);
+    fem::assemble_vector(b0_, *L0);
     b0->scatter_rev(std::plus<T>());
 
     b0_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of L0 (sum-factorisation)
+
+    std::vector<T> L0_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < L0_sf_coeffs.size(); ++i)
+      L0_sf_coeffs[i] = - 1.0 / rho0_[i];
+    
+    StiffnessSpectral3D<T, degreeOfBasis> L0_sf_operator(V);
+
+    auto b0_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto b0_sf_ = b0->mutable_array();
+
+    common::Timer b0_sf_assembly("~ b0_sf assembly");
+    b0_sf_assembly.start();
+
+    std::fill(b0_sf_.begin(), b0_sf_.end(), 0.0);
+    L0_sf_operator(*u->x(), L0_sf_coeffs, *b0_sf);
+    b0_sf->scatter_rev(std::plus<T>());
+
+    b0_sf_assembly.stop();
 
     // ------------------------------------------------------------------------
     // Assembly of L1
@@ -304,12 +410,11 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L3
-
-    std::vector<T> L3_coeffs(c0_.size());
-    for (std::size_t i = 0; i < L3_coeffs.size(); ++i)
-      L3_coeffs[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
-
-    StiffnessSpectral3D<T, degreeOfBasis> L3_operator(V);
+    auto L3 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_L3, {V}, 
+                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}},
+                          {}, 
+                          {}));
 
     auto b3 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b3_ = b3->mutable_array();
@@ -318,10 +423,31 @@ int main(int argc, char* argv[])
     b3_assembly.start();
 
     std::fill(b3_.begin(), b3_.end(), 0.0);
-    L3_operator(*u->x(), L3_coeffs, *b3);
+    fem::assemble_vector(b3_, *L3);
     b3->scatter_rev(std::plus<T>());
 
     b3_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of L3 (sum-factorisation)
+
+    std::vector<T> L3_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < L3_sf_coeffs.size(); ++i)
+      L3_sf_coeffs[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+
+    StiffnessSpectral3D<T, degreeOfBasis> L3_sf_operator(V);
+
+    auto b3_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto b3_sf_ = b3_sf->mutable_array();
+
+    common::Timer b3_sf_assembly("~ b3_sf assembly");
+    b3_sf_assembly.start();
+
+    std::fill(b3_sf_.begin(), b3_sf_.end(), 0.0);
+    L3_sf_operator(*u->x(), L3_sf_coeffs, *b3_sf);
+    b3_sf->scatter_rev(std::plus<T>());
+
+    b3_sf_assembly.stop();
 
     // ------------------------------------------------------------------------
     // Assembly of L4
@@ -343,6 +469,48 @@ int main(int argc, char* argv[])
 
     b4_assembly.stop();
 
+    // ------------------------------------------------------------------------
+    // Assembly of L5
+    auto L5 = std::make_shared<fem::Form<T>>(
+      fem::create_form<T>(*form_forms_L5, {V}, 
+                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, 
+                           {"beta0", beta0}},
+                          {}, 
+                          {}));
+
+    auto b5 = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto b5_ = b5->mutable_array();
+
+    common::Timer b5_assembly("~ b5 assembly");
+    b5_assembly.start();
+
+    std::fill(b5_.begin(), b5_.end(), 0.0);
+    fem::assemble_vector(b5_, *L5);
+    b5->scatter_rev(std::plus<T>());
+
+    b5_assembly.stop();
+
+    // ------------------------------------------------------------------------
+    // Assembly of L5 (sum-factorisation)
+    std::vector<T> L5_sf_coeffs(c0_.size());
+    for (std::size_t i = 0; i < L5_sf_coeffs.size(); ++i)
+      L5_sf_coeffs[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+
+    MassSpectral3D<T, degreeOfBasis> L5_sf_operator(V);
+
+    auto b5_sf = std::make_shared<la::Vector<T>>(index_map, bs);
+    auto b5_sf_ = b5_sf->mutable_array();
+
+    common::Timer b5_sf_assembly("~ b5_sf assembly");
+    b5_sf_assembly.start();
+
+    std::fill(b5_sf_.begin(), b5_sf_.end(), 0.0);
+    L5_sf_operator(*v_n->x(), L5_sf_coeffs, *b5_sf);
+    b5_sf->scatter_rev(std::plus<T>());
+
+    b5_sf_assembly.stop();
+
+    // ------------------------------------------------------------------------
     // List timings
     list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
