@@ -1,29 +1,24 @@
+# Ignore local VSCode settings
 .vscode/
-cpp/Fastor/
+
+# Ignore Fastor library
+cpp/Fastor
+
+# Ignore Python generated files
 python/src/hifusim.egg-info
 *__pycache__/
 
-mesh/*.py
-mesh/*.geo
-*Fastor/
+# Ignore output files
 *sol/
 *vtk/
-*data*
 *.bp
 *.jpeg
 *.png
 *.pvtu
 *.vtu
 *.pvd
+
+# Ignore build files
 *.c
 *.h
-*.avi
-*u_t.h5
-*u_t.xdmf
-cpp/fenicsx/benchmarks/*/mesh.*
-
 *build/
-
-!westervelt_forms.png
-!cclake_dof_per_second.png
-!skylake_dof_per_second.png
