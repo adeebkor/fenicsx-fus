@@ -1,6 +1,6 @@
 import basix.ufl_wrapper
-from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction, 
-                 quadrilateral, inner, grad, ds, dx)
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, VectorElement,
+                 ds, dx, grad, inner, quadrilateral)
 
 P = 4  # Degree of polynomial basis
 Q = 5  # Number of quadrature points
