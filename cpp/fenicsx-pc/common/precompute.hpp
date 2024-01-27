@@ -4,11 +4,11 @@
 #pragma once
 
 #include <algorithm>
-#include <vector>
 #include <basix/finite-element.h>
-#include <basix/quadrature.h>
 #include <basix/mdspan.hpp>
+#include <basix/quadrature.h>
 #include <dolfinx.h>
+#include <vector>
 
 namespace stdex = std::experimental;
 using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
@@ -36,17 +36,15 @@ void transpose(const U& A, V& B) {
 /// @param[in] mesh The mesh object (which contains the coordinate map)
 /// @param[in] points The quadrature points to compute Jacobian of the map
 /// @param[in] weights The weights evaluated at the quadrature points
-std::vector<double> compute_scaled_jacobian_determinant(
-  std::shared_ptr<const mesh::Mesh> mesh, std::vector<double> points,
-  std::vector<double> weights)
-{
+std::vector<double> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::Mesh> mesh,
+                                                        std::vector<double> points,
+                                                        std::vector<double> weights) {
   // Number of points
   std::size_t nq = weights.size();
 
   // Get geometry data
   const fem::CoordinateElement& cmap = mesh->geometry().cmap();
-  const graph::AdjacencyList<std::int32_t>& x_dofmap
-    = mesh->geometry().dofmap();
+  const graph::AdjacencyList<std::int32_t>& x_dofmap = mesh->geometry().dofmap();
   const std::size_t num_dofs_g = cmap.dim();
   std::span<const double> x_g = mesh->geometry().x();
 
@@ -57,8 +55,7 @@ std::vector<double> compute_scaled_jacobian_determinant(
 
   // Tabulate basis functions at quadrature points
   std::array<std::size_t, 4> phi_shape = cmap.tabulate_shape(1, nq);
-  std::vector<double> phi_b(
-    std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
+  std::vector<double> phi_b(std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
   cmdspan4_t phi(phi_b.data(), phi_shape);
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
@@ -72,24 +69,20 @@ std::vector<double> compute_scaled_jacobian_determinant(
   mdspan2_t detJ(detJ_b.data(), nc, nq);
   std::vector<double> det_scratch(2 * tdim * gdim);
 
-  for (std::size_t c = 0; c < nc; ++c)
-  {
+  for (std::size_t c = 0; c < nc; ++c) {
     // Get cell geometry (coordinates dofs)
     auto x_dofs = x_dofmap.links(c);
-    for (std::size_t i = 0; i < x_dofs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < x_dofs.size(); ++i) {
       for (std::size_t j = 0; j < gdim; ++j)
         coord_dofs(i, j) = x_g[3 * x_dofs[i] + j];
     }
 
     // Compute the scaled Jacobian determinant
-    for (std::size_t q = 0; q < nq; ++q)
-    {
+    for (std::size_t q = 0; q < nq; ++q) {
       std::fill(J_b.begin(), J_b.end(), 0.0);
 
       // Get the derivatives at each quadrature points
-      auto dphi = stdex::submdspan(phi, std::pair(1, tdim+1), q, 
-                                   stdex::full_extent, 0);
+      auto dphi = stdex::submdspan(phi, std::pair(1, tdim + 1), q, stdex::full_extent, 0);
 
       // Compute Jacobian matrix
       auto _J = stdex::submdspan(J, stdex::full_extent, stdex::full_extent);
@@ -111,10 +104,9 @@ std::vector<double> compute_scaled_jacobian_determinant(
 /// @param[in] mesh The mesh object (which contains the coordinate map)
 /// @param[in] points The quadrature points to compute Jacobian of the map
 /// @param[in] weights The weights evaluated at the quadrature points
-std::vector<double> compute_scaled_geometrical_factor(
-  std::shared_ptr<const mesh::Mesh> mesh, std::vector<double> points,
-  std::vector<double> weights)
-{
+std::vector<double> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mesh> mesh,
+                                                      std::vector<double> points,
+                                                      std::vector<double> weights) {
   // The number of element of the upper triangular matrix
   std::map<int, int> gdim2dim;
   gdim2dim[2] = 3;
@@ -125,8 +117,7 @@ std::vector<double> compute_scaled_geometrical_factor(
 
   // Get geometry data
   const fem::CoordinateElement& cmap = mesh->geometry().cmap();
-  const graph::AdjacencyList<std::int32_t>& x_dofmap
-    = mesh->geometry().dofmap();
+  const graph::AdjacencyList<std::int32_t>& x_dofmap = mesh->geometry().dofmap();
   const std::size_t num_dofs_g = cmap.dim();
   std::span<const double> x_g = mesh->geometry().x();
 
@@ -138,8 +129,7 @@ std::vector<double> compute_scaled_geometrical_factor(
 
   // Tabulate basis functions at quadrature points
   std::array<std::size_t, 4> phi_shape = cmap.tabulate_shape(1, nq);
-  std::vector<double> phi_b(
-    std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
+  std::vector<double> phi_b(std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
   cmdspan4_t phi(phi_b.data(), phi_shape);
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
@@ -172,27 +162,23 @@ std::vector<double> compute_scaled_geometrical_factor(
   mdspan2_t detJ(detJ_b.data(), nc, nq);
   std::vector<double> det_scratch(2 * gdim * tdim);
 
-  for (std::size_t c = 0; c < nc; ++c)
-  {
+  for (std::size_t c = 0; c < nc; ++c) {
     // Get cell geometry (coordinates dofs)
     auto x_dofs = x_dofmap.links(c);
-    for (std::size_t i = 0; i < num_dofs_g; ++i)
-    {
+    for (std::size_t i = 0; i < num_dofs_g; ++i) {
       for (std::size_t j = 0; j < gdim; ++j)
         coord_dofs(i, j) = x_g[3 * x_dofs[i] + j];
     }
 
     // Compute the scaled geometrical factor
-    for (std::size_t q = 0; q < nq; ++q)
-    {
+    for (std::size_t q = 0; q < nq; ++q) {
       std::fill(J_b.begin(), J_b.end(), 0.0);
       std::fill(K_b.begin(), K_b.end(), 0.0);
       std::fill(KT_b.begin(), KT_b.end(), 0.0);
       std::fill(G_b.begin(), G_b.end(), 0.0);
-      
-      // Get the derivatives at each quadrature points 
-      auto dphi = stdex::submdspan(phi, std::pair(1, tdim+1), q,
-                                   stdex::full_extent, 0);
+
+      // Get the derivatives at each quadrature points
+      auto dphi = stdex::submdspan(phi, std::pair(1, tdim + 1), q, stdex::full_extent, 0);
 
       // Compute Jacobian matrix
       auto _J = stdex::submdspan(J, stdex::full_extent, stdex::full_extent);
@@ -234,20 +220,17 @@ std::vector<double> compute_scaled_geometrical_factor(
 
 /// ---------------------------------------------------------------------------
 /// Tabulate degree P basis functions on an interval
-std::vector<double> tabulate_1d(int P, int Q, int derivative)
-{
+std::vector<double> tabulate_1d(int P, int Q, int derivative) {
   // Create element
-  auto element = basix::create_element(
-    basix::element::family::P, basix::cell::type::interval, P, 
-    basix::element::lagrange_variant::gll_warped);
-  
+  auto element = basix::create_element(basix::element::family::P, basix::cell::type::interval, P,
+                                       basix::element::lagrange_variant::gll_warped);
+
   // Create quadrature
-  auto [points, weights] = basix::quadrature::make_quadrature(
-    basix::quadrature::type::gll, basix::cell::type::interval, Q);
+  auto [points, weights] = basix::quadrature::make_quadrature(basix::quadrature::type::gll,
+                                                              basix::cell::type::interval, Q);
 
   // Tabulate
   auto [table, shape] = element.tabulate(1, points, {weights.size(), 1});
 
   return table;
-
 }

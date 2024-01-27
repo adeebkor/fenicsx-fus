@@ -7,11 +7,11 @@
 #include "precompute_op.hpp"
 
 #include <cmath>
-#include <iostream>
-#include <iomanip>
 #include <dolfinx.h>
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
+#include <iomanip>
+#include <iostream>
 
 #define T_MPI MPI_DOUBLE
 using T = double;
@@ -19,14 +19,13 @@ using T = double;
 using namespace dolfinx;
 
 template <typename T>
-const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2.0*alpha*c0*c0*c0/w0/w0;
+const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha) {
+  const T diffusivity = 2.0 * alpha * c0 * c0 * c0 / w0 / w0;
 
   return diffusivity;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
   {
@@ -36,58 +35,52 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // Source parameters
-    const T sourceFrequency = 0.5e6;  // (Hz)
+    const T sourceFrequency = 0.5e6; // (Hz)
     // const T sourceAmplitude = 60000;  // (Pa)
     // const T period = 1 / sourceFrequency;  // (s)
-    const T angularFrequency = 2 * M_PI * sourceFrequency;  // (rad/s)
+    const T angularFrequency = 2 * M_PI * sourceFrequency; // (rad/s)
 
     // Material parameters (Water)
-    const T speedOfSoundWater = 1500.0;  // (m/s)
-    const T densityWater = 1000.0;  // (kg/m^3)
+    const T speedOfSoundWater = 1500.0; // (m/s)
+    const T densityWater = 1000.0;      // (kg/m^3)
     const T nonlinearCoefficientWater = 3.5;
     const T diffusivityOfSoundWater = 0.0;
-    
+
     // Material parameters (Skin)
-    const T speedOfSoundSkin = 1610.0;  // (m/s)
-    const T densitySkin = 1090.0;  // (kg/m^3)
-    const T attenuationCoefficientdBSkin = 20.0;  // (dB/m)
+    const T speedOfSoundSkin = 1610.0;           // (m/s)
+    const T densitySkin = 1090.0;                // (kg/m^3)
+    const T attenuationCoefficientdBSkin = 20.0; // (dB/m)
     const T nonlinearCoefficientSkin = 4.9;
-    const T attenuationCoefficientNpSkin
-      = attenuationCoefficientdBSkin / 20 * log(10);
+    const T attenuationCoefficientNpSkin = attenuationCoefficientdBSkin / 20 * log(10);
     const T diffusivityOfSoundSkin = compute_diffusivity_of_sound(
-      angularFrequency, speedOfSoundSkin, attenuationCoefficientNpSkin);
+        angularFrequency, speedOfSoundSkin, attenuationCoefficientNpSkin);
 
     // Material parameters (Cortical bone)
-    const T speedOfSoundCortBone = 2800.0;  // (m/s)
-    const T densityCortBone = 1850.0;  // (kg/m^3)
-    const T attenuationCoefficientdBCortBone = 400.0;  // (dB/m)
+    const T speedOfSoundCortBone = 2800.0;            // (m/s)
+    const T densityCortBone = 1850.0;                 // (kg/m^3)
+    const T attenuationCoefficientdBCortBone = 400.0; // (dB/m)
     const T nonlinearCoefficientCortBone = 8.0;
-    const T attenuationCoefficientNpCortBone
-      = attenuationCoefficientdBCortBone / 20 * log(10);
+    const T attenuationCoefficientNpCortBone = attenuationCoefficientdBCortBone / 20 * log(10);
     const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
-      angularFrequency, speedOfSoundCortBone, 
-      attenuationCoefficientNpCortBone);
+        angularFrequency, speedOfSoundCortBone, attenuationCoefficientNpCortBone);
 
     // Material parameters (Trabecular bone)
-    const T speedOfSoundTrabBone = 2300.0;  // (m/s)
-    const T densityTrabBone = 1700.0;  // (kg/m^3)
-    const T attenuationCoefficientdBTrabBone = 800.0;  //(dB/m)
+    const T speedOfSoundTrabBone = 2300.0;            // (m/s)
+    const T densityTrabBone = 1700.0;                 // (kg/m^3)
+    const T attenuationCoefficientdBTrabBone = 800.0; //(dB/m)
     const T nonlinearCoefficientTrabBone = 7.0;
-    const T attenuationCoefficientNpTrabBone
-      = attenuationCoefficientdBTrabBone / 20 * log(10);
+    const T attenuationCoefficientNpTrabBone = attenuationCoefficientdBTrabBone / 20 * log(10);
     const T diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
-      angularFrequency, speedOfSoundTrabBone, 
-      attenuationCoefficientNpTrabBone);
+        angularFrequency, speedOfSoundTrabBone, attenuationCoefficientNpTrabBone);
 
     // Material parameters (Brain)
-    const T speedOfSoundBrain = 1560.0;  // (m/s)
-    const T densityBrain = 1040.0;  // (kg/m^3)
-    const T attenuationCoefficientdBBrain = 30.0;  // (dB/m)
+    const T speedOfSoundBrain = 1560.0;           // (m/s)
+    const T densityBrain = 1040.0;                // (kg/m^3)
+    const T attenuationCoefficientdBBrain = 30.0; // (dB/m)
     const T nonlinearCoefficientBrain = 4.3;
-    const T attenuationCoefficientNpBrain
-      = attenuationCoefficientdBBrain / 20 * log(10);
+    const T attenuationCoefficientNpBrain = attenuationCoefficientdBBrain / 20 * log(10);
     const T diffusivityOfSoundBrain = compute_diffusivity_of_sound(
-      angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
+        angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
 
     // FE parameters
     const int degreeOfBasis = 4;
@@ -95,15 +88,15 @@ int main(int argc, char* argv[])
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
-    io::XDMFFile fmesh(MPI_COMM_WORLD,
-    "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6/mesh.xdmf", "r");
+    io::XDMFFile fmesh(MPI_COMM_WORLD, "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6/mesh.xdmf",
+                       "r");
     auto mesh = std::make_shared<mesh::Mesh>(
-      fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_6"));
+        fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_6"));
     mesh->topology().create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_6_cells"));
+        fmesh.read_meshtags(mesh, "transducer_3d_6_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-      fmesh.read_meshtags(mesh, "transducer_3d_6_facets"));
+        fmesh.read_meshtags(mesh, "transducer_3d_6_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology().dim();
@@ -111,19 +104,17 @@ int main(int argc, char* argv[])
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
     std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<T>::iterator min_mesh_size_local = std::min_element(
-      mesh_size_local.begin(), mesh_size_local.end());
-    int mesh_size_local_idx = std::distance(
-      mesh_size_local.begin(), min_mesh_size_local);
+    std::vector<T>::iterator min_mesh_size_local
+        = std::min_element(mesh_size_local.begin(), mesh_size_local.end());
+    int mesh_size_local_idx = std::distance(mesh_size_local.begin(), min_mesh_size_local);
     T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
     T meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN,
-               0, MPI_COMM_WORLD);
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
     auto V_DG = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
+        fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
 
     // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
@@ -142,68 +133,67 @@ int main(int argc, char* argv[])
 
     std::span<T> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundWater; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundSkin; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundCortBone; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundCortBone; });
     std::for_each(cells_4.begin(), cells_4.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundTrabBone; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundTrabBone; });
     std::for_each(cells_5.begin(), cells_5.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundCortBone; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundCortBone; });
     std::for_each(cells_6.begin(), cells_6.end(),
-      [&](std::int32_t &i) { c0_[i] = speedOfSoundBrain; });
+                  [&](std::int32_t& i) { c0_[i] = speedOfSoundBrain; });
     c0->x()->scatter_fwd();
 
     std::span<T> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { rho0_[i] = densityWater; });
-    std::for_each(cells_2.begin(), cells_2.end(),
-      [&](std::int32_t &i) { rho0_[i] = densitySkin; });
+                  [&](std::int32_t& i) { rho0_[i] = densityWater; });
+    std::for_each(cells_2.begin(), cells_2.end(), [&](std::int32_t& i) { rho0_[i] = densitySkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
-      [&](std::int32_t &i) { rho0_[i] = densityCortBone; });
+                  [&](std::int32_t& i) { rho0_[i] = densityCortBone; });
     std::for_each(cells_4.begin(), cells_4.end(),
-      [&](std::int32_t &i) { rho0_[i] = densityTrabBone; });
+                  [&](std::int32_t& i) { rho0_[i] = densityTrabBone; });
     std::for_each(cells_5.begin(), cells_5.end(),
-      [&](std::int32_t &i) { rho0_[i] = densityCortBone; });
+                  [&](std::int32_t& i) { rho0_[i] = densityCortBone; });
     std::for_each(cells_6.begin(), cells_6.end(),
-      [&](std::int32_t &i) { rho0_[i] = densityBrain; });
+                  [&](std::int32_t& i) { rho0_[i] = densityBrain; });
     rho0->x()->scatter_fwd();
 
     std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundWater; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundSkin; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundCortBone; });
     std::for_each(cells_4.begin(), cells_4.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundTrabBone; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundTrabBone; });
     std::for_each(cells_5.begin(), cells_5.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundCortBone; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundCortBone; });
     std::for_each(cells_6.begin(), cells_6.end(),
-      [&](std::int32_t &i) { delta0_[i] = diffusivityOfSoundBrain; });
+                  [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundBrain; });
     delta0->x()->scatter_fwd();
 
     std::span<T> beta0_ = beta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientWater; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientSkin; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientSkin; });
     std::for_each(cells_3.begin(), cells_3.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientCortBone; });
     std::for_each(cells_4.begin(), cells_4.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientTrabBone; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientTrabBone; });
     std::for_each(cells_5.begin(), cells_5.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientCortBone; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientCortBone; });
     std::for_each(cells_6.begin(), cells_6.end(),
-      [&](std::int32_t &i) { beta0_[i] = nonlinearCoefficientBrain; });
+                  [&](std::int32_t& i) { beta0_[i] = nonlinearCoefficientBrain; });
     beta0->x()->scatter_fwd();
 
     // Define function space
     auto V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
-    
+        fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
+
     auto ndofs = V->dofmap()->index_map->size_global();
 
     // Define field functions
@@ -219,7 +209,7 @@ int main(int argc, char* argv[])
     auto g_ = g->x()->mutable_array();
     auto dg = std::make_shared<fem::Function<T>>(V);
     auto dg_ = dg->x()->mutable_array();
-    
+
     // Define forms
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
@@ -230,10 +220,7 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Assembly of a0
     auto a0 = std::make_shared<fem::Form<T>>(
-                fem::create_form<T>(*form_forms_a0, {V}, 
-                {{"u", u}, {"c0", c0}, {"rho0", rho0}},
-                {},
-                {}));
+        fem::create_form<T>(*form_forms_a0, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
 
     auto m0 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto m0_ = m0->mutable_array();
@@ -269,11 +256,9 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of a1
-    auto a1 = std::make_shared<fem::Form<T>>(
-                fem::create_form<T>(*form_forms_a1, {V}, 
-                {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-                {},
-                {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+    auto a1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_a1, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
 
     auto m1 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto m1_ = m1->mutable_array();
@@ -289,12 +274,9 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of a2
-    auto a2 = std::make_shared<fem::Form<T>>(
-                fem::create_form<T>(*form_forms_a2, {V}, 
-                {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0},
-                 {"u_n", u_n}},
-                {},
-                {}));
+    auto a2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_a2, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0}, {"u_n", u_n}},
+        {}, {}));
 
     auto m2 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto m2_ = m2->mutable_array();
@@ -312,7 +294,7 @@ int main(int argc, char* argv[])
     // Assembly of a2 (precompute)
     std::vector<T> a2_pc_coeffs(c0_.size());
     for (std::size_t i = 0; i < a2_pc_coeffs.size(); ++i)
-      a2_pc_coeffs[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+      a2_pc_coeffs[i] = -2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
 
     Mass3D<T, degreeOfBasis, numberOfQuadraturePoint> a2_pc_operator(V);
 
@@ -331,10 +313,7 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Assembly of L0
     auto L0 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L0, {V}, 
-                          {{"u_n", u_n}, {"rho0", rho0}},
-                          {}, 
-                          {}));
+        fem::create_form<T>(*form_forms_L0, {V}, {{"u_n", u_n}, {"rho0", rho0}}, {}, {}));
 
     auto b0 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b0_ = b0->mutable_array();
@@ -353,8 +332,8 @@ int main(int argc, char* argv[])
 
     std::vector<T> L0_pc_coeffs(c0_.size());
     for (std::size_t i = 0; i < L0_pc_coeffs.size(); ++i)
-      L0_pc_coeffs[i] = - 1.0 / rho0_[i];
-    
+      L0_pc_coeffs[i] = -1.0 / rho0_[i];
+
     Stiffness3D<T, degreeOfBasis, numberOfQuadraturePoint> L0_pc_operator(V);
 
     auto b0_pc = std::make_shared<la::Vector<T>>(index_map, bs);
@@ -372,10 +351,8 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Assembly of L1
     auto L1 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L1, {V}, 
-                          {{"g", g}, {"rho0", rho0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+        fem::create_form<T>(*form_forms_L1, {V}, {{"g", g}, {"rho0", rho0}}, {},
+                            {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
 
     auto b1 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b1_ = b1->mutable_array();
@@ -392,10 +369,8 @@ int main(int argc, char* argv[])
     // ------------------------------------------------------------------------
     // Assembly of L2
     auto L2 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L2, {V}, 
-                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+        fem::create_form<T>(*form_forms_L2, {V}, {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}}, {},
+                            {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
 
     auto b2 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b2_ = b2->mutable_array();
@@ -411,11 +386,9 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L3
-    auto L3 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L3, {V}, 
-                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}},
-                          {}, 
-                          {}));
+    auto L3 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L3, {V}, {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}}, {},
+        {}));
 
     auto b3 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b3_ = b3->mutable_array();
@@ -434,7 +407,7 @@ int main(int argc, char* argv[])
 
     std::vector<T> L3_pc_coeffs(c0_.size());
     for (std::size_t i = 0; i < L3_pc_coeffs.size(); ++i)
-      L3_pc_coeffs[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+      L3_pc_coeffs[i] = -delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
 
     Stiffness3D<T, degreeOfBasis, numberOfQuadraturePoint> L3_pc_operator(V);
 
@@ -452,11 +425,8 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L4
-    auto L4 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L4, {V}, 
-                          {{"dg", dg}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}},
-                          {}, 
-                          {}));
+    auto L4 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L4, {V}, {{"dg", dg}, {"rho0", rho0}, {"c0", c0}, {"delta0", delta0}}, {}, {}));
 
     auto b4 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b4_ = b4->mutable_array();
@@ -472,12 +442,8 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // Assembly of L5
-    auto L5 = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L5, {V}, 
-                          {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, 
-                           {"beta0", beta0}},
-                          {}, 
-                          {}));
+    auto L5 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L5, {V}, {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}, {"beta0", beta0}}, {}, {}));
 
     auto b5 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b5_ = b5->mutable_array();
@@ -521,5 +487,4 @@ int main(int argc, char* argv[])
     }
   }
   PetscFinalize();
-
 }
