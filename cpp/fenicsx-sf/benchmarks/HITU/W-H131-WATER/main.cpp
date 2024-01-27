@@ -15,8 +15,8 @@
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
 
-#define T_MPI MPI_DOUBLE
-using T = double;
+#define T_MPI MPI_FLOAT
+using T = float;
 
 int main(int argc, char* argv[])
 {
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
     const T domainLength = 0.08;  // (m)
 
     // FE parameters
-    const int degreeOfBasis = 4;
+    const int degreeOfBasis = 6;
 
     // Read mesh and mesh tags
     auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const T CFL = 0.5;
+    const T CFL = 0.55;
     T timeStepSize = CFL * meshSizeMinGlobal / 
       (speedOfSound * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;

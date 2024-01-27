@@ -105,25 +105,6 @@ int main(int argc, char* argv[])
     std::fill(rho0_.begin(), rho0_.end(), densityWater);
 
     // ------------------------------------------------------------------------
-    // Mass coefficients
-    std::vector<T> m_coeffs(c0_.size());
-    for (std::size_t i = 0; i < m_coeffs.size(); ++i)
-      m_coeffs[i] = 1.0 / rho0_[i] / c0_[i] / c0_[i];
-
-    // ------------------------------------------------------------------------
-    // Compute spectral mass vector
-    MassSpectral3D<T, P> mass_spectral(V);
-
-    auto mass = std::make_shared<fem::Function<T>>(V);
-
-    std::fill(mass->x()->mutable_array().begin(), mass->x()->mutable_array().end(), 0.0);
-    common::Timer mass_assembly("~ mass spectral");
-    mass_assembly.start();
-    mass_spectral(*u->x(), m_coeffs, *mass->x());
-    mass_assembly.stop();
-    mass->x()->scatter_rev(std::plus<T>());
-
-    // ------------------------------------------------------------------------
     // Stiffness coefficients
     std::vector<T> s_coeffs(c0_.size());
     for (std::size_t i = 0; i < s_coeffs.size(); ++i)
@@ -143,7 +124,7 @@ int main(int argc, char* argv[])
 
     // ------------------------------------------------------------------------
     // List timings
-    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::max);
+    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
     if (mpi_rank == 0) {
       std::cout << "Polynomial degree: " << P << "\n";

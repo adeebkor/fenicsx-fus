@@ -2,8 +2,8 @@ import basix.ufl_wrapper
 from ufl import (VectorElement, Mesh, FunctionSpace, Coefficient, TestFunction, 
                  hexahedron, inner, grad, ds, dx)
 
-P = 6  # Degree of polynomial basis
-Q = 7  # Number of quadrature points
+P = 4  # Degree of polynomial basis
+Q = 5  # Number of quadrature points
 
 # Define mesh and finite element
 coord_element = VectorElement("Lagrange", hexahedron, 1)
