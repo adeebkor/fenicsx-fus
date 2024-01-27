@@ -9,7 +9,7 @@
 /// @param[out] B tensor
 template <typename T, int Na, int Nb, int offa, int offb>
 static inline void transpose(const T* __restrict__ A, T* __restrict__ B) {
-  
+
   for (int a = 0; a < Na; ++a) {
     for (int b = 0; b < Nb; ++b) {
       B[a * offa + b * offb] = A[a * Nb + b];
@@ -25,14 +25,13 @@ static inline void transpose(const T* __restrict__ A, T* __restrict__ B) {
 /// @param[in] B tensor of shape (Nb, Nk) -> Shape (Nb, Nk) so that we can transverse row-wise
 /// @param[out] C tensor of shape (Na, Nb)
 template <typename T, int Na, int Nb, int Nk>
-static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
-                            T* __restrict__ C) {
-  
+static inline void contract(const T* __restrict__ A, const T* __restrict__ B, T* __restrict__ C) {
+
   for (int a = 0; a < Na; ++a) {
     for (int b = 0; b < Nb; ++b) {
       for (int k = 0; k < Nk; ++k) {
         C[a * Nb + b] += A[a * Nk + k] * B[b * Nk + k];
-      } 
+      }
     }
   }
 }
@@ -69,8 +68,7 @@ struct Buffer {
 /// as a matrix- matrix multiplication C[a,{b, c}] = A[a, k] B[k, {b, c}]
 /// K is the contraction index
 template <typename T, int Nk, int Na, int Nb, int Nc, bool transpose>
-static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
-                            T* __restrict__ C) {
+static inline void contract(const T* __restrict__ A, const T* __restrict__ B, T* __restrict__ C) {
   // d = {b, c} is a multi-index d = b* Nc + c
   constexpr int Nd = Nb * Nc;
 
@@ -93,9 +91,8 @@ static inline void contract(const T* __restrict__ A, const T* __restrict__ B,
 /// In[Na, Nb]
 /// B[Nb, Nb, Nb]
 template <typename T, int Na, int Nb, bool Tr>
-static inline void apply_contractions(const T* I0, const T* I1, const T* I2,
-                                      T* __restrict__ B, T* __restrict__ A,
-                                      Buffer<T, Na, Nb>& buffer) {
+static inline void apply_contractions(const T* I0, const T* I1, const T* I2, T* __restrict__ B,
+                                      T* __restrict__ A, Buffer<T, Na, Nb>& buffer) {
   buffer.zero();
   // First tensor contraction
   // T0[Na, Nb, Nb] <- I0[Na, Nb] B[Nb, Nb, Nb]

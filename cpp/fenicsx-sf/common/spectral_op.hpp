@@ -1,13 +1,13 @@
 #pragma once
 
-#include "precompute.hpp"
 #include "permute.hpp"
+#include "precompute.hpp"
 #include "sum_factorisation.hpp"
 
-#include <cmath>
 #include <basix/finite-element.h>
-#include <basix/quadrature.h>
 #include <basix/mdspan.hpp>
+#include <basix/quadrature.h>
+#include <cmath>
 
 namespace stdex = std::experimental;
 using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
@@ -18,13 +18,13 @@ using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
 // -------------- //
 
 namespace mass {
-  template <typename T, int P, int Nq>
-  inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
-    
-    for (int iq = 0; iq < Nq; ++iq)
-      fw[iq] = coeff * fw[iq] * detJ[iq];
-  }
+template <typename T, int P, int Nq>
+inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
+
+  for (int iq = 0; iq < Nq; ++iq)
+    fw[iq] = coeff * fw[iq] * detJ[iq];
 }
+} // namespace mass
 
 /// 3D Spectral Mass operator
 template <typename T, int P>
@@ -55,11 +55,8 @@ public:
     reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights]
-      = basix::quadrature::make_quadrature(
-          basix::quadrature::type::gll,
-          basix::cell::type::hexahedron,
-          Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
     detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
@@ -70,14 +67,12 @@ public:
   /// @param[in] coeffs Coefficients
   /// @param[out] y Output vector
   template <typename Alloc>
-  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs,
-                  la::Vector<T, Alloc>& y) {
+  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs, la::Vector<T, Alloc>& y) {
 
     std::span<const T> x_array = x.array();
     std::span<T> y_array = y.mutable_array();
 
-    for (std::int32_t c = 0; c < Nc; ++c)
-    {
+    for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
@@ -116,24 +111,22 @@ private:
 // ------------------- //
 
 namespace stiffness {
-  template <typename T, int P, int Nq>
-  inline void transform(T* __restrict__ G, T __restrict__ coeff,
-                        T* __restrict__ fw0, T* __restrict__ fw1,
-                        T* __restrict__ fw2) {
+template <typename T, int P, int Nq>
+inline void transform(T* __restrict__ G, T __restrict__ coeff, T* __restrict__ fw0,
+                      T* __restrict__ fw1, T* __restrict__ fw2) {
 
-    for (int iq = 0; iq < Nq; ++iq)
-    {
-      const T* _G = G + iq * 6;
-      const T w0 = fw0[iq];
-      const T w1 = fw1[iq];
-      const T w2 = fw2[iq];
+  for (int iq = 0; iq < Nq; ++iq) {
+    const T* _G = G + iq * 6;
+    const T w0 = fw0[iq];
+    const T w1 = fw1[iq];
+    const T w2 = fw2[iq];
 
-      fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
-      fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
-      fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
-    }
+    fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
+    fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
+    fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
   }
-}  // namespace
+}
+} // namespace stiffness
 
 template <typename T, int P>
 class StiffnessSpectral3D {
@@ -163,15 +156,12 @@ public:
     reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights]
-      = basix::quadrature::make_quadrature(
-          basix::quadrature::type::gll,
-          basix::cell::type::hexahedron,
-          Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
     G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
-  
+
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
     std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi.begin());
@@ -179,8 +169,7 @@ public:
   }
 
   template <typename Alloc>
-  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs,
-                  la::Vector<T, Alloc>& y) {
+  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs, la::Vector<T, Alloc>& y) {
 
     std::span<const T> x_array = x.array();
     std::span<T> y_array = y.mutable_array();
@@ -189,8 +178,7 @@ public:
     T* fw1 = fw1_.data();
     T* fw2 = fw2_.data();
 
-    for (std::int32_t c = 0; c < Nc; ++c)
-    {
+    for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
@@ -202,19 +190,22 @@ public:
 
       // Apply contraction in the x-direction -> [i1, i2, q3]
       fw0_.fill(0.0);
-      contract<T, N, N, N, N, true>(dphi_, x_.data(), fw0);  // [i1, i2, i3] x [i3, q3] -> [i1, i2, q3]
+      contract<T, N, N, N, N, true>(dphi_, x_.data(),
+                                    fw0); // [i1, i2, i3] x [i3, q3] -> [i1, i2, q3]
 
       // Apply contraction in the z-direction -> [i1, q2, i3]
       fw1_.fill(0.0);
-      transpose<T, N, N, N, N, N*N, 1>(x_.data(), T1.data());  // [i1, i2, i3] -> [i1, i3, i2]
-      contract<T, N, N, N, N, true>(dphi_, T1.data(), T2.data());  // [i1, i3, i2] x [i2, q2] -> [i1, i3, q2]
-      transpose<T, N, N, N, N, N*N, 1>(T2.data(), fw1);  // [i1, i3, q2] -> [i1, q2, i3]
+      transpose<T, N, N, N, N, N * N, 1>(x_.data(), T1.data()); // [i1, i2, i3] -> [i1, i3, i2]
+      contract<T, N, N, N, N, true>(dphi_, T1.data(),
+                                    T2.data());           // [i1, i3, i2] x [i2, q2] -> [i1, i3, q2]
+      transpose<T, N, N, N, N, N * N, 1>(T2.data(), fw1); // [i1, i3, q2] -> [i1, q2, i3]
 
       // Apply contraction in the z-direction -> [q1, i2, i3]
       fw2_.fill(0.0);
-      transpose<T, N, N, N, 1, N, N*N>(x_.data(), T3.data());  // [i1, i2, i3] -> [i3, i2, i1]
-      contract<T, N, N, N, N, true>(dphi_, T3.data(), T4.data());  // [i3, i2, i1] x [i1, q1] -> [i3, i2, q1]
-      transpose<T, N, N, N, 1, N, N*N>(T4.data(), fw2);  // [i3, i2, q1] -> [q1, i2, i3]
+      transpose<T, N, N, N, 1, N, N * N>(x_.data(), T3.data()); // [i1, i2, i3] -> [i3, i2, i1]
+      contract<T, N, N, N, N, true>(dphi_, T3.data(),
+                                    T4.data());           // [i3, i2, i1] x [i1, q1] -> [i3, i2, q1]
+      transpose<T, N, N, N, 1, N, N * N>(T4.data(), fw2); // [i3, i2, q1] -> [q1, i2, i3]
 
       // Apply transform
       T* G = G_.data() + c * Nd * 6;
@@ -227,19 +218,22 @@ public:
 
       // Apply contraction in the x-direction -> [j1, j2, j3]
       y0_.fill(0.0);
-      contract<T, N, N, N, N, false>(dphi_, fw0, y0_.data());  // [j1, j2, q3] x [q3, j3] -> [j1, j2, j3]
+      contract<T, N, N, N, N, false>(dphi_, fw0,
+                                     y0_.data()); // [j1, j2, q3] x [q3, j3] -> [j1, j2, j3]
 
       // Apply contraction in the y-direction -> [j1, j2, j3]
       y1_.fill(0.0);
-      transpose<T, N, N, N, N, N*N, 1>(fw1, T1.data());  // [j1, q2, j3] -> [j1, j3, q2]
-      contract<T, N, N, N, N, false>(dphi_, T1.data(), T2.data());  // [j1, j3, q2] x [q2, j2] -> [j1, j3, j2]
-      transpose<T, N, N, N, N, N*N, 1>(T2.data(), y1_.data()); // [j1, j3, j2] -> [j1, j2, j3]
+      transpose<T, N, N, N, N, N * N, 1>(fw1, T1.data()); // [j1, q2, j3] -> [j1, j3, q2]
+      contract<T, N, N, N, N, false>(dphi_, T1.data(),
+                                     T2.data()); // [j1, j3, q2] x [q2, j2] -> [j1, j3, j2]
+      transpose<T, N, N, N, N, N * N, 1>(T2.data(), y1_.data()); // [j1, j3, j2] -> [j1, j2, j3]
 
       // Apply contraction in the y-direction -> [j1, j2, j3]
       y2_.fill(0.0);
-      transpose<T, N, N, N, 1, N, N*N>(fw2, T3.data());  // [q1, j2, j3] -> [j3, j2, q1]
-      contract<T, N, N, N, N, false>(dphi_, T3.data(), T4.data());  // [j3, j2, q1] x [q1, j1] -> [j3, j2, j1]
-      transpose<T, N, N, N, 1, N, N*N>(T4.data(), y2_.data());  // [j3, j2, j1] -> [j1, j2, j3]
+      transpose<T, N, N, N, 1, N, N * N>(fw2, T3.data()); // [q1, j2, j3] -> [j3, j2, q1]
+      contract<T, N, N, N, N, false>(dphi_, T3.data(),
+                                     T4.data()); // [j3, j2, q1] x [q1, j1] -> [j3, j2, j1]
+      transpose<T, N, N, N, 1, N, N * N>(T4.data(), y2_.data()); // [j3, j2, j1] -> [j1, j2, j3]
 
       for (std::int32_t i = 0; i < Nd; ++i)
         y_array[tensor_dofmap_[c * Nd + i]] += y0_[i] + y1_[i] + y2_[i];
@@ -260,9 +254,9 @@ private:
   std::vector<T> G_;
 
   // Derivative of the 1D basis functions
-  std::array<T, N*N> dphi;
+  std::array<T, N * N> dphi;
   const T* dphi_;
-  
+
   // Dofmap
   std::vector<std::int32_t> dofmap_;
   std::vector<std::int32_t> tensor_dofmap_;
