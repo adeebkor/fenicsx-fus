@@ -27,8 +27,7 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param x
 /// @param y
 template <typename T>
-void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
-          const la::Vector<T>& y) {
+void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
   std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
@@ -47,16 +46,13 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
 /// @param [in] sourceAmplitude The source amplitude
 /// @param [in] sourceSpeed The medium speed of sound that is in contact with the source
 template <typename T, int P>
-class LinearSpectral{
+class LinearSpectral {
 public:
-  LinearSpectral(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  LinearSpectral(std::shared_ptr<mesh::Mesh> Mesh,
+                 std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                 std::shared_ptr<fem::Function<T>> speedOfSound,
+                 std::shared_ptr<fem::Function<T>> density, const T& sourceFrequency,
+                 const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -97,8 +93,7 @@ public:
 
     // Define LHS form
     a = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_a, {V},
-                          {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+        fem::create_form<T>(*form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -107,13 +102,9 @@ public:
     m->scatter_rev(std::plus<T>());
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"u_n", u_n}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L, {V}, {{"g", g}, {"u_n", u_n}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
   }
@@ -151,7 +142,8 @@ public:
 
     // Update boundary condition
     std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t)); // homogenous domain
-    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t)); // heterogenous domain
+    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t)); // heterogenous
+    // domain
 
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -259,9 +251,7 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << std::endl;
         }
       }
     }
@@ -271,24 +261,19 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
-  std::int64_t number_of_dofs() const {
-    return V->dofmap()->index_map->size_global();
-  }
+  std::int64_t number_of_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window;
 
   // Mesh data

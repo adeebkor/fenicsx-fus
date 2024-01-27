@@ -27,8 +27,7 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param x
 /// @param y
 template <typename T>
-void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
-          const la::Vector<T>& y) {
+void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
   std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
@@ -50,15 +49,12 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
 template <typename T, int P>
 class LossySpectral {
 public:
-  LossySpectral(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    std::shared_ptr<fem::Function<T>> diffusivityOfSound,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  LossySpectral(std::shared_ptr<mesh::Mesh> Mesh,
+                std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                std::shared_ptr<fem::Function<T>> speedOfSound,
+                std::shared_ptr<fem::Function<T>> density,
+                std::shared_ptr<fem::Function<T>> diffusivityOfSound, const T& sourceFrequency,
+                const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -80,8 +76,8 @@ public:
 
     // Define function space
     V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
-    
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+
     // Define field functions
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -95,18 +91,16 @@ public:
     g_ = g->x()->mutable_array();
     dg = std::make_shared<fem::Function<T>>(V);
     dg_ = dg->x()->mutable_array();
-    
+
     // Define forms
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_a, {V}, 
-        {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-        {},
+    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
         {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
-    
+
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
     std::fill(m_.begin(), m_.end(), 0.0);
@@ -115,12 +109,15 @@ public:
 
     // Define RHS form
     L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"dg", dg}, {"u_n", u_n}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+        fem::create_form<T>(*form_forms_L, {V},
+                            {{"g", g},
+                             {"dg", dg},
+                             {"u_n", u_n},
+                             {"v_n", v_n},
+                             {"c0", c0},
+                             {"rho0", rho0},
+                             {"delta0", delta0}},
+                            {}, {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
   }
@@ -138,7 +135,7 @@ public:
   /// @param[out] result Result, i.e. dun/dtn
   void f0(T& t, std::shared_ptr<la::Vector<T>> u, std::shared_ptr<la::Vector<T>> v,
           std::shared_ptr<la::Vector<T>> result) {
-    kernels::copy<T>(*v, *result);  // 1 read, 1 write
+    kernels::copy<T>(*v, *result); // 1 read, 1 write
   }
 
   /// Evaluate dv/dt = f1(t, u, v)
@@ -152,8 +149,7 @@ public:
     // Apply windowing
     if (t < period * window_length) {
       window = 0.5 * (1.0 - cos(freq * M_PI * t / window_length));
-      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t 
-                                                         / window_length);
+      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t / window_length);
     } else {
       window = 1.0;
       dwindow = 0.0;
@@ -162,27 +158,27 @@ public:
     /*
     // Update boundary condition (homogenous domain)
     std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
-    std::fill(dg_.begin(), dg_.end(), 
-              dwindow * p0 * w0 / s0 * cos(w0 * t) 
+    std::fill(dg_.begin(), dg_.end(),
+              dwindow * p0 * w0 / s0 * cos(w0 * t)
                 - window * p0 * w0 * w0 / s0 * sin(w0 * t));
     */
 
     // Update boundary condition (heterogenous domain)
-    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));  // 1 write x Ndofs
-    std::fill(dg_.begin(), dg_.end(), 
-              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
-                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));  // 1 write x Ndofs
+    std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t)); // 1 write x Ndofs
+    std::fill(dg_.begin(), dg_.end(),
+              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t)
+                  - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t)); // 1 write x Ndofs
 
     // Update fields
     u->scatter_fwd();
-    kernels::copy<T>(*u, *u_n->x());  // 1 read x Ndofs, 1 write x Ndofs
+    kernels::copy<T>(*u, *u_n->x()); // 1 read x Ndofs, 1 write x Ndofs
 
     v->scatter_fwd();
-    kernels::copy<T>(*v, *v_n->x());  // 1 read x Ndofs, 1 write x Ndofs
+    kernels::copy<T>(*v, *v_n->x()); // 1 read x Ndofs, 1 write x Ndofs
 
     // Assemble RHS
-    std::fill(b_.begin(), b_.end(), 0.0);  // 1 write x Ndofs
-    fem::assemble_vector(b_, *L);  // 
+    std::fill(b_.begin(), b_.end(), 0.0); // 1 write x Ndofs
+    fem::assemble_vector(b_, *L);
     b->scatter_rev(std::plus<T>());
 
     // Solve
@@ -196,8 +192,9 @@ public:
 
       // Element wise division
       // out[i] = b[i]/m[i]
-      std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(),
-                     [](const T& bi, const T& mi) { return bi / mi; });  // 2 read x Ndofs, 1 write x Ndofs
+      std::transform(_b.begin(), _b.end(), _m.begin(), out.begin(), [](const T& bi, const T& mi) {
+        return bi / mi;
+      }); // 2 read x Ndofs, 1 write x Ndofs
     }
   }
 
@@ -251,17 +248,17 @@ public:
       dt = std::min(dt, tf - t);
 
       // Store solution at start of time step
-      kernels::copy<T>(*u_, *u0);  // 1 read, 1 write
-      kernels::copy<T>(*v_, *v0);  // 1 read, 1 write
+      kernels::copy<T>(*u_, *u0); // 1 read, 1 write
+      kernels::copy<T>(*v_, *v0); // 1 read, 1 write
 
       // Runge-Kutta 4th order step
       for (int i = 0; i < 4; i++) {
 
-        kernels::copy<T>(*u0, *un);  // 1 read, 1 write
-        kernels::copy<T>(*v0, *vn);  // 1 read, 1 write
+        kernels::copy<T>(*u0, *un); // 1 read, 1 write
+        kernels::copy<T>(*v0, *vn); // 1 read, 1 write
 
-        kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un);  // 2 read, 1 write
-        kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn);  // 2 read, 1 write
+        kernels::axpy<T>(*un, dt * a_runge[i], *ku, *un); // 2 read, 1 write
+        kernels::axpy<T>(*vn, dt * a_runge[i], *kv, *vn); // 2 read, 1 write
 
         // RK time evaluation
         tn = t + c_runge[i] * dt;
@@ -271,8 +268,8 @@ public:
         f1(tn, un, vn, kv);
 
         // Update solution
-        kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_);  // 2 read, 1 write
-        kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_);  // 2 read, 1 write
+        kernels::axpy<T>(*u_, dt * b_runge[i], *ku, *u_); // 2 read, 1 write
+        kernels::axpy<T>(*v_, dt * b_runge[i], *kv, *v_); // 2 read, 1 write
       }
 
       // Update time
@@ -281,10 +278,8 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep
-                    << "\t" << u_->array()[0] << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << "\t"
+                    << u_->array()[0] << std::endl;
         }
       }
     }
@@ -294,24 +289,19 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
-  std::int64_t number_of_dofs() const {
-    return V->dofmap()->index_map->size_global();
-  }
+  std::int64_t number_of_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window, dwindow;
 
   std::shared_ptr<mesh::Mesh> mesh;
@@ -327,8 +317,8 @@ private:
 };
 
 template <typename T>
-const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2*alpha*c0*c0*c0/w0/w0;
+const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha) {
+  const T diffusivity = 2 * alpha * c0 * c0 * c0 / w0 / w0;
 
   return diffusivity;
 }
