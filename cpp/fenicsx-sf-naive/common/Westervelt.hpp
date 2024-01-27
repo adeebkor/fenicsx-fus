@@ -28,15 +28,13 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param x
 /// @param y
 template <typename T>
-void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
-          const la::Vector<T>& y) {
+void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
   std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
 }
 
 } // namespace kernels
-
 
 /// Solver for the 2D second order Westervelt equation.
 /// This solver uses GLL lattice and GLL quadrature such that it produces
@@ -46,22 +44,21 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
 /// @param [in] speedOfSound A DG function defining the speed of sound within the domain
 /// @param [in] density A DG function defining the densities within the domain
 /// @param [in] diffusivityOfSound A DG function defining the diffusivity of sound within the domain
+/// @param [in] coefficientOfNonlinearity A DG function defining the diffusivity of sound within the
+/// domain
 /// @param [in] sourceFrequency The source frequency
 /// @param [in] sourceAmplitude The source amplitude
 /// @param [in] sourceSpeed The medium speed of sound that is in contact with the source
 template <typename T, int P>
 class WesterveltSpectral2D {
 public:
-  WesterveltSpectral2D(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    std::shared_ptr<fem::Function<T>> diffusivityOfSound,
-    std::shared_ptr<fem::Function<T>> coefficientOfNonlinearity,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  WesterveltSpectral2D(std::shared_ptr<mesh::Mesh> Mesh,
+                       std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                       std::shared_ptr<fem::Function<T>> speedOfSound,
+                       std::shared_ptr<fem::Function<T>> density,
+                       std::shared_ptr<fem::Function<T>> diffusivityOfSound,
+                       std::shared_ptr<fem::Function<T>> coefficientOfNonlinearity,
+                       const T& sourceFrequency, const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -84,8 +81,8 @@ public:
 
     // Define function space
     V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
-    
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+
     // Define field functions
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -100,18 +97,16 @@ public:
     g_ = g->x()->mutable_array();
     dg = std::make_shared<fem::Function<T>>(V);
     dg_ = dg->x()->mutable_array();
-    
+
     // Define forms
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_a, {V}, 
-        {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-        {},
+    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
         {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
-    
+
     m0 = std::make_shared<la::Vector<T>>(index_map, bs);
     m0_ = m0->mutable_array();
     std::fill(m0_.begin(), m0_.end(), 0.0);
@@ -121,13 +116,10 @@ public:
     m_ = m->mutable_array();
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"dg", dg}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L, {V},
+        {{"g", g}, {"dg", dg}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
 
@@ -157,12 +149,10 @@ public:
     nlin2_coeff_ = nlin2_coeff->x()->mutable_array();
 
     for (std::size_t i = 0; i < rho0_.size(); ++i) {
-      lin_coeff_[i] = - 1.0 / rho0_[i];
-      att_coeff_[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
-      nlin1_coeff_[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
-        / c0_[i] / c0_[i] / c0_[i];
-      nlin2_coeff_[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
-        / c0_[i] / c0_[i] / c0_[i];
+      lin_coeff_[i] = -1.0 / rho0_[i];
+      att_coeff_[i] = -delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+      nlin1_coeff_[i] = -2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+      nlin2_coeff_[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
     }
 
     lin_coeff->x()->scatter_fwd();
@@ -198,8 +188,7 @@ public:
     // Apply windowing
     if (t < period * window_length) {
       window = 0.5 * (1.0 - cos(freq * M_PI * t / window_length));
-      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t 
-                                                         / window_length);
+      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t / window_length);
     } else {
       window = 1.0;
       dwindow = 0.0;
@@ -207,14 +196,13 @@ public:
 
     // Update boundary condition (homogenous domain)
     std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
-    std::fill(dg_.begin(), dg_.end(), 
-              dwindow * p0 * w0 / s0 * cos(w0 * t) 
-                - window * p0 * w0 * w0 / s0 * sin(w0 * t));
+    std::fill(dg_.begin(), dg_.end(),
+              dwindow * p0 * w0 / s0 * cos(w0 * t) - window * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update boundary condition (heterogenous domain)
     // std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
-    // std::fill(dg_.begin(), dg_.end(), 
-    //           dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
+    // std::fill(dg_.begin(), dg_.end(),
+    //           dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t)
     //             - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update fields
@@ -225,15 +213,13 @@ public:
     kernels::copy<T>(*v, *v_n->x());
 
     std::transform(v_n->x()->array().begin(), v_n->x()->array().end(),
-                   w_n->x()->mutable_array().begin(),
-                   [&](const T& vx) { return vx * vx; });
+                   w_n->x()->mutable_array().begin(), [&](const T& vx) { return vx * vx; });
 
     // Assemble LHS
     std::fill(m_.begin(), m_.end(), 0.0);
     nlin1_op->operator()(*u_n->x(), nlin1_coeff_, *m);
     std::transform(m0->array().begin(), m0->array().end(), m->array().begin(),
-                   m->mutable_array().begin(),
-                   [&](const T& x, const T& y) { return x + y; }); 
+                   m->mutable_array().begin(), [&](const T& x, const T& y) { return x + y; });
     m->scatter_rev(std::plus<T>());
 
     // Assemble RHS
@@ -339,10 +325,8 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep
-                    << "\t" << u_->array()[0] << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << "\t"
+                    << u_->array()[0] << std::endl;
         }
       }
     }
@@ -352,24 +336,19 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
-  std::int64_t number_of_dofs() const {
-    return V->dofmap()->index_map->size_global();
-  }
+  std::int64_t number_of_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window, dwindow;
 
   std::shared_ptr<mesh::Mesh> mesh;
@@ -392,7 +371,6 @@ private:
   std::span<T> lin_coeff_, att_coeff_, nlin1_coeff_, nlin2_coeff_;
 };
 
-
 /// Solver for the 3D second order Westervelt equation.
 /// This solver uses GLL lattice and GLL quadrature such that it produces
 /// a diagonal mass matrix.
@@ -401,22 +379,21 @@ private:
 /// @param [in] speedOfSound A DG function defining the speed of sound within the domain
 /// @param [in] density A DG function defining the densities within the domain
 /// @param [in] diffusivityOfSound A DG function defining the diffusivity of sound within the domain
+/// @param [in] coefficientOfNonlinearity A DG function defining the diffusivity of sound within the
+/// domain
 /// @param [in] sourceFrequency The source frequency
 /// @param [in] sourceAmplitude The source amplitude
 /// @param [in] sourceSpeed The medium speed of sound that is in contact with the source
 template <typename T, int P>
 class WesterveltSpectral3D {
 public:
-  WesterveltSpectral3D(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    std::shared_ptr<fem::Function<T>> diffusivityOfSound,
-    std::shared_ptr<fem::Function<T>> coefficientOfNonlinearity,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  WesterveltSpectral3D(std::shared_ptr<mesh::Mesh> Mesh,
+                       std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                       std::shared_ptr<fem::Function<T>> speedOfSound,
+                       std::shared_ptr<fem::Function<T>> density,
+                       std::shared_ptr<fem::Function<T>> diffusivityOfSound,
+                       std::shared_ptr<fem::Function<T>> coefficientOfNonlinearity,
+                       const T& sourceFrequency, const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -439,8 +416,8 @@ public:
 
     // Define function space
     V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
-    
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+
     // Define field functions
     index_map = V->dofmap()->index_map;
     bs = V->dofmap()->index_map_bs();
@@ -455,18 +432,16 @@ public:
     g_ = g->x()->mutable_array();
     dg = std::make_shared<fem::Function<T>>(V);
     dg_ = dg->x()->mutable_array();
-    
+
     // Define forms
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_a, {V}, 
-        {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-        {},
+    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
         {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
-    
+
     m0 = std::make_shared<la::Vector<T>>(index_map, bs);
     m0_ = m0->mutable_array();
     std::fill(m0_.begin(), m0_.end(), 0.0);
@@ -476,13 +451,10 @@ public:
     m_ = m->mutable_array();
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"dg", dg}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L, {V},
+        {{"g", g}, {"dg", dg}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
 
@@ -512,12 +484,10 @@ public:
     nlin2_coeff_ = nlin2_coeff->x()->mutable_array();
 
     for (std::size_t i = 0; i < rho0_.size(); ++i) {
-      lin_coeff_[i] = - 1.0 / rho0_[i];
-      att_coeff_[i] = - delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
-      nlin1_coeff_[i] = - 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
-        / c0_[i] / c0_[i] / c0_[i];
-      nlin2_coeff_[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] 
-        / c0_[i] / c0_[i] / c0_[i];
+      lin_coeff_[i] = -1.0 / rho0_[i];
+      att_coeff_[i] = -delta0_[i] / rho0_[i] / c0_[i] / c0_[i];
+      nlin1_coeff_[i] = -2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
+      nlin2_coeff_[i] = 2.0 * beta0_[i] / rho0_[i] / rho0_[i] / c0_[i] / c0_[i] / c0_[i] / c0_[i];
     }
 
     lin_coeff->x()->scatter_fwd();
@@ -553,8 +523,7 @@ public:
     // Apply windowing
     if (t < period * window_length) {
       window = 0.5 * (1.0 - cos(freq * M_PI * t / window_length));
-      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t 
-                                                         / window_length);
+      dwindow = 0.5 * M_PI * freq / window_length * sin(freq * M_PI * t / window_length);
     } else {
       window = 1.0;
       dwindow = 0.0;
@@ -562,15 +531,15 @@ public:
 
     // Update boundary condition (homogenous domain)
     // std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t));
-    // std::fill(dg_.begin(), dg_.end(), 
-    //           dwindow * p0 * w0 / s0 * cos(w0 * t) 
+    // std::fill(dg_.begin(), dg_.end(),
+    //           dwindow * p0 * w0 / s0 * cos(w0 * t)
     //             - window * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update boundary condition (heterogenous domain)
     std::fill(g_.begin(), g_.end(), window * 2.0 * p0 * w0 / s0 * cos(w0 * t));
-    std::fill(dg_.begin(), dg_.end(), 
-              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t) 
-                - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
+    std::fill(dg_.begin(), dg_.end(),
+              dwindow * 2.0 * p0 * w0 / s0 * cos(w0 * t)
+                  - window * 2.0 * p0 * w0 * w0 / s0 * sin(w0 * t));
 
     // Update fields
     u->scatter_fwd();
@@ -580,15 +549,13 @@ public:
     kernels::copy<T>(*v, *v_n->x());
 
     std::transform(v_n->x()->array().begin(), v_n->x()->array().end(),
-                   w_n->x()->mutable_array().begin(),
-                   [&](const T& vx) { return vx * vx; });
+                   w_n->x()->mutable_array().begin(), [&](const T& vx) { return vx * vx; });
 
     // Assemble LHS
     std::fill(m_.begin(), m_.end(), 0.0);
     nlin1_op->operator()(*u_n->x(), nlin1_coeff_, *m);
     std::transform(m0->array().begin(), m0->array().end(), m->array().begin(),
-                   m->mutable_array().begin(),
-                   [&](const T& x, const T& y) { return x + y; }); 
+                   m->mutable_array().begin(), [&](const T& x, const T& y) { return x + y; });
     m->scatter_rev(std::plus<T>());
 
     // Assemble RHS
@@ -633,27 +600,27 @@ public:
     std::vector<double> point_coordinates(3 * Nr * Nz);
     for (std::size_t i = 0; i < Nz; ++i) {
       for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = j * 0.04 / (Nr - 1) - 0.02;
-        point_coordinates[3*j + 3*i*Nr + 1] = 0.0;
-        point_coordinates[3*j + 3*i*Nr + 2] = i * 0.08 / (Nz - 1);
+        point_coordinates[3 * j + 3 * i * Nr] = j * 0.04 / (Nr - 1) - 0.02;
+        point_coordinates[3 * j + 3 * i * Nr + 1] = 0.0;
+        point_coordinates[3 * j + 3 * i * Nr + 2] = i * 0.08 / (Nz - 1);
       }
     }
 
     // Compute evaluation parameters
     auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
     auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells = geometry::compute_colliding_cells(
-      *mesh, cell_candidates, point_coordinates);
+    auto colliding_cells
+        = geometry::compute_colliding_cells(*mesh, cell_candidates, point_coordinates);
 
     std::vector<std::int32_t> cells;
     std::vector<double> points_on_proc;
 
-    for (std::size_t i = 0; i < Nr*Nz; ++i) {
+    for (std::size_t i = 0; i < Nr * Nz; ++i) {
       auto link = colliding_cells.links(i);
       if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3*i]);
-        points_on_proc.push_back(point_coordinates[3*i + 1]);
-        points_on_proc.push_back(point_coordinates[3*i + 2]);
+        points_on_proc.push_back(point_coordinates[3 * i]);
+        points_on_proc.push_back(point_coordinates[3 * i + 1]);
+        points_on_proc.push_back(point_coordinates[3 * i + 2]);
         cells.push_back(link[0]);
       }
     }
@@ -741,10 +708,8 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep
-                    << "\t" << u_->array()[0] << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << "\t"
+                    << u_->array()[0] << std::endl;
         }
       }
       // ----------------------------------------------------------------------
@@ -754,8 +719,7 @@ public:
         u_n->x()->scatter_fwd();
 
         // Evaluate function
-        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
-                  {num_points_local, 1});
+        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval, {num_points_local, 1});
         u_value = u_eval.data();
 
         // Write evaluation from each process to a single text file
@@ -763,12 +727,11 @@ public:
 
         for (int i = 0; i < mpi_size; ++i) {
           if (mpi_rank == i) {
-            fname = "/home/mabm4/rds/hpc-work/data/pressure_field_" + 
-                    std::to_string(step_period) + ".txt";
+            fname = "/home/mabm4/rds/hpc-work/data/pressure_field_" + std::to_string(step_period)
+                    + ".txt";
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
-              txt_file << *(p_value + 3 * i) << ","
-                       << *(p_value + 3 * i + 2) << "," 
+              txt_file << *(p_value + 3 * i) << "," << *(p_value + 3 * i + 2) << ","
                        << *(u_value + i) << std::endl;
             }
             txt_file.close();
@@ -785,24 +748,19 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
-  std::int64_t number_of_dofs() const {
-    return V->dofmap()->index_map->size_global();
-  }
+  std::int64_t number_of_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window, dwindow;
 
   std::shared_ptr<mesh::Mesh> mesh;
@@ -826,8 +784,8 @@ private:
 };
 
 template <typename T>
-const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2*alpha*c0*c0*c0/w0/w0;
+const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha) {
+  const T diffusivity = 2 * alpha * c0 * c0 * c0 / w0 / w0;
 
   return diffusivity;
 }

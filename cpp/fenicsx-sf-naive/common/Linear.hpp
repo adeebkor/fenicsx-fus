@@ -28,8 +28,7 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param x
 /// @param y
 template <typename T>
-void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
-          const la::Vector<T>& y) {
+void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
   std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
@@ -50,14 +49,11 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x,
 template <typename T, int P>
 class LinearSpectral2D {
 public:
-  LinearSpectral2D(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  LinearSpectral2D(std::shared_ptr<mesh::Mesh> Mesh,
+                   std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                   std::shared_ptr<fem::Function<T>> speedOfSound,
+                   std::shared_ptr<fem::Function<T>> density, const T& sourceFrequency,
+                   const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -98,8 +94,7 @@ public:
 
     // Define LHS form
     a = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_a, {V},
-                          {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+        fem::create_form<T>(*form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -108,13 +103,9 @@ public:
     m->scatter_rev(std::plus<T>());
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L, {V}, {{"g", g}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
 
@@ -129,7 +120,7 @@ public:
     c_ = coeff->x()->mutable_array();
 
     for (std::size_t i = 0; i < rho0_.size(); ++i)
-      c_[i] = - 1.0 / rho0_[i];
+      c_[i] = -1.0 / rho0_[i];
 
     coeff->x()->scatter_fwd();
   }
@@ -275,9 +266,7 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << std::endl;
         }
       }
     }
@@ -287,20 +276,17 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window;
 
   // Mesh data
@@ -327,7 +313,6 @@ private:
   std::span<T> c_;
 };
 
-
 /// Solver for the 3D second order linear wave equation.
 /// This solver uses GLL lattice and GLL quadrature such that it produces
 /// a diagonal mass matrix.
@@ -341,14 +326,11 @@ private:
 template <typename T, int P>
 class LinearSpectral3D {
 public:
-  LinearSpectral3D(
-    std::shared_ptr<mesh::Mesh> Mesh,
-    std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
-    std::shared_ptr<fem::Function<T>> speedOfSound,
-    std::shared_ptr<fem::Function<T>> density,
-    const T& sourceFrequency, const T& sourceAmplitude,
-    const T& sourceSpeed)
-  {
+  LinearSpectral3D(std::shared_ptr<mesh::Mesh> Mesh,
+                   std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
+                   std::shared_ptr<fem::Function<T>> speedOfSound,
+                   std::shared_ptr<fem::Function<T>> density, const T& sourceFrequency,
+                   const T& sourceAmplitude, const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -389,8 +371,7 @@ public:
 
     // Define LHS form
     a = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_a, {V},
-                          {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+        fem::create_form<T>(*form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -399,13 +380,9 @@ public:
     m->scatter_rev(std::plus<T>());
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(
-      fem::create_form<T>(*form_forms_L, {V}, 
-                          {{"g", g}, {"v_n", v_n}, 
-                           {"c0", c0}, {"rho0", rho0}},
-                          {}, 
-                          {{dolfinx::fem::IntegralType::exterior_facet,
-                            &(*ft)}}));
+    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+        *form_forms_L, {V}, {{"g", g}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}}, {},
+        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
 
@@ -420,7 +397,7 @@ public:
     c_ = coeff->x()->mutable_array();
 
     for (std::size_t i = 0; i < rho0_.size(); ++i)
-      c_[i] = - 1.0 / rho0_[i];
+      c_[i] = -1.0 / rho0_[i];
 
     coeff->x()->scatter_fwd();
   }
@@ -458,7 +435,8 @@ public:
 
     // Update boundary condition
     std::fill(g_.begin(), g_.end(), window * p0 * w0 / s0 * cos(w0 * t)); // homogenous domain
-    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t)); // heterogenous domain
+    // std::fill(g_.begin(), g_.end(), 2.0 * window * p0 * w0 / s0 * cos(w0 * t)); // heterogenous
+    // domain
 
     u->scatter_fwd();
     kernels::copy<T>(*u, *u_n->x());
@@ -506,27 +484,27 @@ public:
     std::vector<T> point_coordinates(3 * Nr * Nz);
     for (std::size_t i = 0; i < Nz; ++i) {
       for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3*j + 3*i*Nr] = j * 0.07 / (Nr - 1) - 0.035;
-        point_coordinates[3*j + 3*i*Nr + 1] = 0.0;
-        point_coordinates[3*j + 3*i*Nr + 2] = i * 0.12 / (Nz - 1);
+        point_coordinates[3 * j + 3 * i * Nr] = j * 0.07 / (Nr - 1) - 0.035;
+        point_coordinates[3 * j + 3 * i * Nr + 1] = 0.0;
+        point_coordinates[3 * j + 3 * i * Nr + 2] = i * 0.12 / (Nz - 1);
       }
     }
 
     // Compute evaluation parameters
     auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
     auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells = geometry::compute_colliding_cells(
-      *mesh, cell_candidates, point_coordinates);
+    auto colliding_cells
+        = geometry::compute_colliding_cells(*mesh, cell_candidates, point_coordinates);
 
     std::vector<std::int32_t> cells;
     std::vector<T> points_on_proc;
 
-    for (std::size_t i = 0; i < Nr*Nz; ++i) {
+    for (std::size_t i = 0; i < Nr * Nz; ++i) {
       auto link = colliding_cells.links(i);
       if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3*i]);
-        points_on_proc.push_back(point_coordinates[3*i + 1]);
-        points_on_proc.push_back(point_coordinates[3*i + 2]);
+        points_on_proc.push_back(point_coordinates[3 * i]);
+        points_on_proc.push_back(point_coordinates[3 * i + 1]);
+        points_on_proc.push_back(point_coordinates[3 * i + 2]);
         cells.push_back(link[0]);
       }
     }
@@ -614,10 +592,8 @@ public:
 
       if (step % 100 == 0) {
         if (mpi_rank == 0) {
-          std::cout << "t: " << t 
-                    << ",\t Steps: " << step 
-                    << "/" << totalStep 
-                    << "\t" << u_->array()[0] << std::endl;
+          std::cout << "t: " << t << ",\t Steps: " << step << "/" << totalStep << "\t"
+                    << u_->array()[0] << std::endl;
         }
       }
       // ----------------------------------------------------------------------
@@ -627,8 +603,7 @@ public:
         u_n->x()->scatter_fwd();
 
         // Evaluate function
-        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
-                  {num_points_local, 1});
+        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval, {num_points_local, 1});
         u_value = u_eval.data();
 
         // Write evaluation from each process to a single text file
@@ -636,12 +611,10 @@ public:
 
         for (int i = 0; i < mpi_size; ++i) {
           if (mpi_rank == i) {
-            fname = "/home/mabm4/data/pressure_on_xz_plane_" + 
-                    std::to_string(step_period) + ".txt";
+            fname = "/home/mabm4/data/pressure_on_xz_plane_" + std::to_string(step_period) + ".txt";
             std::ofstream txt_file(fname, std::ios_base::app);
             for (std::size_t i = 0; i < num_points_local; ++i) {
-              txt_file << *(p_value + 3 * i) << ","
-                       << *(p_value + 3 * i + 2) << "," 
+              txt_file << *(p_value + 3 * i) << "," << *(p_value + 3 * i + 2) << ","
                        << *(u_value + i) << std::endl;
             }
             txt_file.close();
@@ -658,24 +631,19 @@ public:
     kernels::copy<T>(*v_, *v_n->x());
     u_n->x()->scatter_fwd();
     v_n->x()->scatter_fwd();
-
   }
 
-  std::shared_ptr<fem::Function<T>> u_sol() const {
-    return u_n;
-  }
+  std::shared_ptr<fem::Function<T>> u_sol() const { return u_n; }
 
-  std::int64_t number_of_dofs() const {
-    return V->dofmap()->index_map->size_global();
-  }
+  std::int64_t number_of_dofs() const { return V->dofmap()->index_map->size_global(); }
 
 private:
-  int mpi_rank, mpi_size;  // MPI rank and size
-  int bs;  // block size
-  T freq;  // source frequency (Hz)
-  T p0;  // source amplitude (Pa)
-  T w0;  // angular frequency  (rad/s)
-  T s0;  // speed (m/s)
+  int mpi_rank, mpi_size; // MPI rank and size
+  int bs;                 // block size
+  T freq;                 // source frequency (Hz)
+  T p0;                   // source amplitude (Pa)
+  T w0;                   // angular frequency  (rad/s)
+  T s0;                   // speed (m/s)
   T period, window_length, window;
 
   // Mesh data
