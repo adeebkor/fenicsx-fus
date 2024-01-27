@@ -7,25 +7,22 @@
 #include "spectral_op.hpp"
 
 #include <cmath>
-#include <iostream>
-#include <iomanip>
 #include <dolfinx.h>
 #include <dolfinx/fem/Constant.h>
 #include <dolfinx/io/XDMFFile.h>
+#include <iomanip>
+#include <iostream>
 
 using T = double;
 
-
 template <typename T>
-const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha){
-  const T diffusivity = 2*alpha*c0*c0*c0/w0/w0;
+const T compute_diffusivity_of_sound(const T w0, const T c0, const T alpha) {
+  const T diffusivity = 2 * alpha * c0 * c0 * c0 / w0 / w0;
 
   return diffusivity;
 }
 
-
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
   {
@@ -35,9 +32,9 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // Material parameters (Water)
-    const T speedOfSoundWater = 1500.0;  // (m/s)
-    const T densityWater = 1000.0;  // (kg/m^3)
-    
+    const T speedOfSoundWater = 1500.0; // (m/s)
+    const T densityWater = 1000.0;      // (kg/m^3)
+
     // Set polynomial degree
     const int P = 4;
 
@@ -62,45 +59,39 @@ int main(int argc, char* argv[])
     // Create mesh
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
     auto mesh = std::make_shared<mesh::Mesh>(
-      mesh::create_box(
-        MPI_COMM_WORLD,
-        {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
-        {N, N, N},
-        mesh::CellType::hexahedron,
-        part));
+        mesh::create_box(MPI_COMM_WORLD, {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}}, {N, N, N},
+                         mesh::CellType::hexahedron, part));
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
 
     auto ndofs = V->dofmap()->index_map->size_global();
 
     // Create input function
     auto u = std::make_shared<fem::Function<T>>(V);
-    u->interpolate(
-      [](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>>
-      {
-        std::vector<T> u(x.extent(1));
-        
-        for (std::size_t p = 0; p < x.extent(1); ++p)
-          u[p] = std::sin(x(0, p)) * std::cos(std::numbers::pi * x(1, p));
+    u->interpolate([](auto x) -> std::pair<std::vector<T>, std::vector<std::size_t>> {
+      std::vector<T> u(x.extent(1));
 
-        return {u, {u.size()}};
-      });
+      for (std::size_t p = 0; p < x.extent(1); ++p)
+        u[p] = std::sin(x(0, p)) * std::cos(std::numbers::pi * x(1, p));
+
+      return {u, {u.size()}};
+    });
 
     // Create DG functions
     auto V_DG = std::make_shared<fem::FunctionSpace>(
-      fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
+        fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
 
     auto ncells = V_DG->dofmap()->index_map->size_global();
-    
+
     // Define cell functions
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
 
     std::span<T> c0_ = c0->x()->mutable_array();
     std::span<T> rho0_ = rho0->x()->mutable_array();
-    
+
     std::fill(c0_.begin(), c0_.end(), speedOfSoundWater);
     std::fill(rho0_.begin(), rho0_.end(), densityWater);
 
@@ -108,7 +99,7 @@ int main(int argc, char* argv[])
     // Stiffness coefficients
     std::vector<T> s_coeffs(c0_.size());
     for (std::size_t i = 0; i < s_coeffs.size(); ++i)
-      s_coeffs[i] = - 1.0 / rho0_[i];
+      s_coeffs[i] = -1.0 / rho0_[i];
 
     // ------------------------------------------------------------------------
     // Compute spectral stiffness vector
@@ -131,7 +122,6 @@ int main(int argc, char* argv[])
       std::cout << "Degrees of freedom: " << ndofs << "\n";
       std::cout << "Number of cells: " << ncells << "\n";
     }
-
   }
   PetscFinalize();
 }

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "precompute.hpp"
-#include "permute.hpp"
 #include "Fastor/Fastor.h"
+#include "permute.hpp"
+#include "precompute.hpp"
 
-#include <cmath>
 #include <basix/finite-element.h>
-#include <basix/quadrature.h>
 #include <basix/mdspan.hpp>
+#include <basix/quadrature.h>
+#include <cmath>
 
 namespace stdex = std::experimental;
 using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
@@ -20,13 +20,13 @@ using namespace Fastor;
 // -------------- //
 
 namespace mass {
-  template <typename T, int P, int Nq>
-  inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
-    
-    for (int iq = 0; iq < Nq; ++iq)
-      fw[iq] = coeff * fw[iq] * detJ[iq];
-  }
+template <typename T, int P, int Nq>
+inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict__ fw) {
+
+  for (int iq = 0; iq < Nq; ++iq)
+    fw[iq] = coeff * fw[iq] * detJ[iq];
 }
+} // namespace mass
 
 /// 3D Spectral Mass operator
 template <typename T, int P>
@@ -57,11 +57,8 @@ public:
     reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights]
-      = basix::quadrature::make_quadrature(
-          basix::quadrature::type::gll,
-          basix::cell::type::hexahedron,
-          Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
     detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
@@ -72,14 +69,12 @@ public:
   /// @param[in] coeffs Coefficients
   /// @param[out] y Output vector
   template <typename Alloc>
-  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs,
-                  la::Vector<T, Alloc>& y) {
+  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs, la::Vector<T, Alloc>& y) {
 
     std::span<const T> x_array = x.array();
     std::span<T> y_array = y.mutable_array();
 
-    for (std::int32_t c = 0; c < Nc; ++c)
-    {
+    for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
         x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
@@ -118,24 +113,22 @@ private:
 // ------------------- //
 
 namespace stiffness {
-  template <typename T, int P, int Nq>
-  inline void transform(T* __restrict__ G, T __restrict__ coeff,
-                        T* __restrict__ fw0, T* __restrict__ fw1,
-                        T* __restrict__ fw2) {
+template <typename T, int P, int Nq>
+inline void transform(T* __restrict__ G, T __restrict__ coeff, T* __restrict__ fw0,
+                      T* __restrict__ fw1, T* __restrict__ fw2) {
 
-    for (int iq = 0; iq < Nq; ++iq)
-    {
-      const T* _G = G + iq * 6;
-      const T w0 = fw0[iq];
-      const T w1 = fw1[iq];
-      const T w2 = fw2[iq];
+  for (int iq = 0; iq < Nq; ++iq) {
+    const T* _G = G + iq * 6;
+    const T w0 = fw0[iq];
+    const T w1 = fw1[iq];
+    const T w2 = fw2[iq];
 
-      fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
-      fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
-      fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
-    }
+    fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
+    fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
+    fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
   }
-}  // namespace
+}
+} // namespace stiffness
 
 enum
 {
@@ -175,34 +168,27 @@ public:
     reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights]
-      = basix::quadrature::make_quadrature(
-          basix::quadrature::type::gll,
-          basix::cell::type::hexahedron,
-          Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
     G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
-  
+
     // Get the derivative data
     std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
     std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi_.data());
 
     // Transpose derivative data
     dphiT_ = permute<Index<1, 0>>(dphi_);
-
   }
 
   template <typename Alloc>
-  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs,
-                  la::Vector<T, Alloc>& y) {
+  void operator()(const la::Vector<T, Alloc>& x, std::span<T> coeffs, la::Vector<T, Alloc>& y) {
 
     std::span<const T> x_array = x.array();
     std::span<T> y_array = y.mutable_array();
 
-    
-    for (std::int32_t c = 0; c < Nc; ++c)
-    {
+    for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       T* x_ = xi.data();
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -223,8 +209,7 @@ public:
 
       // Apply transform
       T* G = G_.data() + c * Nd * 6;
-      stiffness::transform<T, P, Nd>(G, coeffs[c], 
-                                     fw0_.data(), fw1_.data(), fw2_.data());
+      stiffness::transform<T, P, Nd>(G, coeffs[c], fw0_.data(), fw1_.data(), fw2_.data());
 
       // Apply contraction in the x-direction
       y0_ = einsum<Index<a0, b0>, Index<b0, b1, b2>>(dphiT_, fw0_);
