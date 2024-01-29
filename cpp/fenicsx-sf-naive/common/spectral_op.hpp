@@ -1,3 +1,6 @@
+// Copyright (C) 2024 Adeeb Arif Kor
+// SPDX-License-Identifier:    MIT
+
 #pragma once
 
 #include "permute.hpp"
