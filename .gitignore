@@ -2,7 +2,7 @@
 .vscode/
 
 # Ignore Fastor library
-cpp/Fastor
+cpp/fenicsx-sf-fastor/Fastor
 
 # Ignore Python generated files
 python/src/hifusim.egg-info
