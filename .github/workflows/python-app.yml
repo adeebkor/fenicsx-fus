@@ -34,13 +34,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install hifusim package
+    - name: Install fenicsxfus package
       run: python3 -m pip -v install python/ --no-cache-dir
 
     - name: Flake8 checks
       run: |
         python3 -m flake8 python/tests/
-        python3 -m flake8 python/src/hifusim/
+        python3 -m flake8 python/src/fenicsxfus/
     
     - name: Run tests
       run: |
