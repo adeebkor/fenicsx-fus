@@ -19,8 +19,8 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 
-from hifusim import WesterveltSpectralExplicit
-from hifusim.utils import compute_eval_params, compute_diffusivity_of_sound
+from fenicsxfus import WesterveltSpectralExplicit
+from fenicsxfus.utils import compute_eval_params, compute_diffusivity_of_sound
 
 # Source parameters
 f0 = 1e6  # source frequency (Hz)

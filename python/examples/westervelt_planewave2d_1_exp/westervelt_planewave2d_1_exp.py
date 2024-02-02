@@ -15,8 +15,8 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp, common
 
-from hifusim import WesterveltSpectralExplicit
-from hifusim.utils import compute_diffusivity_of_sound
+from fenicsxfus import WesterveltSpectralExplicit
+from fenicsxfus.utils import compute_diffusivity_of_sound
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank

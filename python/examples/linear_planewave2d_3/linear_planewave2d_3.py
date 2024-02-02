@@ -15,7 +15,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearSpectralSponge, compute_diffusivity_of_sound
+from fenicsxfus import LinearSpectralSponge, compute_diffusivity_of_sound
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank

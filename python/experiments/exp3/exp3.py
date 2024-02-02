@@ -12,7 +12,7 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LinearSpectralExplicit, LinearSpectralS2
+from fenicsxfus import LinearSpectralExplicit, LinearSpectralS2
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank

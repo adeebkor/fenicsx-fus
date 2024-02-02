@@ -6,8 +6,8 @@ from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import LossySpectralExplicit, LossySpectralImplicit
-from hifusim.utils import compute_diffusivity_of_sound
+from fenicsxfus import LossySpectralExplicit, LossySpectralImplicit
+from fenicsxfus.utils import compute_diffusivity_of_sound
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])

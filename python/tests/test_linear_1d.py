@@ -6,7 +6,7 @@ from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
-from hifusim import LinearExplicit
+from fenicsxfus import LinearExplicit
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])

@@ -16,8 +16,8 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 
-from hifusim import LinearSpectralExplicit
-from hifusim.utils import compute_eval_params
+from fenicsxfus import LinearSpectralExplicit
+from fenicsxfus.utils import compute_eval_params
 
 # Material parameters
 c0 = 1500  # medium 1 speed of sound (m/s)

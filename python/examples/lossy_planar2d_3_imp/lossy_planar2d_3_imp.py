@@ -17,8 +17,8 @@ from dolfinx.fem import FunctionSpace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
-from hifusim import LossySpectralImplicit
-from hifusim.utils import compute_diffusivity_of_sound
+from fenicsxfus import LossySpectralImplicit
+from fenicsxfus.utils import compute_diffusivity_of_sound
 
 
 # MPI

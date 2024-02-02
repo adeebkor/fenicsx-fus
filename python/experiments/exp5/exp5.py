@@ -12,8 +12,8 @@ from mpi4py import MPI
 from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import (create_interval, locate_entities_boundary, meshtags)
 
-from hifusim import LossySpectralExplicit
-from hifusim.utils import compute_diffusivity_of_sound, compute_eval_params
+from fenicsxfus import LossySpectralExplicit
+from fenicsxfus.utils import compute_diffusivity_of_sound, compute_eval_params
 
 # MPI
 mpi_rank = MPI.COMM_WORLD.rank
