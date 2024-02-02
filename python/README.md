@@ -6,12 +6,12 @@ To install the Python solver, run:
 
 `pip3 install . --no-cache-dir`
 
-in this directory. This will install a Python package called hifusim.
+in this directory. This will install a Python package called fenicsxfus.
 
 ## Running the code
 
 The examples directory contains examples of various problem being 
-solve using the hifusim package. For instance, to run the linear_hifu2d.py 
+solve using the fenicsxfus package. For instance, to run the linear_hifu2d.py 
 example, do:
 
 `python3 linear_hifu2d.py`
