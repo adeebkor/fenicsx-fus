@@ -1,6 +1,6 @@
 # Focused ultrasound simulation
 
-[![HIFU CI](https://github.com/adeebkor/fenicsx-fus/actions/workflows/python-app.yml/badge.svg)](https://github.com/adeebkor/fenicsx-fus/actions/workflows/python-app.yml)
+[![FEniCSx-FUS CI](https://github.com/adeebkor/fenicsx-fus/actions/workflows/python-app.yml/badge.svg)](https://github.com/adeebkor/fenicsx-fus/actions/workflows/python-app.yml)
 
 FEniCSx implementation for focused ultrasound (FUS) simulation. 
 
