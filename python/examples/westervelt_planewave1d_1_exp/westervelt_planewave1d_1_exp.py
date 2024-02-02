@@ -201,8 +201,8 @@ plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
 plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
 plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
 plt.xlim([data_range[0], data_range[1]])
-plt.tick_params(left = False, right = False , labelleft = False ,
-                labelbottom = True, bottom = True)
+plt.tick_params(left=False, right=False, labelleft=False,
+                labelbottom=True, bottom=True)
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.title(f"Attenuation = {alphadB}")
 plt.savefig(f"u_2_{str(alphadB).zfill(3)}.png", bbox_inches="tight")

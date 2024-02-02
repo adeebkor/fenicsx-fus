@@ -118,6 +118,7 @@ if mpi_rank == 0:
     print("Solve time: ", tsolve.elapsed()[0])
     print("Time per step: ", tsolve.elapsed()[0]/numberOfStep)
 
+
 # Best approximation
 class Analytical:
     """ Analytical solution """
