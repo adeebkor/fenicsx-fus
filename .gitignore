@@ -5,7 +5,7 @@
 cpp/fenicsx-sf-fastor/Fastor
 
 # Ignore Python generated files
-python/src/hifusim.egg-info
+python/src/fenicsxfus.egg-info
 *__pycache__/
 
 # Ignore output files
