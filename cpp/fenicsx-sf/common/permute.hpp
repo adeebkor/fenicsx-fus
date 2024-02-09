@@ -12,11 +12,12 @@
 /// @param[in] celltype Cell type
 /// @param[in] p Degree of basis function
 /// @param[out] out_arr Output dofmap
+template<typename T>
 void reorder_dofmap(std::span<std::int32_t> out_arr, std::span<std::int32_t> in_arr,
                     basix::cell::type celltype, int p) {
 
   // Create element
-  auto element = basix::create_element(basix::element::family::P, celltype, p,
+  auto element = basix::create_element<T>(basix::element::family::P, celltype, p,
                                        basix::element::lagrange_variant::gll_warped);
 
   // Get tensor product order
