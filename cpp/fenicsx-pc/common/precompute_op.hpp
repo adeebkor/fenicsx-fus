@@ -10,9 +10,8 @@
 #include <basix/quadrature.h>
 #include <cmath>
 
-namespace stdex = std::experimental;
-using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
+using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
+using cmdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
 
 // -------------- //
 // Mass operators //

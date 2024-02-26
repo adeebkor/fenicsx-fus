@@ -12,9 +12,8 @@
 #include <basix/quadrature.h>
 #include <cmath>
 
-namespace stdex = std::experimental;
-using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-using cmdspan2_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 2>>;
+using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
+using cmdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
 
 // -------------- //
 // Mass operators //
@@ -33,7 +32,7 @@ inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict
 template <typename T, int P>
 class MassSpectral3D {
 public:
-  MassSpectral3D(std::shared_ptr<fem::FunctionSpace>& V) {
+  MassSpectral3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
 
     // Create a map between polynomial degree and basix quadrature degree
     std::map<int, int> Qdegree;
@@ -48,18 +47,19 @@ public:
     Qdegree[10] = 18;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap and reorder
     dofmap_ = V->dofmap()->list().array();
     tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    reorder_dofmap<T>(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron,
+        basix::polyset::type::standard, Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
     detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
@@ -127,6 +127,7 @@ inline void transform(T* __restrict__ G, T __restrict__ coeff, T* __restrict__ f
     fw0[iq] = coeff * (_G[0] * w0 + _G[1] * w1 + _G[2] * w2);
     fw1[iq] = coeff * (_G[1] * w0 + _G[3] * w1 + _G[4] * w2);
     fw2[iq] = coeff * (_G[2] * w0 + _G[4] * w1 + _G[5] * w2);
+
   }
 }
 } // namespace stiffness
@@ -134,7 +135,7 @@ inline void transform(T* __restrict__ G, T __restrict__ coeff, T* __restrict__ f
 template <typename T, int P>
 class StiffnessSpectral3D {
 public:
-  StiffnessSpectral3D(std::shared_ptr<fem::FunctionSpace>& V) {
+  StiffnessSpectral3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
 
     // Create a map between polynomial degree and basix quadrature degree
     std::map<int, int> Qdegree;
@@ -149,24 +150,25 @@ public:
     Qdegree[10] = 18;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap and reorder
     dofmap_ = V->dofmap()->list().array();
     tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    reorder_dofmap<T>(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, 
+        basix::polyset::type::standard, Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
     G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
 
     // Get the derivative data
-    std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
+    std::vector<T> basis = tabulate_1d<T>(P, Qdegree[P], 1);
     std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi.begin());
     dphi_ = dphi.data();
   }
