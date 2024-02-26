@@ -10,8 +10,6 @@
 #include <dolfinx.h>
 #include <vector>
 
-namespace stdex = std::experimental;
-
 using namespace dolfinx;
 
 /// ---------------------------------------------------------------------------
@@ -36,8 +34,8 @@ template <typename T>
 std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::Mesh> mesh,
                                                    std::vector<double> points,
                                                    std::vector<double> weights) {
-  using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-  using mdspan2_t = stdex::mdspan<T, stdex::dextents<std::size_t, 2>>;
+  using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
+  using mdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
 
   // Number of points
   std::size_t nq = weights.size();
@@ -82,10 +80,10 @@ std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::M
       std::fill(J_b.begin(), J_b.end(), 0.0);
 
       // Get the derivatives at each quadrature points
-      auto dphi = stdex::submdspan(phi, std::pair(1, tdim + 1), q, stdex::full_extent, 0);
+      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
 
       // Compute Jacobian matrix
-      auto _J = stdex::submdspan(J, stdex::full_extent, stdex::full_extent);
+      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian(dphi, coord_dofs, _J);
 
       // Compute the determinant of the Jacobian
@@ -108,9 +106,9 @@ template <typename T>
 std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mesh> mesh,
                                                  std::vector<double> points,
                                                  std::vector<double> weights) {
-  using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-  using mdspan2_t = stdex::mdspan<T, stdex::dextents<std::size_t, 2>>;
-  using mdspan3_t = stdex::mdspan<T, stdex::dextents<std::size_t, 3>>;
+  using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
+  using mdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
+  using mdspan3_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 3>>;
 
   // The number of element of the upper triangular matrix
   std::map<int, int> gdim2dim;
@@ -183,22 +181,22 @@ std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mes
       std::fill(G_b.begin(), G_b.end(), 0.0);
 
       // Get the derivatives at each quadrature points
-      auto dphi = stdex::submdspan(phi, std::pair(1, tdim + 1), q, stdex::full_extent, 0);
+      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
 
       // Compute Jacobian matrix
-      auto _J = stdex::submdspan(J, stdex::full_extent, stdex::full_extent);
+      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian(dphi, coord_dofs, _J);
 
       // Compute the inverse Jacobian matrix
-      auto _K = stdex::submdspan(K, stdex::full_extent, stdex::full_extent);
+      auto _K = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(K, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian_inverse(_J, _K);
 
       // Transpose K -> K^{T}
-      auto _KT = stdex::submdspan(KT, stdex::full_extent, stdex::full_extent);
+      auto _KT = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(KT, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       transpose(_K, _KT);
 
       // Compute the scaled geometrical factor (K * K^{T})
-      auto _G = stdex::submdspan(G, stdex::full_extent, stdex::full_extent);
+      auto _G = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(G, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       math::dot(_K, _KT, _G);
 
       // Compute the scaled Jacobian determinant

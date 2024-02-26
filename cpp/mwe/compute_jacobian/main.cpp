@@ -13,10 +13,9 @@
 #include <basix/mdspan.hpp>
 #include <dolfinx.h>
 
-namespace stdex = std::experimental;
-using cmdspan4_t = stdex::mdspan<const double, stdex::dextents<std::size_t, 4>>;
-using mdspan2_t = stdex::mdspan<double, stdex::dextents<std::size_t, 2>>;
-using mdspan4_t = stdex::mdspan<double, stdex::dextents<std::size_t, 4>>;
+using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
+using mdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
+using mdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
 
 int main(int argc, char* argv[])
 {
@@ -122,10 +121,10 @@ int main(int argc, char* argv[])
             // Compute Jacobians and determinant for current cell
             for (std::size_t q = 0; q < nq; ++q)
             {
-                auto dphi = stdex::submdspan(phi, std::pair(1, tdim+1), q, 
-                                             stdex::full_extent, 0);
-                auto _J = stdex::submdspan(J, c, q, stdex::full_extent,
-                                           stdex::full_extent);
+                auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(phi, std::pair(1, tdim+1), q, 
+                                             MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
+                auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(J, c, q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent,
+                                           MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
                 cmap.compute_jacobian(dphi, coord_dofs, _J);
                 detJ(c, q) = cmap.compute_jacobian_determinant(_J, det_scratch);
             }
