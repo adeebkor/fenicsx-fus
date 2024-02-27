@@ -31,7 +31,7 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param y
 template <typename T>
 void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
-  std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
+  std::transform(x.array().begin(), x.array().begin() + x.index_map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
 }
@@ -54,7 +54,7 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>
 template <typename T, int P>
 class WesterveltSpectral {
 public:
-  WesterveltSpectral(std::shared_ptr<mesh::Mesh> Mesh,
+  WesterveltSpectral(std::shared_ptr<mesh::Mesh<T>> Mesh,
                      std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
                      std::shared_ptr<fem::Function<T>> speedOfSound,
                      std::shared_ptr<fem::Function<T>> density,
@@ -82,7 +82,7 @@ public:
     ft = FacetTags;
 
     // Define function space
-    V = std::make_shared<fem::FunctionSpace>(
+    V = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
 
     // Define field functions
@@ -103,11 +103,23 @@ public:
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
+    // Compute exterior facets
+    std::map<fem::IntegralType,
+        std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>>> fd;
+    auto facet_domains = fem::compute_integration_domains(
+      fem::IntegralType::exterior_facet, *V->mesh()->topology_mutable(), 
+      ft->indices(), mesh->topology()->dim() - 1, ft->values());
+    for (auto& facet : facet_domains) {
+      std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>> x;
+      x.emplace_back(facet.first, std::span(facet.second.data(), facet.second.size()));
+      fd.insert({fem::IntegralType::exterior_facet, std::move(x)});
+    } 
+
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    a = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_a, {V},
         {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}, {"u_n", u_n}, {"beta0", beta0}},
-        {}, {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
+        {}, fd));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -126,7 +138,7 @@ public:
                              {"rho0", rho0},
                              {"delta0", delta0},
                              {"beta0", beta0}},
-                            {}, {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
+                            {}, fd));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
   }
@@ -317,10 +329,10 @@ private:
   T s0;                   // speed (m/s)
   T period, window_length, window, dwindow;
 
-  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<mesh::Mesh<T>> mesh;
   std::shared_ptr<mesh::MeshTags<std::int32_t>> ft;
   std::shared_ptr<const common::IndexMap> index_map;
-  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::FunctionSpace<T>> V;
   std::shared_ptr<fem::Function<T>> u, u_n, v_n, w_n, g, dg, c0, rho0, delta0, beta0;
   std::shared_ptr<fem::Form<T>> a, L;
   std::shared_ptr<la::Vector<T>> m, b;

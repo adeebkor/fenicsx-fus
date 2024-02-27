@@ -15,96 +15,98 @@
 #include <iomanip>
 #include <iostream>
 
+#define T_MPI MPI_DOUBLE
+using T = double;
+
 int main(int argc, char* argv[]) {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
 
   {
-
     // MPI
     int mpi_rank, mpi_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
     // Source parameters
-    const double sourceFrequency = 0.5e6;                       // (Hz)
-    const double sourceAmplitude = 60000;                       // (Pa)
-    const double period = 1 / sourceFrequency;                  // (s)
-    const double angularFrequency = 2 * M_PI * sourceFrequency; // (rad/s)
+    const T sourceFrequency = 0.5e6;                       // (Hz)
+    const T sourceAmplitude = 60000;                       // (Pa)
+    const T period = 1 / sourceFrequency;                  // (s)
+    const T angularFrequency = 2 * M_PI * sourceFrequency; // (rad/s)
 
     // Material parameters (Water)
-    const double speedOfSoundWater = 1500.0; // (m/s)
-    const double densityWater = 1000.0;      // (kg/m^3)
+    const T speedOfSoundWater = 1500.0; // (m/s)
+    const T densityWater = 1000.0;      // (kg/m^3)
 
     // Material parameters (Skin)
-    const double speedOfSoundSkin = 1610.0;           // (m/s)
-    const double densitySkin = 1090.0;                // (kg/m^3)
-    const double attenuationCoefficientdBSkin = 20.0; // (dB/m)
-    const double attenuationCoefficientNpSkin = attenuationCoefficientdBSkin / 20 * log(10);
-    const double diffusivityOfSoundSkin = compute_diffusivity_of_sound(
+    const T speedOfSoundSkin = 1610.0;           // (m/s)
+    const T densitySkin = 1090.0;                // (kg/m^3)
+    const T attenuationCoefficientdBSkin = 20.0; // (dB/m)
+    const T attenuationCoefficientNpSkin = attenuationCoefficientdBSkin / 20 * log(10);
+    const T diffusivityOfSoundSkin = compute_diffusivity_of_sound(
         angularFrequency, speedOfSoundSkin, attenuationCoefficientNpSkin);
 
     // Material parameters (Cortical bone)
-    const double speedOfSoundCortBone = 2800.0;            // (m/s)
-    const double densityCortBone = 1850.0;                 // (kg/m^3)
-    const double attenuationCoefficientdBCortBone = 400.0; //(dB/m)
-    const double attenuationCoefficientNpCortBone = attenuationCoefficientdBCortBone / 20 * log(10);
-    const double diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
+    const T speedOfSoundCortBone = 2800.0;            // (m/s)
+    const T densityCortBone = 1850.0;                 // (kg/m^3)
+    const T attenuationCoefficientdBCortBone = 400.0; //(dB/m)
+    const T attenuationCoefficientNpCortBone = attenuationCoefficientdBCortBone / 20 * log(10);
+    const T diffusivityOfSoundCortBone = compute_diffusivity_of_sound(
         angularFrequency, speedOfSoundCortBone, attenuationCoefficientNpCortBone);
 
     // Material parameters (Trabecular bone)
-    const double speedOfSoundTrabBone = 2300.0;            // (m/s)
-    const double densityTrabBone = 1700.0;                 // (kg/m^3)
-    const double attenuationCoefficientdBTrabBone = 800.0; //(dB/m)
-    const double attenuationCoefficientNpTrabBone = attenuationCoefficientdBTrabBone / 20 * log(10);
-    const double diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
+    const T speedOfSoundTrabBone = 2300.0;            // (m/s)
+    const T densityTrabBone = 1700.0;                 // (kg/m^3)
+    const T attenuationCoefficientdBTrabBone = 800.0; //(dB/m)
+    const T attenuationCoefficientNpTrabBone = attenuationCoefficientdBTrabBone / 20 * log(10);
+    const T diffusivityOfSoundTrabBone = compute_diffusivity_of_sound(
         angularFrequency, speedOfSoundTrabBone, attenuationCoefficientNpTrabBone);
 
     // Material parameters (Brain)
-    const double speedOfSoundBrain = 1560.0;           // (m/s)
-    const double densityBrain = 1040.0;                // (kg/m^3)
-    const double attenuationCoefficientdBBrain = 30.0; // (dB/m)
-    const double attenuationCoefficientNpBrain = attenuationCoefficientdBBrain / 20 * log(10);
-    const double diffusivityOfSoundBrain = compute_diffusivity_of_sound(
+    const T speedOfSoundBrain = 1560.0;           // (m/s)
+    const T densityBrain = 1040.0;                // (kg/m^3)
+    const T attenuationCoefficientdBBrain = 30.0; // (dB/m)
+    const T attenuationCoefficientNpBrain = attenuationCoefficientdBBrain / 20 * log(10);
+    const T diffusivityOfSoundBrain = compute_diffusivity_of_sound(
         angularFrequency, speedOfSoundBrain, attenuationCoefficientNpBrain);
 
     // Domain parameters
-    const double domainLength = 0.12; // (m)
+    const T domainLength = 0.12; // (m)
 
     // FE parameters
     const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
-    auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
+    auto element = fem::CoordinateElement<T>(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "/home/mabm4/rds/hpc-work/mesh/planar_3d_2/mesh.xdmf", "r");
-    auto mesh = std::make_shared<mesh::Mesh>(
+    auto mesh = std::make_shared<mesh::Mesh<T>>(
         fmesh.read_mesh(element, mesh::GhostMode::none, "planar_3d_2"));
-    mesh->topology().create_connectivity(2, 3);
+    mesh->topology()->create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "planar_3d_2_cells"));
+        fmesh.read_meshtags(*mesh, "planar_3d_2_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "planar_3d_2_facets"));
+        fmesh.read_meshtags(*mesh, "planar_3d_2_facets"));
 
     // Mesh parameters
-    const int tdim = mesh->topology().dim();
-    const int num_cell = mesh->topology().index_map(tdim)->size_local();
+    const int tdim = mesh->topology()->dim();
+    const int num_cell = mesh->topology()->index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<double>::iterator min_mesh_size_local
+    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<T>::iterator min_mesh_size_local
         = std::min_element(mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(mesh_size_local.begin(), min_mesh_size_local);
-    double meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
-    double meshSizeMinGlobal;
-    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&meshSizeMinGlobal, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
+    T meshSizeMinGlobal;
+    MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
-    auto V_DG = std::make_shared<fem::FunctionSpace>(
+    auto V_DG = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
-    auto c0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto rho0 = std::make_shared<fem::Function<double>>(V_DG);
-    auto delta0 = std::make_shared<fem::Function<double>>(V_DG);
+    auto c0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
+    auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
 
     auto cells_1 = mt_cell->find(1);
     auto cells_2 = mt_cell->find(2);
@@ -113,7 +115,7 @@ int main(int argc, char* argv[]) {
     auto cells_5 = mt_cell->find(5);
     auto cells_6 = mt_cell->find(6);
 
-    std::span<double> c0_ = c0->x()->mutable_array();
+    std::span<T> c0_ = c0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
                   [&](std::int32_t& i) { c0_[i] = speedOfSoundWater; });
     std::for_each(cells_2.begin(), cells_2.end(),
@@ -128,7 +130,7 @@ int main(int argc, char* argv[]) {
                   [&](std::int32_t& i) { c0_[i] = speedOfSoundBrain; });
     c0->x()->scatter_fwd();
 
-    std::span<double> rho0_ = rho0->x()->mutable_array();
+    std::span<T> rho0_ = rho0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(),
                   [&](std::int32_t& i) { rho0_[i] = densityWater; });
     std::for_each(cells_2.begin(), cells_2.end(), [&](std::int32_t& i) { rho0_[i] = densitySkin; });
@@ -142,7 +144,7 @@ int main(int argc, char* argv[]) {
                   [&](std::int32_t& i) { rho0_[i] = densityBrain; });
     rho0->x()->scatter_fwd();
 
-    std::span<double> delta0_ = delta0->x()->mutable_array();
+    std::span<T> delta0_ = delta0->x()->mutable_array();
     std::for_each(cells_1.begin(), cells_1.end(), [&](std::int32_t& i) { delta0_[i] = 0.0; });
     std::for_each(cells_2.begin(), cells_2.end(),
                   [&](std::int32_t& i) { delta0_[i] = diffusivityOfSoundSkin; });
@@ -157,17 +159,16 @@ int main(int argc, char* argv[]) {
     delta0->x()->scatter_fwd();
 
     // Temporal parameters
-    const double CFL = 0.22;
-    double timeStepSize
-        = CFL * meshSizeMinGlobal / (speedOfSoundCortBone * degreeOfBasis * degreeOfBasis);
+    const T CFL = 0.22;
+    T timeStepSize = CFL * meshSizeMinGlobal / (speedOfSoundCortBone * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
-    const double startTime = 0.0;
-    const double finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
+    const T startTime = 0.0;
+    const T finalTime = domainLength / speedOfSoundWater + 8.0 / sourceFrequency;
     const int numberOfStep = (finalTime - startTime) / timeStepSize + 1;
 
     // Model
-    auto model = LossySpectral<double, 4>(mesh, mt_facet, c0, rho0, delta0, sourceFrequency,
+    auto model = LossySpectral<T, 4>(mesh, mt_facet, c0, rho0, delta0, sourceFrequency,
                                           sourceAmplitude, speedOfSoundWater);
 
     auto nDofs = model.number_of_dofs();
