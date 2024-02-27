@@ -32,8 +32,8 @@ void transpose(const U& A, V& B) {
 /// @param[in] weights The weights evaluated at the quadrature points
 template <typename T>
 std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::Mesh<T>> mesh,
-                                                        std::vector<T> points,
-                                                        std::vector<T> weights) {
+                                                   std::vector<T> points,
+                                                   std::vector<T> weights) {
   // Number of points
   std::size_t nq = weights.size();
 
@@ -100,8 +100,8 @@ std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::M
 /// @param[in] weights The weights evaluated at the quadrature points
 template <typename T>
 std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mesh<T>> mesh,
-                                                      std::vector<T> points,
-                                                      std::vector<T> weights) {
+                                                 std::vector<T> points,
+                                                 std::vector<T> weights) {
   // The number of element of the upper triangular matrix
   std::map<int, int> gdim2dim;
   gdim2dim[2] = 3;

@@ -34,9 +34,6 @@ template <typename T>
 std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::Mesh<T>> mesh,
                                                    std::vector<T> points,
                                                    std::vector<T> weights) {
-  using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
-  using mdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
-
   // Number of points
   std::size_t nq = weights.size();
 
@@ -54,17 +51,17 @@ std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::M
   // Tabulate basis functions at quadrature points
   std::array<std::size_t, 4> phi_shape = cmap.tabulate_shape(1, nq);
   std::vector<T> phi_b(std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
-  cmdspan4_t phi(phi_b.data(), phi_shape);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>> phi(phi_b.data(), phi_shape);
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
   // Create working arrays
   std::vector<T> coord_dofs_b(num_dofs_g * gdim);
-  mdspan2_t coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
 
   std::vector<T> J_b(tdim * gdim);
-  mdspan2_t J(J_b.data(), tdim, gdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> J(J_b.data(), tdim, gdim);
   std::vector<T> detJ_b(nc * nq);
-  mdspan2_t detJ(detJ_b.data(), nc, nq);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> detJ(detJ_b.data(), nc, nq);
   std::vector<T> det_scratch(2 * tdim * gdim);
 
   for (std::size_t c = 0; c < nc; ++c) {
@@ -105,10 +102,6 @@ template <typename T>
 std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mesh<T>> mesh,
                                                  std::vector<T> points,
                                                  std::vector<T> weights) {
-  using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
-  using mdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
-  using mdspan3_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 3>>;
-
   // The number of element of the upper triangular matrix
   std::map<int, int> gdim2dim;
   gdim2dim[2] = 3;
@@ -132,36 +125,36 @@ std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mes
   // Tabulate basis functions at quadrature points
   std::array<std::size_t, 4> phi_shape = cmap.tabulate_shape(1, nq);
   std::vector<T> phi_b(std::reduce(phi_shape.begin(), phi_shape.end(), 1, std::multiplies{}));
-  cmdspan4_t phi(phi_b.data(), phi_shape);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>> phi(phi_b.data(), phi_shape);
   cmap.tabulate(1, points, {nq, gdim}, phi_b);
 
   // Create working arrays
   std::vector<T> coord_dofs_b(num_dofs_g * gdim);
-  mdspan2_t coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> coord_dofs(coord_dofs_b.data(), num_dofs_g, gdim);
 
   // Jacobian
   std::vector<T> J_b(gdim * tdim);
-  mdspan2_t J(J_b.data(), gdim, tdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> J(J_b.data(), gdim, tdim);
 
   // Jacobian inverse J^{-1}
   std::vector<T> K_b(tdim * gdim);
-  mdspan2_t K(K_b.data(), tdim, gdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> K(K_b.data(), tdim, gdim);
 
   // Jacobian inverse transpose J^{-T}
   std::vector<T> KT_b(gdim * tdim);
-  mdspan2_t KT(KT_b.data(), gdim, tdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> KT(KT_b.data(), gdim, tdim);
 
   // G = J^{-1} * J^{-T}
   std::vector<T> G_b(gdim * tdim);
-  mdspan2_t G(G_b.data(), gdim, tdim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> G(G_b.data(), gdim, tdim);
 
   // G small
   std::vector<T> Gs_b(nc * nq * dim);
-  mdspan3_t Gs(Gs_b.data(), nc, nq, dim);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 3>> Gs(Gs_b.data(), nc, nq, dim);
 
   // Jacobian determinants
   std::vector<T> detJ_b(nc * nq);
-  mdspan2_t detJ(detJ_b.data(), nc, nq);
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<T, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> detJ(detJ_b.data(), nc, nq);
   std::vector<T> det_scratch(2 * gdim * tdim);
 
   for (std::size_t c = 0; c < nc; ++c) {
@@ -224,13 +217,15 @@ std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mes
 template <typename T>
 std::vector<T> tabulate_1d(int P, int Q, int derivative) {
   // Create element
-  auto element = basix::create_element<T>(basix::element::family::P, basix::cell::type::interval, P,
-                                       basix::element::lagrange_variant::gll_warped);
+  auto element = basix::create_element<T>(
+    basix::element::family::P, basix::cell::type::interval, P,
+    basix::element::lagrange_variant::gll_warped,
+    basix::element::dpc_variant::unset, false);
 
   // Create quadrature
-  auto [points, weights] = basix::quadrature::make_quadrature<T>(basix::quadrature::type::gll,
-                                                              basix::cell::type::interval, 
-                                                              basix::polyset::type::standard, Q);
+  auto [points, weights] = basix::quadrature::make_quadrature<T>(
+    basix::quadrature::type::gll, basix::cell::type::interval, 
+    basix::polyset::type::standard, Q);
 
   // Tabulate
   auto [table, shape] = element.tabulate(1, points, {weights.size(), 1});

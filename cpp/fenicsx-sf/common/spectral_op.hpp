@@ -12,9 +12,6 @@
 #include <basix/quadrature.h>
 #include <cmath>
 
-using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
-using cmdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
-
 // -------------- //
 // Mass operators //
 // -------------- //
@@ -51,10 +48,10 @@ public:
     int tdim = mesh->topology()->dim();
     Nc = mesh->topology()->index_map(tdim)->size_local();
 
-    // Get dofmap and reorder
-    dofmap_ = V->dofmap()->list().array();
-    tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap<T>(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    // Reorder dofmap to tensor produce order
+    dofmap_ = V->dofmap()->map();
+    tensor_dofmap.resize(dofmap_.size());
+    reorder_dofmap(tensor_dofmap, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
     auto [points, weights] = basix::quadrature::make_quadrature<T>(
@@ -78,13 +75,13 @@ public:
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
-        x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
+        x_[i] = x_array[tensor_dofmap[c * Nd + i]];
 
       T* sdetJ = detJ_.data() + c * Nd;
       mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
 
       for (std::int32_t i = 0; i < Nd; ++i)
-        y_array[tensor_dofmap_[c * Nd + i]] += x_[i];
+        y_array[tensor_dofmap[c * Nd + i]] += x_[i];
     }
   }
 
@@ -102,8 +99,8 @@ private:
   std::vector<T> detJ_;
 
   // Dofmap
-  std::vector<std::int32_t> dofmap_;
-  std::vector<std::int32_t> tensor_dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const std::int32_t, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
+  std::vector<std::int32_t> tensor_dofmap;
 
   // Local input array
   std::array<T, Nd> x_;
@@ -154,10 +151,10 @@ public:
     int tdim = mesh->topology()->dim();
     Nc = mesh->topology()->index_map(tdim)->size_local();
 
-    // Get dofmap and reorder
-    dofmap_ = V->dofmap()->list().array();
-    tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap<T>(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    // Reorder dofmap to tensor produce order
+    dofmap_ = V->dofmap()->map();
+    tensor_dofmap.resize(dofmap_.size());
+    reorder_dofmap(tensor_dofmap, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
     auto [points, weights] = basix::quadrature::make_quadrature<T>(
@@ -186,7 +183,7 @@ public:
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
-        x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
+        x_[i] = x_array[tensor_dofmap[c * Nd + i]];
 
       T1.fill(0.0);
       T2.fill(0.0);
@@ -241,7 +238,7 @@ public:
       transpose<T, N, N, N, 1, N, N * N>(T4.data(), y2_.data()); // [j3, j2, j1] -> [j1, j2, j3]
 
       for (std::int32_t i = 0; i < Nd; ++i)
-        y_array[tensor_dofmap_[c * Nd + i]] += y0_[i] + y1_[i] + y2_[i];
+        y_array[tensor_dofmap[c * Nd + i]] += y0_[i] + y1_[i] + y2_[i];
     }
   }
 
@@ -263,8 +260,8 @@ private:
   const T* dphi_;
 
   // Dofmap
-  std::vector<std::int32_t> dofmap_;
-  std::vector<std::int32_t> tensor_dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const std::int32_t, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
+  std::vector<std::int32_t> tensor_dofmap;
 
   // Coefficients at quadrature point
   std::array<T, Nd> fw0_;

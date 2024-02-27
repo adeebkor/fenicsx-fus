@@ -32,7 +32,7 @@ void copy(const la::Vector<T>& in, la::Vector<T>& out) {
 /// @param y
 template <typename T>
 void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>& y) {
-  std::transform(x.array().begin(), x.array().begin() + x.map()->size_local(), y.array().begin(),
+  std::transform(x.array().begin(), x.array().begin() + x.index_map()->size_local(), y.array().begin(),
                  r.mutable_array().begin(),
                  [&alpha](const T& vx, const T& vy) { return vx * alpha + vy; });
 }
@@ -55,13 +55,15 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>
 template <typename T, int P>
 class WesterveltSpectral3D {
 public:
-  WesterveltSpectral3D(std::shared_ptr<mesh::Mesh> Mesh,
+  WesterveltSpectral3D(std::shared_ptr<mesh::Mesh<T>> Mesh,
                        std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
                        std::shared_ptr<fem::Function<T>> speedOfSound,
                        std::shared_ptr<fem::Function<T>> density,
                        std::shared_ptr<fem::Function<T>> diffusivityOfSound,
                        std::shared_ptr<fem::Function<T>> coefficientOfNonlinearity,
-                       const T& sourceFrequency, const T& sourceAmplitude, const T& sourceSpeed) {
+                       const T& sourceFrequency,
+                       const T& sourceAmplitude,
+                       const T& sourceSpeed) {
     // MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -83,7 +85,7 @@ public:
     ft = FacetTags;
 
     // Define function space
-    V = std::make_shared<fem::FunctionSpace>(
+    V = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
 
     // Define field functions
@@ -105,10 +107,22 @@ public:
     std::span<T> u_ = u->x()->mutable_array();
     std::fill(u_.begin(), u_.end(), 1.0);
 
+    // Compute exterior facets
+    std::map<fem::IntegralType,
+        std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>>> fd;
+    auto facet_domains = fem::compute_integration_domains(
+      fem::IntegralType::exterior_facet, *V->mesh()->topology_mutable(), 
+      ft->indices(), mesh->topology()->dim() - 1, ft->values());
+    for (auto& facet : facet_domains) {
+      std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>> x;
+      x.emplace_back(facet.first, std::span(facet.second.data(), facet.second.size()));
+      fd.insert({fem::IntegralType::exterior_facet, std::move(x)});
+    } 
+
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    a = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
-        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
+        fd));
 
     m0 = std::make_shared<la::Vector<T>>(index_map, bs);
     m0_ = m0->mutable_array();
@@ -119,10 +133,10 @@ public:
     m_ = m->mutable_array();
 
     // Define RHS form
-    L = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    L = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_L, {V},
         {{"g", g}, {"dg", dg}, {"v_n", v_n}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
-        {{dolfinx::fem::IntegralType::exterior_facet, &(*ft)}}));
+        fd));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
 
@@ -255,53 +269,6 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
-    // ------------------------------------------------------------------------
-    // Computing function evaluation parameters
-
-    std::string fname;
-
-    // Grid parameters
-    const std::size_t Nr = 179;
-    const std::size_t Nz = 357;
-
-    // Create evaluation point coordinates
-    std::vector<double> point_coordinates(3 * Nr * Nz);
-    for (std::size_t i = 0; i < Nz; ++i) {
-      for (std::size_t j = 0; j < Nr; ++j) {
-        point_coordinates[3 * j + 3 * i * Nr] = j * 0.04 / (Nr - 1) - 0.02;
-        point_coordinates[3 * j + 3 * i * Nr + 1] = 0.0;
-        point_coordinates[3 * j + 3 * i * Nr + 2] = i * 0.08 / (Nz - 1);
-      }
-    }
-
-    // Compute evaluation parameters
-    auto bb_tree = geometry::BoundingBoxTree(*mesh, mesh->topology().dim());
-    auto cell_candidates = compute_collisions(bb_tree, point_coordinates);
-    auto colliding_cells
-        = geometry::compute_colliding_cells(*mesh, cell_candidates, point_coordinates);
-
-    std::vector<std::int32_t> cells;
-    std::vector<double> points_on_proc;
-
-    for (std::size_t i = 0; i < Nr * Nz; ++i) {
-      auto link = colliding_cells.links(i);
-      if (link.size() > 0) {
-        points_on_proc.push_back(point_coordinates[3 * i]);
-        points_on_proc.push_back(point_coordinates[3 * i + 1]);
-        points_on_proc.push_back(point_coordinates[3 * i + 2]);
-        cells.push_back(link[0]);
-      }
-    }
-
-    std::size_t num_points_local = points_on_proc.size() / 3;
-    std::vector<T> u_eval(num_points_local);
-
-    T* u_value = u_eval.data();
-    double* p_value = points_on_proc.data();
-
-    int numStepPerPeriod = period / timeStep + 3;
-    int step_period = 0;
-    // ------------------------------------------------------------------------
 
     // Time-stepping parameters
     T t = startTime;
@@ -380,35 +347,6 @@ public:
                     << u_->array()[0] << std::endl;
         }
       }
-      // ----------------------------------------------------------------------
-      // Collect data
-      if (t > 0.08 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
-        kernels::copy(*u_, *u_n->x());
-        u_n->x()->scatter_fwd();
-
-        // Evaluate function
-        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval, {num_points_local, 1});
-        u_value = u_eval.data();
-
-        // Write evaluation from each process to a single text file
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        for (int i = 0; i < mpi_size; ++i) {
-          if (mpi_rank == i) {
-            fname = "/home/mabm4/rds/hpc-work/data/pressure_field_" + std::to_string(step_period)
-                    + ".txt";
-            std::ofstream txt_file(fname, std::ios_base::app);
-            for (std::size_t i = 0; i < num_points_local; ++i) {
-              txt_file << *(p_value + 3 * i) << "," << *(p_value + 3 * i + 2) << ","
-                       << *(u_value + i) << std::endl;
-            }
-            txt_file.close();
-          }
-          MPI_Barrier(MPI_COMM_WORLD);
-        }
-        step_period++;
-      }
-      // ----------------------------------------------------------------------
     }
 
     // Prepare solution at final time
@@ -431,10 +369,10 @@ private:
   T s0;                   // speed (m/s)
   T period, window_length, window, dwindow;
 
-  std::shared_ptr<mesh::Mesh> mesh;
+  std::shared_ptr<mesh::Mesh<T>> mesh;
   std::shared_ptr<mesh::MeshTags<std::int32_t>> ft;
   std::shared_ptr<const common::IndexMap> index_map;
-  std::shared_ptr<fem::FunctionSpace> V;
+  std::shared_ptr<fem::FunctionSpace<T>> V;
   std::shared_ptr<fem::Function<T>> u, u_n, v_n, w_n, g, dg, c0, rho0, delta0, beta0;
   std::shared_ptr<fem::Form<T>> a, L;
   std::shared_ptr<la::Vector<T>> m, m0, b;
