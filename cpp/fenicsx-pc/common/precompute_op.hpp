@@ -10,9 +10,6 @@
 #include <basix/quadrature.h>
 #include <cmath>
 
-using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
-using cmdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
-
 // -------------- //
 // Mass operators //
 // -------------- //
@@ -40,7 +37,7 @@ inline void transform(T* __restrict__ detJ, T* __restrict__ phi, T __restrict__ 
 template <typename T, int P, int Q>
 class Mass2D {
 public:
-  Mass2D(std::shared_ptr<fem::FunctionSpace>& V) : dofmap_(0) {
+  Mass2D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
     // Create map between number of quadrature points to basix quadrature degree
     std::map<int, int> Qdegree;
     Qdegree[3] = 4;
@@ -53,28 +50,31 @@ public:
     Qdegree[10] = 16;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap
-    dofmap_ = V->dofmap()->list();
+    dofmap_ = V->dofmap()->map();
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::quadrilateral, Qdegree[Q]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::quadrilateral,
+        basix::polyset::type::standard, Qdegree[Q]);
 
     // Tabulate basis functions at quadrature points
     auto element
-        = basix::create_element(basix::element::family::P, basix::cell::type::quadrilateral, P,
-                                basix::element::lagrange_variant::gll_warped);
+        = basix::create_element<T>(
+          basix::element::family::P, basix::cell::type::quadrilateral, P,
+          basix::element::lagrange_variant::gll_warped,
+          basix::element::dpc_variant::unset, false);
 
     auto [basis, shape] = element.tabulate(0, points, {weights.size(), 2});
     phi.resize(Nd * Nq);
     std::copy(basis.begin(), basis.end(), phi.begin());
 
     // Compute the scaled of the Jacobian determinant
-    detJ_ = compute_scaled_jacobian_determinant(mesh, points, weights);
+    detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
   }
 
   /// Operator y = Mx
@@ -91,7 +91,7 @@ public:
 
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = dofmap_.links(c);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -120,7 +120,9 @@ private:
   std::vector<T> detJ_;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
+      const std::int32_t,
+      MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
 
   // Basis function
   std::vector<T> phi;
@@ -135,7 +137,7 @@ private:
 template <typename T, int P, int Q>
 class Mass3D {
 public:
-  Mass3D(std::shared_ptr<fem::FunctionSpace>& V) : dofmap_(0) {
+  Mass3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
     // Create map between number of quadrature points to basix quadrature degree
     std::map<int, int> Qdegree;
     Qdegree[3] = 4;
@@ -148,27 +150,30 @@ public:
     Qdegree[10] = 16;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap
-    dofmap_ = V->dofmap()->list();
+    dofmap_ = V->dofmap()->map();
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[Q]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron,
+        basix::polyset::type::standard, Qdegree[Q]);
 
     // Tabulate basis functions at quadrature points
-    auto element = basix::create_element(basix::element::family::P, basix::cell::type::hexahedron,
-                                         P, basix::element::lagrange_variant::gll_warped);
+    auto element = basix::create_element<T>(
+      basix::element::family::P, basix::cell::type::hexahedron,
+      P, basix::element::lagrange_variant::gll_warped,
+      basix::element::dpc_variant::unset, false);
 
     auto [basis, shape] = element.tabulate(0, points, {weights.size(), 3});
     phi.resize(Nd * Nq);
     std::copy(basis.begin(), basis.end(), phi.begin());
 
     // Compute the scaled of the Jacobian determinant
-    detJ_ = compute_scaled_jacobian_determinant(mesh, points, weights);
+    detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
   }
 
   /// Operator y = Mx
@@ -185,7 +190,7 @@ public:
 
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = dofmap_.links(c);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -214,7 +219,9 @@ private:
   std::vector<T> detJ_;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
+      const std::int32_t,
+      MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
 
   // Basis function
   std::vector<T> phi;
@@ -286,7 +293,7 @@ inline void transform3(T* __restrict__ G, T* __restrict__ dphi, T __restrict__ c
 template <typename T, int P, int Q>
 class Stiffness2D {
 public:
-  Stiffness2D(std::shared_ptr<fem::FunctionSpace>& V) : dofmap_(0) {
+  Stiffness2D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
     // Create map between number of quadrature points to basix quadrature degree
     std::map<int, int> Qdegree;
     Qdegree[3] = 4;
@@ -299,28 +306,30 @@ public:
     Qdegree[10] = 16;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap
-    dofmap_ = V->dofmap()->list();
+    dofmap_ = V->dofmap()->map();
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::quadrilateral, Qdegree[Q]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::quadrilateral,
+        basix::polyset::type::standard, Qdegree[Q]);
 
     // Tabulate basis functions at quadrature points
-    auto element
-        = basix::create_element(basix::element::family::P, basix::cell::type::quadrilateral, P,
-                                basix::element::lagrange_variant::gll_warped);
+    auto element = basix::create_element<T>(
+          basix::element::family::P, basix::cell::type::quadrilateral, P,
+          basix::element::lagrange_variant::gll_warped,
+          basix::element::dpc_variant::unset, false);
 
     auto [basis, shape] = element.tabulate(1, points, {weights.size(), 2});
     dphi.resize(2 * Nd * Nq);
     std::copy(basis.begin() + Nd * Nq, basis.end(), dphi.begin());
 
     // Compute the scaled of the geometrical factor
-    G_ = compute_scaled_geometrical_factor(mesh, points, weights);
+    G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
   }
 
   /// Operator y = Kx
@@ -336,7 +345,7 @@ public:
     T* dphi_ = dphi.data();
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = dofmap_.links(c);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -365,7 +374,9 @@ private:
   std::vector<T> G_;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
+      const std::int32_t,
+      MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
 
   // Derivatives of basis function
   std::vector<T> dphi;
@@ -380,7 +391,7 @@ private:
 template <typename T, int P, int Q>
 class Stiffness3D {
 public:
-  Stiffness3D(std::shared_ptr<fem::FunctionSpace>& V) : dofmap_(0) {
+  Stiffness3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
     // Create map between number of quadrature points to basix quadrature degree
     std::map<int, int> Qdegree;
     Qdegree[3] = 4;
@@ -393,27 +404,30 @@ public:
     Qdegree[10] = 16;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
     // Get dofmap
-    dofmap_ = V->dofmap()->list();
+    dofmap_ = V->dofmap()->map();
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[Q]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, 
+        basix::polyset::type::standard, Qdegree[Q]);
 
     // Tabulate basis functions at quadrature points
-    auto element = basix::create_element(basix::element::family::P, basix::cell::type::hexahedron,
-                                         P, basix::element::lagrange_variant::gll_warped);
+    auto element = basix::create_element<T>(
+      basix::element::family::P, basix::cell::type::hexahedron,
+      P, basix::element::lagrange_variant::gll_warped, 
+      basix::element::dpc_variant::unset, false);
 
     auto [basis, shape] = element.tabulate(1, points, {weights.size(), 3});
     dphi.resize(3 * Nd * Nq);
     std::copy(basis.begin() + Nd * Nq, basis.end(), dphi.begin());
 
     // Compute the scaled of the geometrical factor
-    G_ = compute_scaled_geometrical_factor(mesh, points, weights);
+    G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
   }
 
   /// Operator y = Kx
@@ -429,7 +443,7 @@ public:
     T* dphi_ = dphi.data();
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = dofmap_.links(c);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -458,7 +472,9 @@ private:
   std::vector<T> G_;
 
   // Dofmap
-  graph::AdjacencyList<std::int32_t> dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<
+      const std::int32_t,
+      MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
 
   // Derivatives of basis function
   std::vector<T> dphi;
