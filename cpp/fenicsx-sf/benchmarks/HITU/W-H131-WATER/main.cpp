@@ -18,6 +18,8 @@
 #define T_MPI MPI_DOUBLE
 using T = double;
 
+using namespace dolfinx;
+
 int main(int argc, char* argv[]) {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);

@@ -12,9 +12,6 @@
 #include <basix/quadrature.h>
 #include <cmath>
 
-using cmdspan4_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 4>>;
-using cmdspan2_t = MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const double, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>>;
-
 using namespace Fastor;
 
 // -------------- //
@@ -34,7 +31,7 @@ inline void transform(T* __restrict__ detJ, T& __restrict__ coeff, T* __restrict
 template <typename T, int P>
 class MassSpectral3D {
 public:
-  MassSpectral3D(std::shared_ptr<fem::FunctionSpace>& V) {
+  MassSpectral3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
 
     // Create a map between polynomial degree and basix quadrature degree
     std::map<int, int> Qdegree;
@@ -49,18 +46,19 @@ public:
     Qdegree[10] = 18;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
-    // Get dofmap and reorder
-    dofmap_ = V->dofmap()->list().array();
-    tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    // Reorder dofmap to tensor produce order
+    dofmap_ = V->dofmap()->map();
+    tensor_dofmap.resize(dofmap_.size());
+    reorder_dofmap(tensor_dofmap, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron,
+        basix::polyset::type::standard, Qdegree[P]);
 
     // Compute the scaled of the Jacobian determinant
     detJ_ = compute_scaled_jacobian_determinant<T>(mesh, points, weights);
@@ -79,13 +77,13 @@ public:
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
-        x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
+        x_[i] = x_array[tensor_dofmap[c * Nd + i]];
 
       T* sdetJ = detJ_.data() + c * Nd;
       mass::transform<T, P, Nd>(sdetJ, coeffs[c], x_.data());
 
       for (std::int32_t i = 0; i < Nd; ++i)
-        y_array[tensor_dofmap_[c * Nd + i]] += x_[i];
+        y_array[tensor_dofmap[c * Nd + i]] += x_[i];
     }
   }
 
@@ -103,8 +101,8 @@ private:
   std::vector<T> detJ_;
 
   // Dofmap
-  std::vector<std::int32_t> dofmap_;
-  std::vector<std::int32_t> tensor_dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const std::int32_t, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
+  std::vector<std::int32_t> tensor_dofmap;
 
   // Local input array
   std::array<T, Nd> x_;
@@ -145,7 +143,7 @@ enum
 template <typename T, int P>
 class StiffnessSpectral3D {
 public:
-  StiffnessSpectral3D(std::shared_ptr<fem::FunctionSpace>& V) {
+  StiffnessSpectral3D(std::shared_ptr<fem::FunctionSpace<T>>& V) {
 
     // Create a map between polynomial degree and basix quadrature degree
     std::map<int, int> Qdegree;
@@ -160,24 +158,25 @@ public:
     Qdegree[10] = 18;
 
     // Get mesh and mesh attributes
-    std::shared_ptr<const mesh::Mesh> mesh = V->mesh();
-    int tdim = mesh->topology().dim();
-    Nc = mesh->topology().index_map(tdim)->size_local();
+    std::shared_ptr<const mesh::Mesh<T>> mesh = V->mesh();
+    int tdim = mesh->topology()->dim();
+    Nc = mesh->topology()->index_map(tdim)->size_local();
 
-    // Get dofmap and reorder
-    dofmap_ = V->dofmap()->list().array();
-    tensor_dofmap_.resize(dofmap_.size());
-    reorder_dofmap(tensor_dofmap_, dofmap_, basix::cell::type::hexahedron, P);
+    // Reorder dofmap to tensor produce order
+    dofmap_ = V->dofmap()->map();
+    tensor_dofmap.resize(dofmap_.size());
+    reorder_dofmap(tensor_dofmap, dofmap_, basix::cell::type::hexahedron, P);
 
     // Tabulate quadrature points and weights
-    auto [points, weights] = basix::quadrature::make_quadrature(
-        basix::quadrature::type::gll, basix::cell::type::hexahedron, Qdegree[P]);
+    auto [points, weights] = basix::quadrature::make_quadrature<T>(
+        basix::quadrature::type::gll, basix::cell::type::hexahedron, 
+        basix::polyset::type::standard, Qdegree[P]);
 
     // Compute the scaled of the geometrical factor
     G_ = compute_scaled_geometrical_factor<T>(mesh, points, weights);
 
     // Get the derivative data
-    std::vector<double> basis = tabulate_1d(P, Qdegree[P], 1);
+    std::vector<T> basis = tabulate_1d<T>(P, Qdegree[P], 1);
     std::copy(basis.begin() + (P + 1) * (P + 1), basis.end(), dphi_.data());
 
     // Transpose derivative data
@@ -194,7 +193,7 @@ public:
       // Pack coefficients
       T* x_ = xi.data();
       for (std::int32_t i = 0; i < Nd; ++i)
-        x_[i] = x_array[tensor_dofmap_[c * Nd + i]];
+        x_[i] = x_array[tensor_dofmap[c * Nd + i]];
 
       // Apply contraction in the x-direction
       fw0_ = einsum<Index<a0, b0>, Index<b0, b1, b2>>(dphi_, xi);
@@ -230,7 +229,7 @@ public:
       T* y1 = y1_.data();
       T* y2 = y2_.data();
       for (std::int32_t i = 0; i < Nd; ++i)
-        y_array[tensor_dofmap_[c * Nd + i]] += y0[i] + y1[i] + y2[i];
+        y_array[tensor_dofmap[c * Nd + i]] += y0[i] + y1[i] + y2[i];
     }
   }
 
@@ -252,8 +251,8 @@ private:
   Fastor::Tensor<T, N, N> dphiT_;
 
   // Dofmap
-  std::vector<std::int32_t> dofmap_;
-  std::vector<std::int32_t> tensor_dofmap_;
+  MDSPAN_IMPL_STANDARD_NAMESPACE::mdspan<const std::int32_t, MDSPAN_IMPL_STANDARD_NAMESPACE::dextents<std::size_t, 2>> dofmap_;
+  std::vector<std::int32_t> tensor_dofmap;
 
   // Coefficients at quadrature point
   Fastor::Tensor<T, N, N, N> fw0_;
