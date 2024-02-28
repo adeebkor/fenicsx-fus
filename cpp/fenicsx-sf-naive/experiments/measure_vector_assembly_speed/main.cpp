@@ -86,20 +86,20 @@ int main(int argc, char* argv[]) {
     const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
-    auto element = fem::CoordinateElement(mesh::CellType::hexahedron, 1);
+    auto element = fem::CoordinateElement<T>(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "/home/mabm4/rds/hpc-work/mesh/transducer_3d_6/mesh.xdmf",
                        "r");
-    auto mesh = std::make_shared<mesh::Mesh>(
+    auto mesh = std::make_shared<mesh::Mesh<T>>(
         fmesh.read_mesh(element, mesh::GhostMode::none, "transducer_3d_6"));
-    mesh->topology().create_connectivity(2, 3);
+    mesh->topology()->create_connectivity(2, 3);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "transducer_3d_6_cells"));
+        fmesh.read_meshtags(*mesh, "transducer_3d_6_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "transducer_3d_6_facets"));
+        fmesh.read_meshtags(*mesh, "transducer_3d_6_facets"));
 
     // Mesh parameters
-    const int tdim = mesh->topology().dim();
-    const int num_cell = mesh->topology().index_map(tdim)->size_local();
+    const int tdim = mesh->topology()->dim();
+    const int num_cell = mesh->topology()->index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
     std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
-    auto V_DG = std::make_shared<fem::FunctionSpace>(
+    auto V_DG = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a0, "c0", mesh));
 
     // Define cell functions
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
     beta0->x()->scatter_fwd();
 
     // Define function space
-    auto V = std::make_shared<fem::FunctionSpace>(
+    auto V = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a0, "u", mesh));
 
     auto ndofs = V->dofmap()->index_map->size_global();
@@ -215,6 +215,18 @@ int main(int argc, char* argv[]) {
 
     std::span<T> u_n_ = u_n->x()->mutable_array();
     std::fill(u_n_.begin(), u_n_.end(), 2.0);
+
+    // Compute exterior facets
+    std::map<fem::IntegralType,
+        std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>>> fd;
+    auto facet_domains = fem::compute_integration_domains(
+      fem::IntegralType::exterior_facet, *V->mesh()->topology_mutable(), 
+      mt_facet->indices(), mesh->topology()->dim() - 1, mt_facet->values());
+    for (auto& facet : facet_domains) {
+      std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>> x;
+      x.emplace_back(facet.first, std::span(facet.second.data(), facet.second.size()));
+      fd.insert({fem::IntegralType::exterior_facet, std::move(x)});
+    } 
 
     // ------------------------------------------------------------------------
     // Assembly of a0
@@ -258,7 +270,7 @@ int main(int argc, char* argv[]) {
 
     auto a1 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
         *form_forms_a1, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
-        {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+        fd));
 
     auto m1 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto m1_ = m1->mutable_array();
@@ -356,7 +368,7 @@ int main(int argc, char* argv[]) {
 
     auto L1 = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_forms_L1, {V}, {{"g", g}, {"rho0", rho0}}, {},
-                            {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+                            fd));
 
     auto b1 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b1_ = b1->mutable_array();
@@ -375,7 +387,7 @@ int main(int argc, char* argv[]) {
 
     auto L2 = std::make_shared<fem::Form<T>>(
         fem::create_form<T>(*form_forms_L2, {V}, {{"v_n", v_n}, {"rho0", rho0}, {"c0", c0}}, {},
-                            {{dolfinx::fem::IntegralType::exterior_facet, &(*mt_facet)}}));
+                            fd));
 
     auto b2 = std::make_shared<la::Vector<T>>(index_map, bs);
     auto b2_ = b2->mutable_array();

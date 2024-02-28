@@ -50,23 +50,23 @@ int main(int argc, char* argv[]) {
     const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
-    auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, 1);
+    auto element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
-    auto mesh = std::make_shared<mesh::Mesh>(
+    auto mesh = std::make_shared<mesh::Mesh<T>>(
         fmesh.read_mesh(element, mesh::GhostMode::none, "planewave_2d_4"));
-    mesh->topology().create_connectivity(1, 2);
+    mesh->topology()->create_connectivity(1, 2);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "planewave_2d_4_cells"));
+        fmesh.read_meshtags(*mesh, "planewave_2d_4_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(mesh, "planewave_2d_4_facets"));
+        fmesh.read_meshtags(*mesh, "planewave_2d_4_facets"));
 
     // Mesh parameters
-    const int tdim = mesh->topology().dim();
-    const int num_cell = mesh->topology().index_map(tdim)->size_local();
+    const int tdim = mesh->topology()->dim();
+    const int num_cell = mesh->topology()->index_map(tdim)->size_local();
     std::vector<int> num_cell_range(num_cell);
     std::iota(num_cell_range.begin(), num_cell_range.end(), 0.0);
-    std::vector<double> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
-    std::vector<double>::iterator min_mesh_size_local
+    std::vector<T> mesh_size_local = mesh::h(*mesh, num_cell_range, tdim);
+    std::vector<T>::iterator min_mesh_size_local
         = std::min_element(mesh_size_local.begin(), mesh_size_local.end());
     int mesh_size_local_idx = std::distance(mesh_size_local.begin(), min_mesh_size_local);
     T meshSizeMinLocal = mesh_size_local.at(mesh_size_local_idx);
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
     // Define DG function space for the physical parameters of the domain
-    auto V_DG = std::make_shared<fem::FunctionSpace>(
+    auto V_DG = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
@@ -133,22 +133,13 @@ int main(int argc, char* argv[]) {
 
     // Solve
     model.init();
-
-    common::Timer solve_time("~ SOLVE TIME");
-    solve_time.start();
-
     model.rk4(startTime, finalTime, timeStepSize);
-
-    solve_time.stop();
 
     // Final solution
     auto u_n = model.u_sol();
 
     // Output to VTX
-    dolfinx::io::VTXWriter u_out(mesh->comm(), "output_final.bp", {u_n});
+    dolfinx::io::VTXWriter<T> u_out(mesh->comm(), "output_final.bp", {u_n}, "BP4");
     u_out.write(0.0);
-
-    // List timings
-    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
   }
 }

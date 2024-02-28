@@ -26,7 +26,7 @@ add_custom_command(
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-include_directories("../../common" ".")
+include_directories("../../../common" ".")
 
 add_executable(${PROJECT_NAME} forms.c main.cpp)
 target_link_libraries(${PROJECT_NAME} dolfinx)

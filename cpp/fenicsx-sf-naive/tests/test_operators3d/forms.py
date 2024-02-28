@@ -1,24 +1,23 @@
-import basix.ufl_wrapper
-from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction, VectorElement,
-                 dx, grad, hexahedron, inner)
+import basix
+from basix.ufl import element
+from ufl import (Coefficient, FunctionSpace, Mesh, TestFunction,
+                 grad, dx, inner)
 
 P = 4  # Degree of polynomial basis
 Q = 5  # Number of quadrature points
 G = 1  # Mesh geometry order
 
 # Define mesh and finite element
-coord_element = VectorElement("Lagrange", hexahedron, G)
+coord_element = element("Lagrange", "hexahedron", G, shape=(3, ))
 mesh = Mesh(coord_element)
-element = basix.ufl_wrapper.create_element(
-    basix.ElementFamily.P, basix.CellType.hexahedron, P,
+e = element(basix.ElementFamily.P, basix.CellType.hexahedron, P,
     basix.LagrangeVariant.gll_warped)
-element_DG = basix.ufl_wrapper.create_element(
-    basix.ElementFamily.P, basix.CellType.hexahedron, 0,
+e_DG = element(basix.ElementFamily.P, basix.CellType.hexahedron, 0,
     basix.LagrangeVariant.gll_warped, basix.DPCVariant.unset, True)
 
 # Define function spaces
-V = FunctionSpace(mesh, element)
-V_DG = FunctionSpace(mesh, element_DG)
+V = FunctionSpace(mesh, e)
+V_DG = FunctionSpace(mesh, e_DG)
 
 c0 = Coefficient(V_DG)
 rho0 = Coefficient(V_DG)

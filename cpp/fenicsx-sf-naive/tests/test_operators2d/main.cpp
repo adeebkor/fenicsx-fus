@@ -11,15 +11,13 @@
 #include <dolfinx/io/XDMFFile.h>
 
 #define T_MPI MPI_DOUBLE
-
-using namespace dolfinx;
 using T = double;
 
-int main(int argc, char* argv[]) {
+using namespace dolfinx;
 
+int main(int argc, char* argv[]) {
   dolfinx::init_logging(argc, argv);
   PetscInitialize(&argc, &argv, nullptr, nullptr);
-
   {
     // MPI
     int mpi_rank, mpi_size;
@@ -46,16 +44,16 @@ int main(int argc, char* argv[]) {
     */
 
     // Read mesh and tags
-    auto element = fem::CoordinateElement(mesh::CellType::quadrilateral, G);
+    auto element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, G);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh_1/mesh.xdmf", "r");
     auto mesh
-        = std::make_shared<mesh::Mesh>(fmesh.read_mesh(element, mesh::GhostMode::none, "quad"));
-    mesh->topology().create_connectivity(1, 2);
+        = std::make_shared<mesh::Mesh<T>>(fmesh.read_mesh(element, mesh::GhostMode::none, "quad"));
+    mesh->topology()->create_connectivity(1, 2);
     auto mt_cell
-        = std::make_shared<mesh::MeshTags<std::int32_t>>(fmesh.read_meshtags(mesh, "quad_cells"));
+        = std::make_shared<mesh::MeshTags<std::int32_t>>(fmesh.read_meshtags(*mesh, "quad_cells"));
 
     // Create function space
-    auto V = std::make_shared<fem::FunctionSpace>(
+    auto V = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_m1, "u", mesh));
 
     // Get index map and block size
@@ -85,7 +83,7 @@ int main(int argc, char* argv[]) {
                    w_n->x()->mutable_array().begin(), [&](const T& vx) { return vx * vx; });
 
     // Create DG functions
-    auto V_DG = std::make_shared<fem::FunctionSpace>(
+    auto V_DG = std::make_shared<fem::FunctionSpace<T>>(
         fem::create_functionspace(functionspace_form_forms_m1, "c0", mesh));
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
@@ -110,8 +108,8 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // Compute dolfinx m1 vector
-    auto M1 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_m1, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+    auto M1 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_m1, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
 
     auto m1 = std::make_shared<fem::Function<T>>(V);
     fem::assemble_vector(m1->x()->mutable_array(), *M1);
@@ -139,8 +137,8 @@ int main(int argc, char* argv[]) {
     // ------------------------------------------------------------------------
     // Equality check (Mass 1)
 
-    auto Em1 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_E, {}, {{"f0", m1}, {"f1", ms1}}, {}, {}, mesh));
+    auto Em1 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_E, {}, {{"f0", m1}, {"f1", ms1}}, {}, {}, mesh));
     T error_m1 = fem::assemble_scalar(*Em1);
     T error_m1_sum;
     MPI_Reduce(&error_m1, &error_m1_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -157,7 +155,7 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // Compute dolfinx m2 vector
-    auto M2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    auto M2 = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_m2, {V}, {{"u", u}, {"u_n", u_n}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0}},
         {}, {}));
 
@@ -187,8 +185,8 @@ int main(int argc, char* argv[]) {
     // ------------------------------------------------------------------------
     // Equality check (Mass 2)
 
-    auto Em2 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_E, {}, {{"f0", m2}, {"f1", ms2}}, {}, {}, mesh));
+    auto Em2 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_E, {}, {{"f0", m2}, {"f1", ms2}}, {}, {}, mesh));
     T error_m2 = fem::assemble_scalar(*Em2);
     T error_m2_sum;
     MPI_Reduce(&error_m2, &error_m2_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -205,7 +203,7 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // Compute dolfinx m3 vector
-    auto M3 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    auto M3 = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_m3, {V}, {{"u_n", u_n}, {"c0", c0}, {"rho0", rho0}, {"beta0", beta0}}, {}, {}));
 
     auto m3 = std::make_shared<fem::Function<T>>(V);
@@ -234,8 +232,8 @@ int main(int argc, char* argv[]) {
     // ------------------------------------------------------------------------
     // Equality check (Mass 3)
 
-    auto Em3 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_E, {}, {{"f0", m3}, {"f1", ms3}}, {}, {}, mesh));
+    auto Em3 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_E, {}, {{"f0", m3}, {"f1", ms3}}, {}, {}, mesh));
     T error_m3 = fem::assemble_scalar(*Em3);
     T error_m3_sum;
     MPI_Reduce(&error_m3, &error_m3_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -252,8 +250,8 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // Compute dolfinx s1 vector
-    auto s1 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_b1, {V}, {{"v_n", v_n}, {"rho0", rho0}}, {}, {}));
+    auto s1 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_b1, {V}, {{"v_n", v_n}, {"rho0", rho0}}, {}, {}));
 
     auto b1 = std::make_shared<fem::Function<T>>(V);
     fem::assemble_vector(b1->x()->mutable_array(), *s1);
@@ -281,8 +279,8 @@ int main(int argc, char* argv[]) {
     // ------------------------------------------------------------------------
     // Equality check (Stiffness 1)
 
-    auto Es1 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_E, {}, {{"f0", b1}, {"f1", bs1}}, {}, {}, mesh));
+    auto Es1 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_E, {}, {{"f0", b1}, {"f1", bs1}}, {}, {}, mesh));
     T error_s1 = fem::assemble_scalar(*Es1);
     T error_s1_sum;
     MPI_Reduce(&error_s1, &error_s1_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -299,7 +297,7 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // Compute dolfinx s1 vector
-    auto s2 = std::make_shared<fem::Form<T>>(fem::create_form<T>(
+    auto s2 = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_b2, {V}, {{"v_n", v_n}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, {},
         {}));
 
@@ -329,8 +327,8 @@ int main(int argc, char* argv[]) {
     // ------------------------------------------------------------------------
     // Equality check (Stiffness 2)
 
-    auto Es2 = std::make_shared<fem::Form<T>>(
-        fem::create_form<T>(*form_forms_E, {}, {{"f0", b2}, {"f1", bs2}}, {}, {}, mesh));
+    auto Es2 = std::make_shared<fem::Form<T, T>>(
+        fem::create_form<T, T>(*form_forms_E, {}, {{"f0", b2}, {"f1", bs2}}, {}, {}, mesh));
     T error_s2 = fem::assemble_scalar(*Es2);
     T error_s2_sum;
     MPI_Reduce(&error_s2, &error_s2_sum, 1, T_MPI, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -339,6 +337,5 @@ int main(int argc, char* argv[]) {
       std::cout << "Relative L2 error (stiffness 2): " << error_s2_sum << std::endl;
     }
   }
-
   PetscFinalize();
 }
