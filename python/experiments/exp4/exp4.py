@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
-from dolfinx.mesh import (create_interval, locate_entities_boundary, meshtags)
+from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
 from fenicsxfus import LinearSpectralExplicit
@@ -53,15 +53,16 @@ mesh = create_interval(MPI.COMM_WORLD, numberOfElements, [0, domainLength])
 # Tag boundaries
 tdim = mesh.topology.dim
 
-facets0 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+facets0 = locate_entities_boundary(mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] > domainLength - np.finfo(float).eps)
+    mesh, tdim - 1, lambda x: x[0] > domainLength - np.finfo(float).eps
+)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                    np.full(facets1.shape, 2, np.intc)))
-mt = meshtags(mesh, tdim-1, indices, values[pos])
+values = np.hstack(
+    (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+)
+mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Define a DG function space for the medium properties
 V_DG = FunctionSpace(mesh, ("DG", 0))
@@ -72,7 +73,7 @@ rho0 = Function(V_DG)
 rho0.x.array[:] = density
 
 # Temporal parameters
-CFL = 1/3200
+CFL = 1 / 3200
 timeStepSize = CFL * meshSize / speedOfSound
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
@@ -82,8 +83,17 @@ numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
 model = LinearSpectralExplicit(
-    mesh, mt, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
-    speedOfSound, rkOrder, timeStepSize)
+    mesh,
+    mt,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()
@@ -92,7 +102,7 @@ uh, vh, tf = model.rk(startTime, finalTime)
 
 # Compute accuracy
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0
@@ -102,8 +112,11 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-            np.heaviside(self.t-x[0]/self.c0, 0)
+        val = (
+            self.p0
+            * np.sin(self.w0 * (self.t - x[0] / self.c0))
+            * np.heaviside(self.t - x[0] / self.c0, 0)
+        )
 
         return val
 
@@ -114,16 +127,15 @@ u_e.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, tf))
 
 # L2 error
 diff = uh - u_e
-L2_diff = mesh.comm.allreduce(
-    assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
-L2_exact = mesh.comm.allreduce(
-    assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
+L2_diff = mesh.comm.allreduce(assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
+L2_exact = mesh.comm.allreduce(assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
 
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
 print(
     f"{degreeOfBasis},{meshSize:6.6},{rkOrder},{CFL:5.5},",
-    f"{timeStepSize:8.8},{L2_error:8.8}")
+    f"{timeStepSize:8.8},{L2_error:8.8}",
+)
 
 # Plot the solution
 npts = 1024
@@ -142,5 +154,5 @@ plt.legend()
 plt.savefig("sol.png")
 plt.close()
 
-L2_error_disc = np.linalg.norm(uh_eval - ue_eval)/np.linalg.norm(ue_eval)
+L2_error_disc = np.linalg.norm(uh_eval - ue_eval) / np.linalg.norm(ue_eval)
 print(f"L2 error (numpy): {L2_error_disc:5.5}")

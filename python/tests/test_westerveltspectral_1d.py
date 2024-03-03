@@ -25,8 +25,8 @@ def test_westerveltspectral_L2(degree, epw):
     L = 1.0  # domain length (m)
 
     # Physical parameters
-    p0 = rho0*c0*u0  # pressure amplitude (Pa)
-    lmbda = c0/f0  # wavelength (m)
+    p0 = rho0 * c0 * u0  # pressure amplitude (Pa)
+    lmbda = c0 / f0  # wavelength (m)
 
     # Mesh parameters
     nw = L / lmbda  # number of waves
@@ -40,14 +40,17 @@ def test_westerveltspectral_L2(degree, epw):
     tdim = mesh.topology.dim
 
     facets0 = locate_entities_boundary(
-        mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+        mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps
+    )
     facets1 = locate_entities_boundary(
-        mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+        mesh, tdim - 1, lambda x: x[0] > L - np.finfo(float).eps
+    )
 
     indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-    values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                        np.full(facets1.shape, 2, np.intc)))
-    mt = meshtags(mesh, tdim-1, indices, values[pos])
+    values = np.hstack(
+        (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+    )
+    mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
     # Define DG function for physical parameters
     V_DG = functionspace(mesh, ("DG", 0))
@@ -72,7 +75,8 @@ def test_westerveltspectral_L2(degree, epw):
 
     # Instantiate model
     eqn = WesterveltSpectralExplicit(
-        mesh, mt, degree, c, rho, delta, beta, f0, p0, c0, 4, dt)
+        mesh, mt, degree, c, rho, delta, beta, f0, p0, c0, 4, dt
+    )
 
     # Solve
     eqn.init()
@@ -80,7 +84,6 @@ def test_westerveltspectral_L2(degree, epw):
 
     # Calculate L2
     class Analytical:
-
         def __init__(self, c0, f0, p0, rho0, beta, t):
             self.c0 = c0
             self.f0 = f0
@@ -93,26 +96,33 @@ def test_westerveltspectral_L2(degree, epw):
 
         def __call__(self, x):
             xsh = self.c0**2 / self.w0 / self.beta / self.u0
-            sigma = (x[0]+0.0000001) / xsh
+            sigma = (x[0] + 0.0000001) / xsh
 
             val = np.zeros(sigma.shape[0])
             for term in range(1, 50):
-                val += 2/term/sigma * jv(term, term*sigma) * \
-                    np.sin(term*self.w0*(self.t - x[0]/self.c0))
+                val += (
+                    2
+                    / term
+                    / sigma
+                    * jv(term, term * sigma)
+                    * np.sin(term * self.w0 * (self.t - x[0] / self.c0))
+                )
 
             return self.p0 * val
 
-    V_e = functionspace(mesh, ("Lagrange", degree+3))
+    V_e = functionspace(mesh, ("Lagrange", degree + 3))
     u_e = Function(V_e)
     u_e.interpolate(Analytical(c0, f0, p0, rho0, beta0, tf))
 
     # L2 error
     diff = u_n - u_e
     L2_diff = mesh.comm.allreduce(
-        assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
+        assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM
+    )
     L2_exact = mesh.comm.allreduce(
-        assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
+        assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM
+    )
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
-    assert (L2_error < 1E-1)
+    assert L2_error < 1e-1

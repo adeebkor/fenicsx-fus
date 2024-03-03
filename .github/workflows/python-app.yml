@@ -37,10 +37,11 @@ jobs:
     - name: Install fenicsxfus package
       run: python3 -m pip -v install python/ --no-cache-dir
 
-    - name: Flake8 checks
+    ruff-isort-python-code: &ruff-isort-python-code
+    - name: ruff checks
       run: |
-        python3 -m flake8 python/tests/
-        python3 -m flake8 python/src/fenicsxfus/
+        ruff check python/tests/
+        ruff format --check python/src/fenicsxfus/
     
     - name: Run tests
       run: |

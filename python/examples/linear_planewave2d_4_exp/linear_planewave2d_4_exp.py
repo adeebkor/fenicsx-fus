@@ -48,7 +48,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
     mt = [mt_cell, mt_facet]
 
@@ -71,7 +71,7 @@ rho0.x.array[mt_cell.find(2)] = densityBone
 
 # Temporal parameters
 CFL = 0.9
-timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -94,8 +94,17 @@ if mpi_rank == 0:
 
 # Model
 model = LinearSpectralExplicit(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
-    speedOfSoundWater, rkOrder, timeStepSize)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSoundWater,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()
@@ -107,11 +116,11 @@ with VTXWriter(mesh.comm, "output_final.bp", u_n) as out:
 
 # Best approximation
 class Wave:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c1, c2, rho1, rho2, f, p, t):
-        self.r1 = c1*rho1
-        self.r2 = c2*rho2
+        self.r1 = c1 * rho1
+        self.r2 = c2 * rho2
 
         self.ratio = self.r2 / self.r1
 
@@ -127,21 +136,34 @@ class Wave:
         self.t = t
 
     def field(self, x):
-        x0 = x[0] + 0.j  # need to plus 0.j because piecewise return same type
+        x0 = x[0] + 0.0j  # need to plus 0.j because piecewise return same type
         val = np.piecewise(
-            x0, [x0 < 0.06, x0 >= 0.06],
-            [lambda x: self.R * self.p * np.exp(
-                1j * (self.w * self.t - self.k1 * (x - 0.06))),
-             lambda x: self.T * self.p * np.exp(
-                1j * (self.w * self.t - self.k2 * (x - 0.06)))])
+            x0,
+            [x0 < 0.06, x0 >= 0.06],
+            [
+                lambda x: self.R
+                * self.p
+                * np.exp(1j * (self.w * self.t - self.k1 * (x - 0.06))),
+                lambda x: self.T
+                * self.p
+                * np.exp(1j * (self.w * self.t - self.k2 * (x - 0.06))),
+            ],
+        )
 
         return val.imag
 
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
 u_ba = Function(V_ba)
-wave = Wave(speedOfSoundWater, speedOfSoundBone, densityWater, densityBone,
-            sourceFrequency, sourceAmplitude, tf)
+wave = Wave(
+    speedOfSoundWater,
+    speedOfSoundBone,
+    densityWater,
+    densityBone,
+    sourceFrequency,
+    sourceAmplitude,
+    tf,
+)
 u_ba.interpolate(wave.field)
 
 with VTXWriter(mesh.comm, "output_analytical.bp", u_ba) as f_ba:

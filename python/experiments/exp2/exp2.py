@@ -30,7 +30,7 @@ speedOfSound = 1500  # (m/s)
 density = 1000  # (kg/m^3)
 
 # Physical parameters
-lmbda = speedOfSound/sourceFrequency  # wavelength (m)
+lmbda = speedOfSound / sourceFrequency  # wavelength (m)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -61,15 +61,16 @@ rho0.x.array[:] = density
 # Tag boundaries
 tdim = mesh.topology.dim
 
-facets0 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+facets0 = locate_entities_boundary(mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] > domainLength - np.finfo(float).eps)
+    mesh, tdim - 1, lambda x: x[0] > domainLength - np.finfo(float).eps
+)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                    np.full(facets1.shape, 2, np.intc)))
-mt = meshtags(mesh, tdim-1, indices, values[pos])
+values = np.hstack(
+    (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+)
+mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Temporal parameters
 CFL = 0.2
@@ -82,8 +83,17 @@ numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
 model = LinearSpectralExplicit(
-    mesh, mt, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
-    speedOfSound, rkOrder, timeStepSize)
+    mesh,
+    mt,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 model.alpha = 4.0
 
 # Solve
@@ -93,7 +103,7 @@ uh, vh, tf = model.rk(startTime, finalTime)
 
 # Compute accuracy
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0
@@ -103,30 +113,33 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-            np.heaviside(self.t-x[0]/self.c0, 0)
+        val = (
+            self.p0
+            * np.sin(self.w0 * (self.t - x[0] / self.c0))
+            * np.heaviside(self.t - x[0] / self.c0, 0)
+        )
 
         return val
 
 
-V_e = FunctionSpace(mesh, ("Lagrange", degreeOfBasis+3))
+V_e = FunctionSpace(mesh, ("Lagrange", degreeOfBasis + 3))
 u_e = Function(V_e)
 u_e.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, tf))
 
 # L2 error
 diff = uh - u_e
-L2_diff = mesh.comm.allreduce(
-    assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
-L2_exact = mesh.comm.allreduce(
-    assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
+L2_diff = mesh.comm.allreduce(assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
+L2_exact = mesh.comm.allreduce(assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
 
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
 # H1 error
-H1_diff = mesh.comm.allreduce(assemble_scalar(
-    form(inner(grad(diff), grad(diff)) * dx)), op=MPI.SUM)
-H1_exact = mesh.comm.allreduce(assemble_scalar(
-    form(inner(grad(u_e), grad(u_e)) * dx)), op=MPI.SUM)
+H1_diff = mesh.comm.allreduce(
+    assemble_scalar(form(inner(grad(diff), grad(diff)) * dx)), op=MPI.SUM
+)
+H1_exact = mesh.comm.allreduce(
+    assemble_scalar(form(inner(grad(u_e), grad(u_e)) * dx)), op=MPI.SUM
+)
 H1_error = abs(np.sqrt(H1_diff) / np.sqrt(H1_exact))
 
 # Plot the solution
@@ -154,9 +167,7 @@ if mpi_rank == 0:
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
     print(f"Domain length: {domainLength}", flush=True)
     print(f"Polynomial basis degree: {degreeOfBasis}", flush=True)
-    print(
-        f"Number of elements per wavelength: {elementPerWavelength}",
-        flush=True)
+    print(f"Number of elements per wavelength: {elementPerWavelength}", flush=True)
     print(f"Number of elements: {numberOfElements}", flush=True)
     print(f"Minimum mesh size: {meshSize:4.4}", flush=True)
     print(f"CFL number: {CFL}", flush=True)
@@ -164,7 +175,9 @@ if mpi_rank == 0:
     print(f"Number of step per period: {stepPerPeriod}", flush=True)
     print(f"Number of steps: {numberOfStep}", flush=True)
     print(f"L2 error: {L2_error:8.8}", flush=True)
-    print("Relative L2:",
-          np.linalg.norm(uh_eval - ue_eval) /
-          np.linalg.norm(ue_eval), flush=True)
+    print(
+        "Relative L2:",
+        np.linalg.norm(uh_eval - ue_eval) / np.linalg.norm(ue_eval),
+        flush=True,
+    )
     print(f"H1 error: {H1_error:8.8}", flush=True)

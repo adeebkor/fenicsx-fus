@@ -35,7 +35,8 @@ nonlinearCoefficient = 300.0
 attenuationCoefficientdB = 50  # (dB/m)
 attenuationCoefficientNp = attenuationCoefficientdB / 20 * np.log(10)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSound, attenuationCoefficientdB)
+    angularFrequency, speedOfSound, attenuationCoefficientdB
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -52,7 +53,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
@@ -78,7 +79,7 @@ delta0.x.array[:] = diffusivityOfSound
 
 # Temporal parameters
 CFL = 0.8
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -104,9 +105,19 @@ if mpi_rank == 0:
 
 # Model
 model = WesterveltSpectralExplicit(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, delta0, beta0,
-    sourceFrequency, sourceAmplitude, speedOfSound,
-    rkOrder, timeStepSize)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    delta0,
+    beta0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()
@@ -116,12 +127,12 @@ with common.Timer() as tsolve:
 
 if mpi_rank == 0:
     print("Solve time: ", tsolve.elapsed()[0])
-    print("Time per step: ", tsolve.elapsed()[0]/numberOfStep)
+    print("Time per step: ", tsolve.elapsed()[0] / numberOfStep)
 
 
 # Best approximation
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, a0, f0, p0, t):
         self.c0 = c0
@@ -132,16 +143,22 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.exp(1j*(self.w0*self.t - self.w0/self.c0*x[0])) \
-                * np.exp(-self.a0*x[0])
+        val = (
+            self.p0
+            * np.exp(1j * (self.w0 * self.t - self.w0 / self.c0 * x[0]))
+            * np.exp(-self.a0 * x[0])
+        )
 
         return val.imag
 
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
 u_ba = Function(V_ba)
-u_ba.interpolate(Analytical(speedOfSound, attenuationCoefficientNp,
-                            sourceFrequency, sourceAmplitude, tf))
+u_ba.interpolate(
+    Analytical(
+        speedOfSound, attenuationCoefficientNp, sourceFrequency, sourceAmplitude, tf
+    )
+)
 
 with VTXWriter(mesh.comm, "output_nonlinear.bp", u_n) as f:
     f.write(0.0)

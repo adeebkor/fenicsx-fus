@@ -36,7 +36,8 @@ nonlinearCoefficient = 150.0
 attenuationCoefficientdB = 100  # (dB/m)
 attenuationCoefficientNp = attenuationCoefficientdB / 20 * np.log(10)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSound, attenuationCoefficientdB)
+    angularFrequency, speedOfSound, attenuationCoefficientdB
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -53,7 +54,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
@@ -80,7 +81,7 @@ delta0.x.array[mt_cell.find(2)] = diffusivityOfSound
 
 # Temporal parameters
 CFL = 1.0
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -106,9 +107,19 @@ if mpi_rank == 0:
 
 # Model
 model = WesterveltSpectralExplicit(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, delta0, beta0,
-    sourceFrequency, sourceAmplitude, speedOfSound,
-    rkOrder, timeStepSize)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    delta0,
+    beta0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()

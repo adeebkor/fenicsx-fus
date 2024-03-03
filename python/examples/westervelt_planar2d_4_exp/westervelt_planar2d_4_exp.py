@@ -41,9 +41,11 @@ nonlinearCoefficientBone = 200
 attenuationCoefficientdBWater = 0.0  # (dB/m)
 attenuationCoefficientdBBone = 400.0  # (dB/m)
 diffusivityOfSoundWater = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSoundWater, attenuationCoefficientdBWater)
+    angularFrequency, speedOfSoundWater, attenuationCoefficientdBWater
+)
 diffusivityOfSoundBone = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSoundBone, attenuationCoefficientdBBone)
+    angularFrequency, speedOfSoundBone, attenuationCoefficientdBBone
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -60,7 +62,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
     mt = [mt_cell, mt_facet]
 
@@ -91,7 +93,7 @@ delta0.x.array[mt_cell.find(2)] = diffusivityOfSoundBone
 
 # Temporal parameters
 CFL = 1.0
-timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -106,8 +108,7 @@ if mpi_rank == 0:
     print(f"Speed of sound (Bone): {speedOfSoundBone}", flush=True)
     print(f"Density (Water): {densityWater}", flush=True)
     print(f"Density (Bone): {densityBone}", flush=True)
-    print(f"Diffusivity of sound (Water): {diffusivityOfSoundWater}",
-          flush=True)
+    print(f"Diffusivity of sound (Water): {diffusivityOfSoundWater}", flush=True)
     print(f"Diffusivity of sound (Bone): {diffusivityOfSoundBone}", flush=True)
     print(f"Source frequency: {sourceFrequency}", flush=True)
     print(f"Source amplitude: {sourceAmplitude}", flush=True)
@@ -121,9 +122,19 @@ if mpi_rank == 0:
 
 # Model
 model = WesterveltSpectralExplicit(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, delta0, beta0,
-    sourceFrequency, sourceAmplitude, speedOfSoundWater,
-    rkOrder, timeStepSize)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    delta0,
+    beta0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSoundWater,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()

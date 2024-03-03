@@ -21,7 +21,6 @@ class LinearSpectralNewmark:
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0, dt):
-
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
         self.mpi_rank = MPI.COMM_WORLD.rank
@@ -38,20 +37,20 @@ class LinearSpectralNewmark:
 
         # Time-stepping data
         self.dt = dt
-        self.gamma = 1/2
-        self.beta = 1/4
+        self.gamma = 1 / 2
+        self.beta = 1 / 4
 
         # Initialise mesh
         self.mesh = mesh
 
         # Boundary facets
-        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+        ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
         FE = basix.ufl.element(
-            basix.ElementFamily.P, cell_type, k,
-            basix.LagrangeVariant.gll_warped)
+            basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
+        )
         V = functionspace(mesh, FE)
 
         # Define functions
@@ -63,36 +62,56 @@ class LinearSpectralNewmark:
         self.w_n = Function(V)
 
         # Quadrature parameters
-        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
-              "9": 16, "10": 18}
-        md = {"quadrature_rule": "GLL",
-              "quadrature_degree": qd[str(k)]}
+        qd = {
+            "2": 3,
+            "3": 4,
+            "4": 6,
+            "5": 8,
+            "6": 10,
+            "7": 12,
+            "8": 14,
+            "9": 16,
+            "10": 18,
+        }
+        md = {"quadrature_rule": "GLL", "quadrature_degree": qd[str(k)]}
 
         # Define forms
-        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                      * dx(metadata=md)
-                      + inner(self.gamma*self.dt/self.rho0/self.c0*self.u,
-                              self.v)
-                      * ds(2, metadata=md)
-                      + inner(self.beta*self.dt*self.dt/self.rho0*grad(self.u),
-                              grad(self.v))
-                      * dx(metadata=md))
+        self.a = form(
+            inner(self.u / self.rho0 / self.c0 / self.c0, self.v) * dx(metadata=md)
+            + inner(self.gamma * self.dt / self.rho0 / self.c0 * self.u, self.v)
+            * ds(2, metadata=md)
+            + inner(
+                self.beta * self.dt * self.dt / self.rho0 * grad(self.u), grad(self.v)
+            )
+            * dx(metadata=md)
+        )
         self.A = assemble_matrix(self.a)
         self.A.assemble()
 
         self.L = form(
-            - inner(1/self.rho0/self.c0*(
-                self.v_n + (1 - self.gamma)*self.dt*self.w_n), self.v)
+            -inner(
+                1
+                / self.rho0
+                / self.c0
+                * (self.v_n + (1 - self.gamma) * self.dt * self.w_n),
+                self.v,
+            )
             * ds(2, metadata=md)
-            - inner(1/self.rho0*grad(
-                self.u_n + self.dt*self.v_n +
-                0.5*self.dt*self.dt*(1 - 2*self.beta)*self.w_n), grad(self.v))
+            - inner(
+                1
+                / self.rho0
+                * grad(
+                    self.u_n
+                    + self.dt * self.v_n
+                    + 0.5 * self.dt * self.dt * (1 - 2 * self.beta) * self.w_n
+                ),
+                grad(self.v),
+            )
             * dx(metadata=md)
-            + inner(1/self.rho0*self.g, self.v)
-            * ds(1, metadata=md))
+            + inner(1 / self.rho0 * self.g, self.v) * ds(1, metadata=md)
+        )
         self.b = assemble_vector(self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Linear solver
         self.solver = PETSc.KSP().create(mesh.comm)
@@ -109,8 +128,9 @@ class LinearSpectralNewmark:
         self.v_n.x.array[:] = 0.0
         self.w_n.x.array[:] = 0.0
 
-    def solve(self, t: float, u: PETSc.Vec, v: PETSc.Vec, w: PETSc.Vec,
-              result: PETSc.Vec):
+    def solve(
+        self, t: float, u: PETSc.Vec, v: PETSc.Vec, w: PETSc.Vec, result: PETSc.Vec
+    ):
         """
         Solve for u_{n+1}
 
@@ -134,32 +154,32 @@ class LinearSpectralNewmark:
             window = 1.0
 
         # Update source
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
-            * np.cos(self.w0 * t)
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 * np.cos(self.w0 * t)
 
         # Update fields
         u.copy(result=self.u_n.vector)
-        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.u_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
         v.copy(result=self.v_n.vector)
-        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.v_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
         w.copy(result=self.w_n.vector)
-        self.w_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.w_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
 
         # Assemble RHS
         with self.b.localForm() as b_local:
             b_local.set(0.0)
         assemble_vector(self.b, self.L)
 
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
         self.solver.solve(self.b, result)
-        result.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                           mode=PETSc.ScatterMode.FORWARD)
+        result.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
 
     def newmark(self, t0: float, tf: float):
         """
@@ -207,8 +227,12 @@ class LinearSpectralNewmark:
             self.solve(t_, u0, v0, w0, w_)
 
             # Update u_, v_
-            v_ = v0 + (1 - self.gamma)*dt*w0 + self.gamma*dt*w_
-            u_ = u0 + dt*v0 + 0.5*dt*dt*((1 - 2*self.beta)*w0 + 2*self.beta*w_)
+            v_ = v0 + (1 - self.gamma) * dt * w0 + self.gamma * dt * w_
+            u_ = (
+                u0
+                + dt * v0
+                + 0.5 * dt * dt * ((1 - 2 * self.beta) * w0 + 2 * self.beta * w_)
+            )
 
             # Update time
             t = t_
@@ -217,12 +241,9 @@ class LinearSpectralNewmark:
             if step % 100 == 0:
                 PETSc.Sys.syncPrint(f"t: {t:5.5},\t Steps: {step}/{nstep}")
 
-        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
-        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
-        w_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
+        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+        w_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
         w_.copy(result=self.w_n.vector)
@@ -242,7 +263,6 @@ class LinearSpectralS2:
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
-
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
         self.mpi_rank = MPI.COMM_WORLD.rank
@@ -261,13 +281,13 @@ class LinearSpectralS2:
         self.mesh = mesh
 
         # Boundary facets
-        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+        ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
         FE = basix.ufl.element(
-            basix.ElementFamily.P, cell_type, k,
-            basix.LagrangeVariant.gll_warped)
+            basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
+        )
         V = functionspace(mesh, FE)
 
         # Define functions
@@ -278,29 +298,34 @@ class LinearSpectralS2:
         self.v_n = Function(V)
 
         # Quadrature parameters
-        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
-              "9": 16, "10": 18}
-        md = {"quadrature_rule": "GLL",
-              "quadrature_degree": qd[str(k)]}
+        qd = {
+            "2": 3,
+            "3": 4,
+            "4": 6,
+            "5": 8,
+            "6": 10,
+            "7": 12,
+            "8": 14,
+            "9": 16,
+            "10": 18,
+        }
+        md = {"quadrature_rule": "GLL", "quadrature_degree": qd[str(k)]}
 
         # Define forms
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                      * dx(metadata=md))
+        self.a = form(
+            inner(self.u / self.rho0 / self.c0 / self.c0, self.v) * dx(metadata=md)
+        )
         self.m = assemble_vector(self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(
-            - inner(1/self.rho0*grad(self.u_n), grad(self.v))
-            * dx(metadata=md)
-            + inner(1/self.rho0*self.g, self.v)
-            * ds(1, metadata=md)
-            - inner(1/self.rho0/self.c0*self.v_n, self.v)
-            * ds(2, metadata=md))
+            -inner(1 / self.rho0 * grad(self.u_n), grad(self.v)) * dx(metadata=md)
+            + inner(1 / self.rho0 * self.g, self.v) * ds(1, metadata=md)
+            - inner(1 / self.rho0 / self.c0 * self.v_n, self.v) * ds(2, metadata=md)
+        )
         self.b = assemble_vector(self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -406,30 +431,28 @@ class LinearSpectralS2:
         a = -0.011
         b = 0.011
         self.g.interpolate(
-            lambda x:
-            np.piecewise(
+            lambda x: np.piecewise(
                 x[1],
-                [x[1] < a,
-                 np.logical_and(x[1] >= a, x[1] <= b),
-                 x[1] > b],
-                [lambda x: 0,
-                 lambda x: source,
-                 lambda x: 0]))
+                [x[1] < a, np.logical_and(x[1] >= a, x[1] <= b), x[1] > b],
+                [lambda x: 0, lambda x: source, lambda x: 0],
+            )
+        )
 
         # Update fields
         u.copy(result=self.u_n.vector)
-        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.u_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
         v.copy(result=self.v_n.vector)
-        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.v_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
 
         # Assemble RHS
         with self.b.localForm() as b_local:
             b_local.set(0.0)
         assemble_vector(self.b, self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
         result.pointwiseDivide(self.b, self.m)
@@ -470,14 +493,14 @@ class LinearSpectralS2:
         # Runge-Kutta timestepping data
         n_RK = 4
         a_runge = np.array([0.0, 0.5, 0.5, 1.0])
-        b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
+        b_runge = np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0])
         c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
         while t < tf:
-            dt = min(dt, tf-t)
+            dt = min(dt, tf - t)
 
             # Store solution at start of time step
             u_.copy(result=u0)
@@ -488,8 +511,8 @@ class LinearSpectralS2:
                 u0.copy(result=un)
                 v0.copy(result=vn)
 
-                un.axpy(a_runge[i]*dt, ku)
-                vn.axpy(a_runge[i]*dt, kv)
+                un.axpy(a_runge[i] * dt, ku)
+                vn.axpy(a_runge[i] * dt, kv)
 
                 # RK time evaluation
                 tn = t + c_runge[i] * dt
@@ -499,21 +522,18 @@ class LinearSpectralS2:
                 self.f1(tn, un, vn, result=kv)
 
                 # Update solution
-                u_.axpy(b_runge[i]*dt, ku)
-                v_.axpy(b_runge[i]*dt, kv)
+                u_.axpy(b_runge[i] * dt, ku)
+                v_.axpy(b_runge[i] * dt, kv)
 
             # Update time
             t += dt
             step += 1
 
             if step % 100 == 0:
-                PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
-                    t, step, nstep))
+                PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(t, step, nstep))
 
-        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
-        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
+        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
 
@@ -534,7 +554,6 @@ class LinearSpectralSciPy:
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, freq0, p0, s0):
-
         # Physical parameters
         self.c0 = c0
         self.rho0 = rho0
@@ -549,13 +568,13 @@ class LinearSpectralSciPy:
         self.mesh = mesh
 
         # Boundary facets
-        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+        ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
         FE = basix.ufl.element(
-            basix.ElementFamily.P, cell_type, k,
-            basix.LagrangeVariant.gll_warped)
+            basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
+        )
         V = functionspace(mesh, FE)
 
         # Define functions
@@ -569,29 +588,34 @@ class LinearSpectralSciPy:
         self.ndof = V.dofmap.index_map.size_global
 
         # Quadrature parameters
-        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
-              "9": 16, "10": 18}
-        md = {"quadrature_rule": "GLL",
-              "quadrature_degree": qd[str(k)]}
+        qd = {
+            "2": 3,
+            "3": 4,
+            "4": 6,
+            "5": 8,
+            "6": 10,
+            "7": 12,
+            "8": 14,
+            "9": 16,
+            "10": 18,
+        }
+        md = {"quadrature_rule": "GLL", "quadrature_degree": qd[str(k)]}
 
         # Define forms
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u/self.rho0/self.c0/self.c0, self.v)
-                      * dx(metadata=md))
+        self.a = form(
+            inner(self.u / self.rho0 / self.c0 / self.c0, self.v) * dx(metadata=md)
+        )
         self.m = assemble_vector(self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(
-            - inner(1/self.rho0*grad(self.u_n), grad(self.v))
-            * dx(metadata=md)
-            + inner(1/self.rho0*self.g, self.v)
-            * ds(1, metadata=md)
-            - inner(1/self.rho0/self.c0*self.v_n, self.v)
-            * ds(2, metadata=md))
+            -inner(1 / self.rho0 * grad(self.u_n), grad(self.v)) * dx(metadata=md)
+            + inner(1 / self.rho0 * self.g, self.v) * ds(1, metadata=md)
+            - inner(1 / self.rho0 / self.c0 * self.v_n, self.v) * ds(2, metadata=md)
+        )
         self.b = assemble_vector(self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -623,29 +647,29 @@ class LinearSpectralSciPy:
             window = 1.0
 
         # Update source
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
-            * np.cos(self.w0 * t)
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 * np.cos(self.w0 * t)
 
         # Update fields
-        self.u_n.x.array[:] = y[:self.ndof]
-        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
-        self.v_n.x.array[:] = y[self.ndof:]
-        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.u_n.x.array[:] = y[: self.ndof]
+        self.u_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
+        self.v_n.x.array[:] = y[self.ndof :]
+        self.v_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
 
         # Assemble RHS
         with self.b.localForm() as b_local:
             b_local.set(0.0)
         assemble_vector(self.b, self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
         result = self.b.array[:] / self.m.array[:]
 
         # Full solution
-        ynext = np.concatenate([y[self.ndof:], result])
+        ynext = np.concatenate([y[self.ndof :], result])
 
         return ynext
 
@@ -682,8 +706,8 @@ class LinearSpectralSciPy:
                 PETSc.Sys.syncPrint("t: {}".format(model.t))
 
         # Solution at final time
-        self.u_n.x.array[:] = model.y[:self.ndof]
-        self.v_n.x.array[:] = model.y[self.ndof:]
+        self.u_n.x.array[:] = model.y[: self.ndof]
+        self.v_n.x.array[:] = model.y[self.ndof :]
 
         return self.u_n, self.v_n, model.t, step
 
@@ -702,7 +726,6 @@ class LinearSpectralSponge:
     """
 
     def __init__(self, mesh, meshtags, k, c0, rho0, delta0, freq0, p0, s0):
-
         # MPI
         self.mpi_rank = MPI.COMM_WORLD.rank
         self.mpi_size = MPI.COMM_WORLD.size
@@ -722,13 +745,13 @@ class LinearSpectralSponge:
         self.mesh = mesh
 
         # Boundary facets
-        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+        ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
         FE = basix.ufl.element(
-            basix.ElementFamily.P, cell_type, k,
-            basix.LagrangeVariant.gll_warped)
+            basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
+        )
         V = functionspace(mesh, FE)
 
         # Define functions
@@ -744,12 +767,17 @@ class LinearSpectralSponge:
         self.delta = Function(V)
 
         # Linear function
-        self.delta.interpolate(lambda x:
-                               np.piecewise(x[0], [x[0] < 0.12, x[0] >= 0.12],
-                                            [0.0,
-                                             lambda x: delta0 / 5 /
-                                             self.lmbda * x - 0.12 * delta0
-                                             / 5 / self.lmbda]))
+        self.delta.interpolate(
+            lambda x: np.piecewise(
+                x[0],
+                [x[0] < 0.12, x[0] >= 0.12],
+                [
+                    0.0,
+                    lambda x: delta0 / 5 / self.lmbda * x
+                    - 0.12 * delta0 / 5 / self.lmbda,
+                ],
+            )
+        )
 
         # Quadratic function
         # self.delta.interpolate(lambda x:
@@ -760,35 +788,40 @@ class LinearSpectralSponge:
         # --------------------------------------------------------------------
 
         # Quadrature parameters
-        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
-              "9": 16, "10": 18}
-        md = {"quadrature_rule": "GLL",
-              "quadrature_degree": qd[str(k)]}
+        qd = {
+            "2": 3,
+            "3": 4,
+            "4": 6,
+            "5": 8,
+            "6": 10,
+            "7": 12,
+            "8": 14,
+            "9": 16,
+            "10": 18,
+        }
+        md = {"quadrature_rule": "GLL", "quadrature_degree": qd[str(k)]}
 
         # Define forms
         self.u.x.array[:] = 1.0
         self.a = form(
-            inner(self.u/self.rho0, self.v) * dx(metadata=md)
-            + inner(self.delta/self.rho0/self.c0*self.u, self.v)
-            * ds(2, metadata=md))
+            inner(self.u / self.rho0, self.v) * dx(metadata=md)
+            + inner(self.delta / self.rho0 / self.c0 * self.u, self.v)
+            * ds(2, metadata=md)
+        )
         self.m = assemble_vector(self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         self.L = form(
-            - inner(self.c0*self.c0/self.rho0*grad(self.u_n), grad(self.v))
+            -inner(self.c0 * self.c0 / self.rho0 * grad(self.u_n), grad(self.v))
             * dx(metadata=md)
-            + inner(self.c0*self.c0/self.rho0*self.g, self.v)
-            * ds(1, metadata=md)
-            - inner(self.c0/self.rho0*self.v_n, self.v)
-            * ds(2, metadata=md)
-            - inner(self.delta/self.rho0*grad(self.v_n), grad(self.v))
+            + inner(self.c0 * self.c0 / self.rho0 * self.g, self.v) * ds(1, metadata=md)
+            - inner(self.c0 / self.rho0 * self.v_n, self.v) * ds(2, metadata=md)
+            - inner(self.delta / self.rho0 * grad(self.v_n), grad(self.v))
             * dx(metadata=md)
-            + inner(self.delta/self.rho0*self.dg, self.v)
-            * ds(1, metadata=md))
+            + inner(self.delta / self.rho0 * self.dg, self.v) * ds(1, metadata=md)
+        )
         self.b = assemble_vector(self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -832,33 +865,38 @@ class LinearSpectralSponge:
 
         if t < self.T * self.alpha:
             window = 0.5 * (1 - np.cos(self.freq * np.pi * t / self.alpha))
-            dwindow = 0.5 * np.pi * self.freq / self.alpha * \
-                np.sin(self.freq * np.pi * t / self.alpha)
+            dwindow = (
+                0.5
+                * np.pi
+                * self.freq
+                / self.alpha
+                * np.sin(self.freq * np.pi * t / self.alpha)
+            )
         else:
             window = 1.0
             dwindow = 0.0
 
         # Update boundary condition
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 \
-            * np.cos(self.w0 * t)
-        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.s0 \
-            * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.s0 \
-            * np.sin(self.w0 * t)
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.s0 * np.cos(self.w0 * t)
+        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.s0 * np.cos(
+            self.w0 * t
+        ) - window * self.p0 * self.w0**2 / self.s0 * np.sin(self.w0 * t)
 
         # Update fields
         u.copy(result=self.u_n.vector)
-        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.u_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
         v.copy(result=self.v_n.vector)
-        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.v_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
 
         # Assemble RHS
         with self.b.localForm() as b_local:
             b_local.set(0.0)
         assemble_vector(self.b, self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
         result.pointwiseDivide(self.b, self.m)
@@ -899,14 +937,14 @@ class LinearSpectralSponge:
         # Runge-Kutta timestepping data
         n_RK = 4
         a_runge = np.array([0.0, 0.5, 0.5, 1.0])
-        b_runge = np.array([1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0])
+        b_runge = np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0])
         c_runge = np.array([0.0, 0.5, 0.5, 1.0])
 
         t = t0
         step = 0
         nstep = int((tf - t0) / dt) + 1
         while t < tf:
-            dt = min(dt, tf-t)
+            dt = min(dt, tf - t)
 
             # Store solution at start of time step
             u_.copy(result=u0)
@@ -917,8 +955,8 @@ class LinearSpectralSponge:
                 u0.copy(result=un)
                 v0.copy(result=vn)
 
-                un.axpy(a_runge[i]*dt, ku)
-                vn.axpy(a_runge[i]*dt, kv)
+                un.axpy(a_runge[i] * dt, ku)
+                vn.axpy(a_runge[i] * dt, kv)
 
                 # RK time evaluation
                 tn = t + c_runge[i] * dt
@@ -928,21 +966,18 @@ class LinearSpectralSponge:
                 self.f1(tn, un, vn, result=kv)
 
                 # Update solution
-                u_.axpy(b_runge[i]*dt, ku)
-                v_.axpy(b_runge[i]*dt, kv)
+                u_.axpy(b_runge[i] * dt, ku)
+                v_.axpy(b_runge[i] * dt, kv)
 
             # Update time
             t += dt
             step += 1
 
             if step % 100 == 0:
-                PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(
-                    t, step, nstep))
+                PETSc.Sys.syncPrint("t: {},\t Steps: {}/{}".format(t, step, nstep))
 
-        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
-        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                       mode=PETSc.ScatterMode.FORWARD)
+        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         u_.copy(result=self.u_n.vector)
         v_.copy(result=self.v_n.vector)
 
@@ -962,8 +997,8 @@ class WesterveltSpectralSciPy:
 
         cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
         FE = basix.ufl.element(
-            basix.ElementFamily.P, cell_type, k,
-            basix.LagrangeVariant.gll_warped)
+            basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
+        )
         self.V = functionspace(mesh, FE)
         self.v = TestFunction(self.V)
         self.u = Function(self.V)
@@ -976,7 +1011,7 @@ class WesterveltSpectralSciPy:
         self.ndof = self.V.dofmap.index_map.size_global
 
         # Tag boundary facets
-        ds = Measure('ds', subdomain_data=meshtags, domain=mesh)
+        ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Physical parameters
         self.c0 = c0
@@ -990,37 +1025,56 @@ class WesterveltSpectralSciPy:
         self.alpha = 4  # window length
 
         # Quadrature parameters
-        qd = {"2": 3, "3": 4, "4": 6, "5": 8, "6": 10, "7": 12, "8": 14,
-              "9": 16, "10": 18}
-        md = {"quadrature_rule": "GLL",
-              "quadrature_degree": qd[str(k)]}
+        qd = {
+            "2": 3,
+            "3": 4,
+            "4": 6,
+            "5": 8,
+            "6": 10,
+            "7": 12,
+            "8": 14,
+            "9": 16,
+            "10": 18,
+        }
+        md = {"quadrature_rule": "GLL", "quadrature_degree": qd[str(k)]}
 
         # Define variational form
         self.u.x.array[:] = 1.0
-        self.a = form(inner(self.u, self.v) * dx(metadata=md)
-                      + self.delta / self.c0 * inner(self.u, self.v)
-                      * ds(2, metadata=md)
-                      - 2 * self.beta / self.rho0 / self.c0**2 * self.u_n
-                      * inner(self.u, self.v) * dx(metadata=md))
+        self.a = form(
+            inner(self.u, self.v) * dx(metadata=md)
+            + self.delta / self.c0 * inner(self.u, self.v) * ds(2, metadata=md)
+            - 2
+            * self.beta
+            / self.rho0
+            / self.c0**2
+            * self.u_n
+            * inner(self.u, self.v)
+            * dx(metadata=md)
+        )
         self.m = assemble_vector(self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
-        self.L = form(self.c0**2 * (- inner(grad(self.u_n), grad(self.v))
-                                    * dx(metadata=md)
-                                    + inner(self.g, self.v)
-                                    * ds(1, metadata=md)
-                                    - 1 / self.c0*inner(self.v_n, self.v)
-                                    * ds(2, metadata=md))
-                      + self.delta * (- inner(grad(self.v_n), grad(self.v))
-                                      * dx(metadata=md)
-                                      + inner(self.dg, self.v)
-                                      * ds(1, metadata=md))
-                      + 2 * self.beta / self.rho0 / self.c0**2
-                      * inner(self.v_n*self.v_n, self.v) * dx(metadata=md))
+        self.L = form(
+            self.c0**2
+            * (
+                -inner(grad(self.u_n), grad(self.v)) * dx(metadata=md)
+                + inner(self.g, self.v) * ds(1, metadata=md)
+                - 1 / self.c0 * inner(self.v_n, self.v) * ds(2, metadata=md)
+            )
+            + self.delta
+            * (
+                -inner(grad(self.v_n), grad(self.v)) * dx(metadata=md)
+                + inner(self.dg, self.v) * ds(1, metadata=md)
+            )
+            + 2
+            * self.beta
+            / self.rho0
+            / self.c0**2
+            * inner(self.v_n * self.v_n, self.v)
+            * dx(metadata=md)
+        )
         self.b = assemble_vector(self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
     def init(self):
         """
@@ -1047,46 +1101,50 @@ class WesterveltSpectralSciPy:
         # Compute window
         if t < self.T * self.alpha:
             window = 0.5 * (1 - np.cos(self.freq * np.pi * t / self.alpha))
-            dwindow = 0.5 * np.pi * self.freq / self.alpha * \
-                np.sin(self.freq * np.pi * t / self.alpha)
+            dwindow = (
+                0.5
+                * np.pi
+                * self.freq
+                / self.alpha
+                * np.sin(self.freq * np.pi * t / self.alpha)
+            )
         else:
             window = 1.0
             dwindow = 0.0
 
         # Update source
-        self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 \
-            * np.cos(self.w0 * t)
-        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 \
-            * np.cos(self.w0 * t) - window * self.p0 * self.w0**2 / self.c0 \
-            * np.sin(self.w0 * t)
+        self.g.x.array[:] = window * self.p0 * self.w0 / self.c0 * np.cos(self.w0 * t)
+        self.dg.x.array[:] = dwindow * self.p0 * self.w0 / self.c0 * np.cos(
+            self.w0 * t
+        ) - window * self.p0 * self.w0**2 / self.c0 * np.sin(self.w0 * t)
 
         # Update fields
-        self.u_n.x.array[:] = y[:self.ndof]
-        self.u_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
-        self.v_n.x.array[:] = y[self.ndof:]
-        self.v_n.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT,
-                                    mode=PETSc.ScatterMode.FORWARD)
+        self.u_n.x.array[:] = y[: self.ndof]
+        self.u_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
+        self.v_n.x.array[:] = y[self.ndof :]
+        self.v_n.vector.ghostUpdate(
+            addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+        )
 
         # Assemble LHS
         with self.m.localForm() as m_local:
             m_local.set(0.0)
         assemble_vector(self.m, self.a)
-        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.m.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Assemble RHS
         with self.b.localForm() as b_local:
             b_local.set(0.0)
         assemble_vector(self.b, self.L)
-        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD,
-                           mode=PETSc.ScatterMode.REVERSE)
+        self.b.ghostUpdate(addv=PETSc.InsertMode.ADD, mode=PETSc.ScatterMode.REVERSE)
 
         # Solve
         result = self.b.array[:] / self.m.array[:]
 
         # Full solution
-        ynext = np.concatenate([y[self.ndof:], result])
+        ynext = np.concatenate([y[self.ndof :], result])
 
         return ynext
 
@@ -1124,7 +1182,7 @@ class WesterveltSpectralSciPy:
                 PETSc.Sys.syncPrint("t: {}".format(model.t))
 
         # Solution at final time
-        self.u_n.x.array[:] = model.y[:self.ndof]
-        self.v_n.x.array[:] = model.y[self.ndof:]
+        self.u_n.x.array[:] = model.y[: self.ndof]
+        self.v_n.x.array[:] = model.y[self.ndof :]
 
         return self.u_n, self.v_n, model.t, step

@@ -23,8 +23,8 @@ def test_linear_explicit(degree, epw):
     L = 1.0  # domain length (m)
 
     # Physical parameters
-    p0 = rho0*c0*u0  # pressure amplitude (Pa)
-    lmbda = c0/f0  # wavelength (m)
+    p0 = rho0 * c0 * u0  # pressure amplitude (Pa)
+    lmbda = c0 / f0  # wavelength (m)
 
     # Mesh parameters
     nw = L / lmbda  # number of waves
@@ -38,14 +38,17 @@ def test_linear_explicit(degree, epw):
     tdim = mesh.topology.dim
 
     facets0 = locate_entities_boundary(
-        mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+        mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps
+    )
     facets1 = locate_entities_boundary(
-        mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+        mesh, tdim - 1, lambda x: x[0] > L - np.finfo(float).eps
+    )
 
     indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-    values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                        np.full(facets1.shape, 2, np.intc)))
-    mt = meshtags(mesh, tdim-1, indices, values[pos])
+    values = np.hstack(
+        (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+    )
+    mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
     # Define DG function for physical parameters
     V_DG = functionspace(mesh, ("DG", 0))
@@ -72,7 +75,7 @@ def test_linear_explicit(degree, epw):
     u_n, _, tf = eqn.rk(tstart, tend)
 
     class Analytical:
-        """ Analytical solution """
+        """Analytical solution"""
 
         def __init__(self, c0, f0, p0, t):
             self.p0 = p0
@@ -82,22 +85,27 @@ def test_linear_explicit(degree, epw):
             self.t = t
 
         def __call__(self, x):
-            val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-                np.heaviside(self.t-x[0]/self.c0, 0)
+            val = (
+                self.p0
+                * np.sin(self.w0 * (self.t - x[0] / self.c0))
+                * np.heaviside(self.t - x[0] / self.c0, 0)
+            )
 
             return val
 
-    V_e = functionspace(mesh, ("Lagrange", degree+3))
+    V_e = functionspace(mesh, ("Lagrange", degree + 3))
     u_e = Function(V_e)
     u_e.interpolate(Analytical(c0, f0, p0, tf))
 
     # L2 error
     diff = u_n - u_e
     L2_diff = mesh.comm.allreduce(
-        assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
+        assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM
+    )
     L2_exact = mesh.comm.allreduce(
-        assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM)
+        assemble_scalar(form(inner(u_e, u_e) * dx)), op=MPI.SUM
+    )
 
     L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 
-    assert (L2_error < 1E-3)
+    assert L2_error < 1e-3

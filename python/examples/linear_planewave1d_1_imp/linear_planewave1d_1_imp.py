@@ -15,8 +15,12 @@ from mpi4py import MPI
 
 from dolfinx.common import Timer
 from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
-from dolfinx.mesh import (create_interval, locate_entities,
-                          locate_entities_boundary, meshtags)
+from dolfinx.mesh import (
+    create_interval,
+    locate_entities,
+    locate_entities_boundary,
+    meshtags,
+)
 from ufl import inner, dx
 
 from fenicsxfus import LinearSpectralImplicit
@@ -29,13 +33,13 @@ rho0 = 1000  # density (kg / m^3)
 # Source parameters
 f0 = 0.5e6  # source frequency (Hz)
 u0 = 0.04  # velocity amplitude (m / s)
-p0 = rho0*c0*u0  # pressure amplitude (Pa)
+p0 = rho0 * c0 * u0  # pressure amplitude (Pa)
 
 # Domain parameters
 L = 0.12  # domain length (m)
 
 # Physical parameters
-lmbda = c0/f0  # wavelength (m)
+lmbda = c0 / f0  # wavelength (m)
 
 # FE parameters
 degree = 4
@@ -55,21 +59,20 @@ mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
 # Tag boundaries
 tdim = mesh.topology.dim
 
-facets0 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+facets0 = locate_entities_boundary(mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+    mesh, tdim - 1, lambda x: x[0] > L - np.finfo(float).eps
+)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                    np.full(facets1.shape, 2, np.intc)))
-mt = meshtags(mesh, tdim-1, indices, values[pos])
+values = np.hstack(
+    (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+)
+mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Define DG functions to specify different medium
-cells0 = locate_entities(
-    mesh, tdim, lambda x: x[0] < L / 2)
-cells1 = locate_entities(
-    mesh, tdim, lambda x: x[0] >= L / 2 - h)
+cells0 = locate_entities(mesh, tdim, lambda x: x[0] < L / 2)
+cells1 = locate_entities(mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
 V_DG = FunctionSpace(mesh, ("DG", 0))
 c = Function(V_DG)
@@ -91,13 +94,17 @@ model = LinearSpectralImplicit(mesh, mt, degree, c, rho, f0, p0, c0, rk, dt)
 # Solve
 model.init()
 with Timer() as t_solve:
-    u_e, _, tf, = model.dirk(tstart, tend)
+    (
+        u_e,
+        _,
+        tf,
+    ) = model.dirk(tstart, tend)
 
 print("Solver time: ", t_solve.elapsed()[0])
 
 
 # Plot solution
-npts = 3 * degree * (nx+1)
+npts = 3 * degree * (nx + 1)
 x0 = np.linspace(0, L, npts)
 points = np.zeros((3, npts))
 points[0] = x0
@@ -108,7 +115,7 @@ u_eval = u_e.eval(x, cells).flatten()
 
 # Best approximation
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0
@@ -118,8 +125,11 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-            np.heaviside(self.t-x[0]/self.c0, 0)
+        val = (
+            self.p0
+            * np.sin(self.w0 * (self.t - x[0] / self.c0))
+            * np.heaviside(self.t - x[0] / self.c0, 0)
+        )
 
         return val
 
@@ -137,10 +147,10 @@ plt.close()
 
 # L2 error
 diff = u_e - u_ba
-L2_diff = mesh.comm.allreduce(
-    assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
+L2_diff = mesh.comm.allreduce(assemble_scalar(form(inner(diff, diff) * dx)), op=MPI.SUM)
 L2_exact = mesh.comm.allreduce(
-    assemble_scalar(form(inner(u_ba, u_ba) * dx)), op=MPI.SUM)
+    assemble_scalar(form(inner(u_ba, u_ba) * dx)), op=MPI.SUM
+)
 
 L2_error = abs(np.sqrt(L2_diff) / np.sqrt(L2_exact))
 

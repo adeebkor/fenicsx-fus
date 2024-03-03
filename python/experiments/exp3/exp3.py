@@ -45,7 +45,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh_conform.xdmf", "r") as fmesh:
     meshc = fmesh.read_mesh(name=f"{meshc_name}")
     tdim = meshc.topology.dim
     mt_cellc = fmesh.read_meshtags(meshc, name=f"{meshc_name}_cells")
-    meshc.topology.create_connectivity(tdim-1, tdim)
+    meshc.topology.create_connectivity(tdim - 1, tdim)
     mt_facetc = fmesh.read_meshtags(meshc, name=f"{meshc_name}_facets")
 
 # Mesh parameters
@@ -65,7 +65,7 @@ rho0c.x.array[:] = density
 
 # Temporal parameters
 CFLc = 0.9
-timeStepSizec = CFLc * meshSizec / (speedOfSound * degreeOfBasis ** 2)
+timeStepSizec = CFLc * meshSizec / (speedOfSound * degreeOfBasis**2)
 stepPerPeriodc = int(period / timeStepSizec + 1)
 timeStepSizec = period / stepPerPeriodc
 startTimec = 0.0
@@ -77,8 +77,17 @@ if mpi_rank == 0:
 
 # Model
 modelc = LinearSpectralExplicit(
-    meshc, mt_facetc, degreeOfBasis, c0c, rho0c, sourceFrequency,
-    sourceAmplitude, speedOfSound, rkOrder, timeStepSizec)
+    meshc,
+    mt_facetc,
+    degreeOfBasis,
+    c0c,
+    rho0c,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSizec,
+)
 
 # Solve
 modelc.init()
@@ -98,7 +107,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
@@ -118,7 +127,7 @@ rho0.x.array[:] = density
 
 # Temporal parameters
 CFL = 0.9
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -130,8 +139,15 @@ if mpi_rank == 0:
 
 # Model
 model = LinearSpectralS2(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency,
-    sourceAmplitude, speedOfSound)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+)
 
 # Solve
 model.init()

@@ -31,7 +31,8 @@ speedOfSound = 1500.0  # (m/s)
 density = 1000.0  # (kg/m^3)
 attenuationCoefficientdB = 1.0  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    sourceFrequency, speedOfSound, attenuationCoefficientdB)
+    sourceFrequency, speedOfSound, attenuationCoefficientdB
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -45,7 +46,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
     mt = [mt_cell, mt_facet]
 
@@ -66,7 +67,7 @@ rho0.x.array[:] = density
 
 # Temporal parameters
 CFL = 0.4
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -88,8 +89,16 @@ if mpi_rank == 0:
 
 # Model
 model = LinearSpectralSponge(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, diffusivityOfSound,
-    sourceFrequency, sourceAmplitude, speedOfSound)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    diffusivityOfSound,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+)
 
 # Solve
 model.init()
@@ -98,7 +107,7 @@ u_n, v_n, tf = model.rk4(startTime, finalTime, timeStepSize)
 
 # Best approximation
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, f0, p0, t):
         self.p0 = p0
@@ -108,16 +117,18 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-            np.heaviside(self.t-x[0]/self.c0, 0)
+        val = (
+            self.p0
+            * np.sin(self.w0 * (self.t - x[0] / self.c0))
+            * np.heaviside(self.t - x[0] / self.c0, 0)
+        )
 
         return val
 
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
 u_ba = Function(V_ba)
-u_ba.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude,
-                            tf))
+u_ba.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, tf))
 
 with VTXWriter(mesh.comm, "output_final.bp", u_n) as f:
     f.write(0.0)

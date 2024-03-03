@@ -10,13 +10,13 @@ class SoundHardExact2D(object):
         self.a = scat_rad
         self.f = 0
 
-        self.number_of_terms = np.int(30 + (self.k * self.a)**1.01)
+        self.number_of_terms = np.int(30 + (self.k * self.a) ** 1.01)
 
     def incident(self, x):
         k = self.k
         a = self.a
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
 
         idx = np.where(r < a)
 
@@ -31,17 +31,22 @@ class SoundHardExact2D(object):
 
         number_of_terms = self.number_of_terms
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
         t = np.arctan2(x[1], x[0])
 
         idx = np.where(r < a)
 
         u_scatter = 0
         for n in range(-number_of_terms, number_of_terms):
-            dbessel = jv(n-1, k*a) - n/(k*a) * jv(n, k*a)
-            dhankel = n/(k*a)*hankel1(n, k*a) - hankel1(n+1, k*a)
-            u_scatter += -(1j)**n * dbessel/dhankel * hankel1(n, k*r) * \
-                np.exp(1j*n*t)
+            dbessel = jv(n - 1, k * a) - n / (k * a) * jv(n, k * a)
+            dhankel = n / (k * a) * hankel1(n, k * a) - hankel1(n + 1, k * a)
+            u_scatter += (
+                -((1j) ** n)
+                * dbessel
+                / dhankel
+                * hankel1(n, k * r)
+                * np.exp(1j * n * t)
+            )
 
         u_scatter[idx] = 0
         return u_scatter
@@ -63,13 +68,13 @@ class SoundSoftExact2D(object):
         self.a = scat_rad
         self.f = 0
 
-        self.number_of_terms = np.int(30 + (self.k * self.a)**1.01)
+        self.number_of_terms = np.int(30 + (self.k * self.a) ** 1.01)
 
     def incident(self, x):
         k = self.k
         a = self.a
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
 
         idx = np.where(r < a)
 
@@ -84,15 +89,20 @@ class SoundSoftExact2D(object):
 
         number_of_terms = self.number_of_terms
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
         t = np.arctan2(x[1], x[0])
 
         idx = np.where(r < a)
 
         u_scatter = 0
         for n in range(-number_of_terms, number_of_terms):
-            u_scatter += -(1j)**n * jv(n, k*a)/hankel1(n, k*a) * \
-                hankel1(n, k*r) * np.exp(1j*n*t)
+            u_scatter += (
+                -((1j) ** n)
+                * jv(n, k * a)
+                / hankel1(n, k * a)
+                * hankel1(n, k * r)
+                * np.exp(1j * n * t)
+            )
 
         u_scatter[idx] = 0
         return u_scatter
@@ -114,14 +124,15 @@ class PenetrableExact2D(object):
         self.a = scat_rad
         self.f = 0
 
-        self.number_of_terms = np.max([100, np.int(55 + (wavenumber1 *
-                                                         scat_rad)**1.01)])
+        self.number_of_terms = np.max(
+            [100, np.int(55 + (wavenumber1 * scat_rad) ** 1.01)]
+        )
 
     def incident(self, x):
         k1 = self.k1
         a = self.a
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
 
         interior = np.where(r < a)
 
@@ -137,7 +148,7 @@ class PenetrableExact2D(object):
 
         number_of_terms = self.number_of_terms
 
-        r = np.sqrt(x[0]**2 + x[1]**2)
+        r = np.sqrt(x[0] ** 2 + x[1] ** 2)
         t = np.arctan2(x[1], x[0])
 
         interior = np.where(r < a)
@@ -146,22 +157,23 @@ class PenetrableExact2D(object):
         u_scatter_interior = 0
         u_scatter_exterior = 0
         for n in range(-number_of_terms, number_of_terms):
-            besselk1 = jv(n, k1*a)
-            besselk2 = jv(n, k2*a)
-            hankelk1 = hankel1(n, k1*a)
+            besselk1 = jv(n, k1 * a)
+            besselk2 = jv(n, k2 * a)
+            hankelk1 = hankel1(n, k1 * a)
 
-            dbesselk1 = jv(n-1, k1*a) - n/(k1*a)*jv(n, k1*a)
-            dbesselk2 = jv(n-1, k2*a) - n/(k2*a)*jv(n, k2*a)
-            dhankelk1 = n/(k1*a)*hankelk1 - hankel1(n+1, k1*a)
+            dbesselk1 = jv(n - 1, k1 * a) - n / (k1 * a) * jv(n, k1 * a)
+            dbesselk2 = jv(n - 1, k2 * a) - n / (k2 * a) * jv(n, k2 * a)
+            dhankelk1 = n / (k1 * a) * hankelk1 - hankel1(n + 1, k1 * a)
 
-            a_n = (1j**n) * (k2*dbesselk2*besselk1 -
-                             k1*dbesselk1*besselk2) / \
-                            (k1*dhankelk1*besselk2 -
-                             k2*dbesselk2*hankelk1)
-            b_n = (a_n*hankelk1 + (1j**n)*besselk1) / besselk2
+            a_n = (
+                (1j**n)
+                * (k2 * dbesselk2 * besselk1 - k1 * dbesselk1 * besselk2)
+                / (k1 * dhankelk1 * besselk2 - k2 * dbesselk2 * hankelk1)
+            )
+            b_n = (a_n * hankelk1 + (1j**n) * besselk1) / besselk2
 
-            u_scatter_exterior += a_n*hankel1(n, k1*r)*np.exp(1j*n*t)
-            u_scatter_interior += b_n*jv(n, k2*r)*np.exp(1j*n*t)
+            u_scatter_exterior += a_n * hankel1(n, k1 * r) * np.exp(1j * n * t)
+            u_scatter_interior += b_n * jv(n, k2 * r) * np.exp(1j * n * t)
 
         u_scatter_exterior[interior] = 0.0
         u_scatter_interior[exterior] = 0.0

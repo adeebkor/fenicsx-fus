@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 
 from dolfinx.fem import FunctionSpace, Function
-from dolfinx.mesh import (create_interval, locate_entities_boundary, meshtags)
+from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 
 from fenicsxfus import LossySpectralExplicit
 from fenicsxfus.utils import compute_diffusivity_of_sound, compute_eval_params
@@ -31,7 +31,8 @@ density = 1000  # (kg/m^3)
 attenuationCoefficientdB = 1500  # (dB/m)
 attenuationCoefficientNp = attenuationCoefficientdB / 20 * np.log(10)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSound, attenuationCoefficientdB)
+    angularFrequency, speedOfSound, attenuationCoefficientdB
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -56,15 +57,16 @@ mesh = create_interval(MPI.COMM_WORLD, numberOfElements, [0, domainLength])
 # Tag boundaries
 tdim = mesh.topology.dim
 
-facets0 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+facets0 = locate_entities_boundary(mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] > domainLength - np.finfo(float).eps)
+    mesh, tdim - 1, lambda x: x[0] > domainLength - np.finfo(float).eps
+)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                    np.full(facets1.shape, 2, np.intc)))
-mt = meshtags(mesh, tdim-1, indices, values[pos])
+values = np.hstack(
+    (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+)
+mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Define a DG function space for the medium properties
 V_DG = FunctionSpace(mesh, ("DG", 0))
@@ -78,7 +80,7 @@ delta0 = Function(V_DG)
 delta0.x.array[:] = diffusivityOfSound
 
 # Temporal parameters
-CFL = 1/12
+CFL = 1 / 12
 timeStepSize = CFL * meshSize / speedOfSound
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod  # adjust time step size
@@ -88,8 +90,18 @@ numberOfStep = int(finalTime / timeStepSize + 1)
 
 # Model
 model = LossySpectralExplicit(
-    mesh, mt, degreeOfBasis, c0, rho0, delta0, sourceFrequency,
-    sourceAmplitude, speedOfSound, rkOrder, timeStepSize)
+    mesh,
+    mt,
+    degreeOfBasis,
+    c0,
+    rho0,
+    delta0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()
@@ -98,7 +110,7 @@ u_n, v_n, tf = model.rk(startTime, finalTime)
 
 # Best approximation
 class Analytical:
-    """ Analytical solution """
+    """Analytical solution"""
 
     def __init__(self, c0, a0, f0, p0, t):
         self.c0 = c0
@@ -109,16 +121,22 @@ class Analytical:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.exp(1j*(self.w0*self.t - self.w0/self.c0*x[0])) \
-                * np.exp(-self.a0*x[0])
+        val = (
+            self.p0
+            * np.exp(1j * (self.w0 * self.t - self.w0 / self.c0 * x[0]))
+            * np.exp(-self.a0 * x[0])
+        )
 
         return val.imag
 
 
 V_ba = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
 u_ba = Function(V_ba)
-u_ba.interpolate(Analytical(speedOfSound, attenuationCoefficientNp,
-                            sourceFrequency, sourceAmplitude, tf))
+u_ba.interpolate(
+    Analytical(
+        speedOfSound, attenuationCoefficientNp, sourceFrequency, sourceAmplitude, tf
+    )
+)
 
 # Plot the solution
 npts = 1024
@@ -137,5 +155,7 @@ plt.legend()
 plt.savefig("sol.png")
 plt.close()
 
-print(f"{attenuationCoefficientdB},{diffusivityOfSound:5.5},{degreeOfBasis},",
-      f"{meshSize:6.6},{rkOrder},{CFL:5.5},{timeStepSize:5.5}")
+print(
+    f"{attenuationCoefficientdB},{diffusivityOfSound:5.5},{degreeOfBasis},",
+    f"{meshSize:6.6},{rkOrder},{CFL:5.5},{timeStepSize:5.5}",
+)

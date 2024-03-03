@@ -42,7 +42,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
@@ -62,7 +62,7 @@ rho0.x.array[:] = density
 
 # Temporal parameters
 CFL = 0.9
-timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSound * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -84,8 +84,16 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LinearSpectralS2(mesh, mt_facet, degreeOfBasis, c0, rho0,
-                         sourceFrequency, sourceAmplitude, speedOfSound)
+model = LinearSpectralS2(
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+)
 
 # Solve
 model.init()

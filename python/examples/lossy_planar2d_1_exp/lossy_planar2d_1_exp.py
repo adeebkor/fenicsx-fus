@@ -34,7 +34,8 @@ speedOfSound = 1500  # (m/s)
 density = 1000  # (kg/m^3)
 attenuationCoefficientdB = 100  # (dB/m)
 diffusivityOfSound = compute_diffusivity_of_sound(
-    angularFrequency, speedOfSound, attenuationCoefficientdB)
+    angularFrequency, speedOfSound, attenuationCoefficientdB
+)
 
 # Domain parameters
 domainLength = 0.12  # (m)
@@ -51,7 +52,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
 
 # Mesh parameters
@@ -98,9 +99,19 @@ if mpi_rank == 0:
     print(f"Number of steps: {numberOfStep}", flush=True)
 
 # Model
-model = LossySpectralExplicit(mesh, mt_facet, degreeOfBasis, c0, rho0, delta0,
-                              sourceFrequency, sourceAmplitude, speedOfSound,
-                              rkOrder, timeStepSize)
+model = LossySpectralExplicit(
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    delta0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSound,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()

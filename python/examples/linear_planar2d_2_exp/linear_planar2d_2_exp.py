@@ -48,7 +48,7 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
     mesh = fmesh.read_mesh(name=f"{mesh_name}")
     tdim = mesh.topology.dim
     mt_cell = fmesh.read_meshtags(mesh, name=f"{mesh_name}_cells")
-    mesh.topology.create_connectivity(tdim-1, tdim)
+    mesh.topology.create_connectivity(tdim - 1, tdim)
     mt_facet = fmesh.read_meshtags(mesh, name=f"{mesh_name}_facets")
     mt = [mt_cell, mt_facet]
 
@@ -71,7 +71,7 @@ rho0.x.array[mt_cell.find(2)] = densityBone
 
 # Temporal parameters
 CFL = 0.9
-timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis ** 2)
+timeStepSize = CFL * meshSize / (speedOfSoundBone * degreeOfBasis**2)
 stepPerPeriod = int(period / timeStepSize + 1)
 timeStepSize = period / stepPerPeriod
 startTime = 0.0
@@ -94,8 +94,17 @@ if mpi_rank == 0:
 
 # Model
 model = LinearSpectralExplicit(
-    mesh, mt_facet, degreeOfBasis, c0, rho0, sourceFrequency, sourceAmplitude,
-    speedOfSoundWater, rkOrder, timeStepSize)
+    mesh,
+    mt_facet,
+    degreeOfBasis,
+    c0,
+    rho0,
+    sourceFrequency,
+    sourceAmplitude,
+    speedOfSoundWater,
+    rkOrder,
+    timeStepSize,
+)
 
 # Solve
 model.init()

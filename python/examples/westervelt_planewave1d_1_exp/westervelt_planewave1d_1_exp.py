@@ -16,8 +16,12 @@ from mpi4py import MPI
 
 from dolfinx.common import Timer
 from dolfinx.fem import FunctionSpace, Function
-from dolfinx.mesh import (create_interval, locate_entities,
-                          locate_entities_boundary, meshtags)
+from dolfinx.mesh import (
+    create_interval,
+    locate_entities,
+    locate_entities_boundary,
+    meshtags,
+)
 
 from fenicsxfus import WesterveltSpectralExplicit
 from fenicsxfus.utils import compute_eval_params, compute_diffusivity_of_sound
@@ -33,15 +37,14 @@ rho0 = 998.2  # density (kg / m^3)
 beta0 = 3.5  # nonlinearity coefficient
 alphadB = 0.217  # attenuation (dB/m)
 alphaNp = alphadB / 20 * np.log(10)
-delta0 = compute_diffusivity_of_sound(
-    w0, c0, alphadB)
+delta0 = compute_diffusivity_of_sound(w0, c0, alphadB)
 
 # Domain parameters
 L = 0.12  # domain length (m)
-xsh = rho0*c0**3/beta0/p0/w0  # shock formation distance (m)
+xsh = rho0 * c0**3 / beta0 / p0 / w0  # shock formation distance (m)
 
 # Physical parameters
-lmbda = c0/f0  # wavelength (m)
+lmbda = c0 / f0  # wavelength (m)
 
 # FE parameters
 degree = 4
@@ -61,21 +64,20 @@ mesh = create_interval(MPI.COMM_WORLD, nx, [0, L])
 # Tag boundaries
 tdim = mesh.topology.dim
 
-facets0 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] < np.finfo(float).eps)
+facets0 = locate_entities_boundary(mesh, tdim - 1, lambda x: x[0] < np.finfo(float).eps)
 facets1 = locate_entities_boundary(
-    mesh, tdim-1, lambda x: x[0] > L - np.finfo(float).eps)
+    mesh, tdim - 1, lambda x: x[0] > L - np.finfo(float).eps
+)
 
 indices, pos = np.unique(np.hstack((facets0, facets1)), return_index=True)
-values = np.hstack((np.full(facets0.shape, 1, np.intc),
-                    np.full(facets1.shape, 2, np.intc)))
-mt = meshtags(mesh, tdim-1, indices, values[pos])
+values = np.hstack(
+    (np.full(facets0.shape, 1, np.intc), np.full(facets1.shape, 2, np.intc))
+)
+mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Define DG functions to specify different medium
-cells0 = locate_entities(
-    mesh, tdim, lambda x: x[0] < L / 2)
-cells1 = locate_entities(
-    mesh, tdim, lambda x: x[0] >= L / 2 - h)
+cells0 = locate_entities(mesh, tdim, lambda x: x[0] < L / 2)
+cells1 = locate_entities(mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
 V_DG = FunctionSpace(mesh, ("DG", 0))
 
@@ -100,19 +102,24 @@ tend = L / c0 + 16 / f0  # simulation final time (s)
 
 # Model
 model = WesterveltSpectralExplicit(
-    mesh, mt, degree, c, rho, delta, beta, f0, p0, c0, rk, dt)
+    mesh, mt, degree, c, rho, delta, beta, f0, p0, c0, rk, dt
+)
 
 # Solve
 model.init()
 with Timer() as t_solve:
-    u_e, _, tf, = model.rk(tstart, tend)
+    (
+        u_e,
+        _,
+        tf,
+    ) = model.rk(tstart, tend)
 
 print("Solver time: ", t_solve.elapsed()[0])
 print("Shock formation distance: ", xsh)
 print("Domain length: ", L)
 
 # Plot solution
-npts = 3 * degree * (nx+1)
+npts = 3 * degree * (nx + 1)
 x0 = np.linspace(0, L, npts)
 points = np.zeros((3, npts))
 points[0] = x0
@@ -141,13 +148,18 @@ class Nonlinear:
 
     def __call__(self, x):
         xsh = self.c0**2 / self.w0 / self.beta0 / self.u0
-        sigma = (x[0]+0.0000001) / xsh
+        sigma = (x[0] + 0.0000001) / xsh
 
         val = np.zeros(sigma.shape[0])
         for term in range(1, 100):
-            val += 2/term/sigma * jv(term, term*sigma) * \
-                np.sin(term*self.w0*(self.t - x[0]/self.c0)) * \
-                np.exp(-self.a0*x[0])
+            val += (
+                2
+                / term
+                / sigma
+                * jv(term, term * sigma)
+                * np.sin(term * self.w0 * (self.t - x[0] / self.c0))
+                * np.exp(-self.a0 * x[0])
+            )
 
         return self.p0 * val
 
@@ -168,9 +180,12 @@ class Lossy:
         self.t = t
 
     def __call__(self, x):
-        val = self.p0 * np.sin(self.w0 * (self.t - x[0]/self.c0)) * \
-            np.heaviside(self.t-x[0]/self.c0, 0) * \
-            np.exp(-self.a0*x[0])
+        val = (
+            self.p0
+            * np.sin(self.w0 * (self.t - x[0] / self.c0))
+            * np.heaviside(self.t - x[0] / self.c0, 0)
+            * np.exp(-self.a0 * x[0])
+        )
 
         return val
 
@@ -194,15 +209,13 @@ plt.savefig("u_1.png", bbox_inches="tight")
 plt.close()
 
 data_range = [0.06, 0.06 + 2 * lmbda]
-idx = np.argwhere(np.logical_and(
-    x.T[0] > data_range[0], x.T[0] < data_range[1]))
+idx = np.argwhere(np.logical_and(x.T[0] > data_range[0], x.T[0] < data_range[1]))
 plt.figure(figsize=(16, 8))
 plt.plot(x.T[0][idx], u_eval[idx], label="FEniCSx")
 plt.plot(x.T[0][idx], u_nonlinear_eval[idx], "--", label="Nonlinear")
 plt.plot(x.T[0][idx], u_linear_eval[idx], "--", label="Lossy")
 plt.xlim([data_range[0], data_range[1]])
-plt.tick_params(left=False, right=False, labelleft=False,
-                labelbottom=True, bottom=True)
+plt.tick_params(left=False, right=False, labelleft=False, labelbottom=True, bottom=True)
 plt.legend(bbox_to_anchor=(1.0, 1.0))
 plt.title(f"Attenuation = {alphadB}")
 plt.savefig(f"u_2_{str(alphadB).zfill(3)}.png", bbox_inches="tight")
