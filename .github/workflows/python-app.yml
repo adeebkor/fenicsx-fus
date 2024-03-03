@@ -37,7 +37,6 @@ jobs:
     - name: Install fenicsxfus package
       run: python3 -m pip -v install python/ --no-cache-dir
 
-    ruff-isort-python-code: &ruff-isort-python-code
     - name: ruff checks
       run: |
         ruff check python/tests/
