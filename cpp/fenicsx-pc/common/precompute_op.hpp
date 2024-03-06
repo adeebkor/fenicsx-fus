@@ -91,7 +91,7 @@ public:
 
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -190,7 +190,7 @@ public:
 
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -345,7 +345,7 @@ public:
     T* dphi_ = dphi.data();
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)
@@ -443,7 +443,7 @@ public:
     T* dphi_ = dphi.data();
     for (std::int32_t c = 0; c < Nc; ++c) {
       // Get cell degrees of freedom
-      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto cell_dofs = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(dofmap_, c, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
 
       // Pack coefficients
       for (std::int32_t i = 0; i < Nd; ++i)

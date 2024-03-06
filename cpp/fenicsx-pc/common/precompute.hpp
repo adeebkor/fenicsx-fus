@@ -76,10 +76,10 @@ std::vector<T> compute_scaled_jacobian_determinant(std::shared_ptr<const mesh::M
       std::fill(J_b.begin(), J_b.end(), 0.0);
 
       // Get the derivatives at each quadrature points
-      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
+      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
 
       // Compute Jacobian matrix
-      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian(dphi, coord_dofs, _J);
 
       // Compute the determinant of the Jacobian
@@ -172,22 +172,22 @@ std::vector<T> compute_scaled_geometrical_factor(std::shared_ptr<const mesh::Mes
       std::fill(G_b.begin(), G_b.end(), 0.0);
 
       // Get the derivatives at each quadrature points
-      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
+      auto dphi = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(phi, std::pair(1, tdim + 1), q, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, 0);
 
       // Compute Jacobian matrix
-      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto _J = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(J, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian(dphi, coord_dofs, _J);
 
       // Compute the inverse Jacobian matrix
-      auto _K = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(K, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto _K = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(K, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       cmap.compute_jacobian_inverse(_J, _K);
 
       // Transpose K -> K^{T}
-      auto _KT = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(KT, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto _KT = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(KT, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       transpose(_K, _KT);
 
       // Compute the scaled geometrical factor (K * K^{T})
-      auto _G = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE::submdspan(G, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
+      auto _G = MDSPAN_IMPL_STANDARD_NAMESPACE::submdspan(G, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent, MDSPAN_IMPL_STANDARD_NAMESPACE::full_extent);
       math::dot(_K, _KT, _G);
 
       // Compute the scaled Jacobian determinant
