@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <iostream>
 
-using T = double;
+using T = float;
 
 using namespace dolfinx;
 
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     // Create mesh
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
     auto mesh = std::make_shared<mesh::Mesh<T>>(
-        mesh::create_box(MPI_COMM_WORLD, {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}}, {N, N, N},
+        mesh::create_box<T>(MPI_COMM_WORLD, {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}}, {N, N, N},
                          mesh::CellType::hexahedron, part));
 
     // Create function space
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
 
     // ------------------------------------------------------------------------
     // List timings
-    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::max);
+    list_timings(MPI_COMM_WORLD, {TimingType::wall}, Table::Reduction::min);
 
     if (mpi_rank == 0) {
       std::cout << "Polynomial degree: " << P << "\n";
