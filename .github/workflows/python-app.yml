@@ -35,7 +35,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Install fenicsxfus package
-      run: python -m pip -v install python/ --no-cache-dir
+      run: pip -v install python/ --no-cache-dir
 
     - name: ruff checks
       run: |
