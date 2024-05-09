@@ -1,239 +1,159 @@
 POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, DOUBLE, AVX512
+Degrees of freedom: 38272753
+Number of cells: 4741632
 ~ stiffness spectral                                                        |     1  0.028644  0.028644
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.028441  0.028441
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.028714  0.028714
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.028598  0.028598
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
 
 POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, DOUBLE, AVX512
+Degrees of freedom: 38272753
+Number of cells: 1404928
 ~ stiffness spectral                                                        |     1  0.024686  0.024686
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
-
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.025297  0.025297
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
-
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.024677  0.024677
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
-
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.024829  0.024829
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
 
 POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, DOUBLE, AVX512
+Degrees of freedom: 38272753
+Number of cells: 592704
 ~ stiffness spectral                                                        |     1  0.019565  0.019565
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.019415  0.019415
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.019052  0.019052
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.019335  0.019335
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
 
 POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, DOUBLE, AVX512
+Degrees of freedom: 39651821
+Number of cells: 314432
 ~ stiffness spectral                                                        |     1  0.018615  0.018615
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.018721  0.018721
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.018020  0.018020
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.018376  0.018376
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
 
 POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, DOUBLE, AVX512
+Degrees of freedom: 38272753
+Number of cells: 175616
 ~ stiffness spectral                                                        |     1  0.017435  0.017435
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.017354  0.017354
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.017313  0.017313
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, DOUBLE, AVX512
 ~ stiffness spectral                                                        |     1  0.017392  0.017392
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
 
 POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, FLOAT, AVX512
+Degrees of freedom: 38272753
+Number of cells: 4741632
 ~ stiffness spectral                                                        |     1  0.020963  0.020963
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, FLOAT, AVX512
 ~ stiffness spectral                                                        |     1  0.020797  0.020797
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, FLOAT, AVX512
 ~ stiffness spectral                                                        |     1  0.020889  0.020889
-Polynomial degree: 2
-Degrees of freedom: 38272753
-Number of cells: 4741632
-
-POLYNOMIAL DEGREE 2, ICELAKE 76 PROCESSES, FLOAT, AVX512
 ~ stiffness spectral                                                        |     1  0.021090  0.021090
-Polynomial degree: 2
+
+POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, FLOAT, AVX512
+Degrees of freedom: 38272753
+Number of cells: 1404928
+~ stiffness spectral                                                        |     1  0.016970  0.016970
+~ stiffness spectral                                                        |     1  0.016857  0.016857
+~ stiffness spectral                                                        |     1  0.017430  0.017430
+~ stiffness spectral                                                        |     1  0.016906  0.016906
+
+POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, FLOAT, AVX512
+Degrees of freedom: 38272753
+Number of cells: 592704
+~ stiffness spectral                                                        |     1  0.010898  0.010898
+~ stiffness spectral                                                        |     1  0.011004  0.011004
+~ stiffness spectral                                                        |     1  0.010907  0.010907
+~ stiffness spectral                                                        |     1  0.010926  0.010926
+
+POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, FLOAT, AVX512
+Degrees of freedom: 39651821
+Number of cells: 314432
+~ stiffness spectral                                                        |     1  0.010217  0.010217
+~ stiffness spectral                                                        |     1  0.010412  0.010412
+~ stiffness spectral                                                        |     1  0.010363  0.010363
+~ stiffness spectral                                                        |     1  0.010474  0.010474
+
+POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, FLOAT, AVX512
+Degrees of freedom: 38272753
+Number of cells: 175616
+~ stiffness spectral                                                        |     1  0.009792  0.009792
+~ stiffness spectral                                                        |     1  0.009801  0.009801
+~ stiffness spectral                                                        |     1  0.009913  0.009913
+~ stiffness spectral                                                        |     1  0.009921  0.009921
+
+POLYNOMIAL DEGREE 2, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
 Degrees of freedom: 38272753
 Number of cells: 4741632
+~ stiffness spectral                                                        |     1  0.312392  0.312392
+~ stiffness spectral                                                        |     1  0.311360  0.311360
+~ stiffness spectral                                                        |     1  0.309883  0.309883
+~ stiffness spectral                                                        |     1  0.310365  0.310365
 
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.016970  0.016970
-Polynomial degree: 3
+POLYNOMIAL DEGREE 3, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
 Degrees of freedom: 38272753
 Number of cells: 1404928
+~ stiffness spectral                                                        |     1  0.342435  0.342435
+~ stiffness spectral                                                        |     1  0.339170  0.339170
+~ stiffness spectral                                                        |     1  0.344749  0.344749
+~ stiffness spectral                                                        |     1  0.342537  0.342537
 
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.016857  0.016857
-Polynomial degree: 3
+POLYNOMIAL DEGREE 4, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
+Degrees of freedom: 38272753
+Number of cells: 592704
+~ stiffness spectral                                                        |     1  0.169133  0.169133
+~ stiffness spectral                                                        |     1  0.171125  0.171125
+~ stiffness spectral                                                        |     1  0.168219  0.168219
+~ stiffness spectral                                                        |     1  0.171510  0.171510
+
+POLYNOMIAL DEGREE 5, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
+Degrees of freedom: 39651821
+Number of cells: 314432
+~ stiffness spectral                                                        |     1  0.166571  0.166571
+~ stiffness spectral                                                        |     1  0.167136  0.167136
+~ stiffness spectral                                                        |     1  0.159774  0.159774
+~ stiffness spectral                                                        |     1  0.162710  0.162710
+
+POLYNOMIAL DEGREE 6, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
+Degrees of freedom: 38272753
+Number of cells: 175616
+~ stiffness spectral                                                        |     1  0.141130  0.141130
+~ stiffness spectral                                                        |     1  0.146191  0.146191
+~ stiffness spectral                                                        |     1  0.140964  0.140964
+~ stiffness spectral                                                        |     1  0.139706  0.139706
+
+POLYNOMIAL DEGREE 2, SANDYBRIDGE EN/EP 16 PROCESSES, FLOAT
+Degrees of freedom: 38272753
+Number of cells: 4741632
+~ stiffness spectral                                                        |     1  0.267204  0.267204
+~ stiffness spectral                                                        |     1  0.267208  0.267208
+~ stiffness spectral                                                        |     1  0.266178  0.266178
+~ stiffness spectral                                                        |     1  0.267157  0.267157
+
+POLYNOMIAL DEGREE 3, SANDYBRIDGE EN/EP 16 PROCESSES, FLOAT
 Degrees of freedom: 38272753
 Number of cells: 1404928
+~ stiffness spectral                                                        |     1  0.174439  0.174439
+~ stiffness spectral                                                        |     1  0.176721  0.176721
+~ stiffness spectral                                                        |     1  0.177874  0.177874
+~ stiffness spectral                                                        |     1  0.174670  0.174670
 
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.017430  0.017430
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
-
-POLYNOMIAL DEGREE 3, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.016906  0.016906
-Polynomial degree: 3
-Degrees of freedom: 38272753
-Number of cells: 1404928
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010898  0.010898
-Polynomial degree: 4
+POLYNOMIAL DEGREE 4, SANDYBRIDGE EN/EP 16 PROCESSES, FLOAT
 Degrees of freedom: 38272753
 Number of cells: 592704
+~ stiffness spectral                                                        |     1  0.120997  0.120997
+~ stiffness spectral                                                        |     1  0.118259  0.118259
+~ stiffness spectral                                                        |     1  0.118816  0.118816
+~ stiffness spectral                                                        |     1  0.121076  0.121076
 
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.011004  0.011004
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010907  0.010907
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 4, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010926  0.010926
-Polynomial degree: 4
-Degrees of freedom: 38272753
-Number of cells: 592704
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010217  0.010217
-Polynomial degree: 5
+POLYNOMIAL DEGREE 5, SANDYBRIDGE EN/EP 16 PROCESSES, FLOAT
 Degrees of freedom: 39651821
 Number of cells: 314432
+~ stiffness spectral                                                        |     1  0.113766  0.113766
+~ stiffness spectral                                                        |     1  0.113457  0.113457
+~ stiffness spectral                                                        |     1  0.116086  0.116086
+~ stiffness spectral                                                        |     1  0.112367  0.112367
 
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010412  0.010412
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010363  0.010363
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 5, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.010474  0.010474
-Polynomial degree: 5
-Degrees of freedom: 39651821
-Number of cells: 314432
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.009792  0.009792
-Polynomial degree: 6
+POLYNOMIAL DEGREE 6, SANDYBRIDGE EN/EP 16 PROCESSES, DOUBLE
 Degrees of freedom: 38272753
 Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.009801  0.009801
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.009913  0.009913
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
-
-POLYNOMIAL DEGREE 6, ICELAKE 76 PROCESSES, FLOAT, AVX512
-~ stiffness spectral                                                        |     1  0.009921  0.009921
-Polynomial degree: 6
-Degrees of freedom: 38272753
-Number of cells: 175616
+~ stiffness spectral                                                        |     1  0.091360  0.091360
+~ stiffness spectral                                                        |     1  0.090053  0.090053
+~ stiffness spectral                                                        |     1  0.092290  0.092290
+~ stiffness spectral                                                        |     1  0.091582  0.091582

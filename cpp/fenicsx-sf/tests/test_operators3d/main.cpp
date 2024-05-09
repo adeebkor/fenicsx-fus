@@ -10,7 +10,7 @@
 #include <dolfinx.h>
 #include <dolfinx/io/XDMFFile.h>
 
-using T = double;
+using T = float;
 
 using namespace dolfinx;
 
@@ -26,19 +26,18 @@ int main(int argc, char* argv[]) {
     // Set polynomial degree
     const int P = 4;
 
-    /*
     // Create mesh and function space
     const std::size_t N = 20;
     auto part = mesh::create_cell_partitioner(mesh::GhostMode::none);
-    auto mesh = std::make_shared<mesh::Mesh>(
-      mesh::create_box(
+    auto mesh = std::make_shared<mesh::Mesh<T>>(
+      mesh::create_box<T>(
         MPI_COMM_WORLD,
         {{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}}},
         {N, N, N},
         mesh::CellType::hexahedron,
         part));
-    */
 
+    /*
     // Read mesh and tags
     auto element = fem::CoordinateElement<T>(mesh::CellType::hexahedron, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
@@ -47,6 +46,7 @@ int main(int argc, char* argv[]) {
     mesh->topology()->create_connectivity(2, 3);
     auto mt_cell
         = std::make_shared<mesh::MeshTags<std::int32_t>>(fmesh.read_meshtags(*mesh, "hex_cells"));
+    */
 
     // Create function space
     auto V = std::make_shared<fem::FunctionSpace<T>>(

@@ -10,9 +10,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set flags
 set(CMAKE_CXX_FLAGS
-    "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_CXX_FLAGS} -Wall")
+    "-Ofast -march=native ${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_C_FLAGS
-    "-Ofast -mprefer-vector-width=512 -march=native ${CMAKE_C_FLAGS} -Wall")
+    "-Ofast -march=native ${CMAKE_C_FLAGS} -Wall")
 
 if(NOT TARGET dolfinx)
   find_package(DOLFINX REQUIRED)
@@ -20,7 +20,7 @@ endif()
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/forms.c
-  COMMAND ffcx --scalar_type=float ${CMAKE_CURRENT_SOURCE_DIR}/forms.py -o
+  COMMAND ffcx --scalar_type=float32 ${CMAKE_CURRENT_SOURCE_DIR}/forms.py -o
           ${CMAKE_CURRENT_SOURCE_DIR}/
   VERBATIM
   DEPENDS forms.py
