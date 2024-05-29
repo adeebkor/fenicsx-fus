@@ -33,6 +33,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install linting tools
+      run: python3 -m pip install ruff
     
     - name: Install fenicsxfus package
       run: python3 -m pip -v install --break-system-packages python/ --no-cache-dir
