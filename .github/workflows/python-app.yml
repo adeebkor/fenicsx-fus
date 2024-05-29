@@ -39,6 +39,9 @@ jobs:
 
     - name: Install Python test dependencies
       run: python3 -m pip -v install --break-system-packages pytest
+
+    - name: Install Python package dependencies
+      run: python3 -m pip -v install --break-system-packages scipy
     
     - name: Install fenicsxfus package
       run: python3 -m pip -v install --break-system-packages python/ --no-cache-dir
