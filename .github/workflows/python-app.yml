@@ -36,6 +36,9 @@ jobs:
 
     - name: Install linting tools
       run: python3 -m pip -v install --break-system-packages ruff
+
+    - name: Install Python test dependencies
+      run: python3 -m pip -v install --break-system-packages pytest
     
     - name: Install fenicsxfus package
       run: python3 -m pip -v install --break-system-packages python/ --no-cache-dir
