@@ -21,7 +21,6 @@ class WesterveltSpectralExplicit:
     def __init__(
         self, mesh, meshtags, k, c0, rho0, delta0, beta0, freq0, p0, s0, rk_order, dt
     ):
-
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
         self.mpi_rank = MPI.COMM_WORLD.rank
