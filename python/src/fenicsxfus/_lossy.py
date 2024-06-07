@@ -74,7 +74,7 @@ class LossySpectralExplicit:
         ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
-        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        cell_type = mesh.ufl_cell().cellname()
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
         )
@@ -375,7 +375,7 @@ class LossySpectralImplicit:
         ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
-        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        cell_type = mesh.ufl_cell().cellname()
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
         )

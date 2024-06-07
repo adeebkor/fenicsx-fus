@@ -45,7 +45,8 @@ def test_diagonal(dimension, p):
         )
 
     # Create function space
-    cell_type = basix.cell.string_to_type(cell_type.cellname())
+    # cell_type = basix.cell.string_to_type(cell_type.cellname())
+    cell_type = cell_type.cellname()
     FE = basix.ufl.element(
         basix.ElementFamily.P, cell_type, p, basix.LagrangeVariant.gll_warped
     )
