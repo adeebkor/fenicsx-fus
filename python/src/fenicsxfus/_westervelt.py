@@ -19,8 +19,12 @@ class WesterveltSpectralExplicit:
     """
 
     def __init__(
-        self, mesh, meshtags, k, c0, rho0, delta0, beta0, freq0, p0, s0, rk_order, dt
+        self, mesh, meshtags, k, c0, rho0, delta0, beta0, freq0, p0, s0, rk_order, dt, sensor
     ):
+
+        self.sensor = sensor
+        self.degree = k
+
         # MPI
         self.mpi_size = MPI.COMM_WORLD.size
         self.mpi_rank = MPI.COMM_WORLD.rank
@@ -288,6 +292,36 @@ class WesterveltSpectralExplicit:
         step = 0
         nstep = int((tf - t0) / dt) + 1
 
+        # ---------------------------------------------------------------------
+        # Data collection code
+
+        from dolfinx.geometry import (bb_tree, compute_collisions_points,
+                                      compute_colliding_cells)
+        npoints = self.sensor.shape[0]
+        points = np.zeros((3, npoints))
+        points[0] = self.sensor
+        tree = bb_tree(
+            self.mesh, self.mesh.topology.dim)
+        cells = []
+        points_on_proc = []
+        cell_candidates = compute_collisions_points(tree, points.T)
+        cell_collisions = compute_colliding_cells(
+            self.mesh, cell_candidates, points.T)
+
+        for i, point in enumerate(points.T):
+            # Only use evaluate for points on current processor
+            if len(cell_collisions.links(i)) > 0:
+                points_on_proc.append(point)
+                cells.append(cell_collisions.links(i)[0])
+
+        points_on_proc = np.array(points_on_proc, dtype=np.float64)
+
+        num_step_per_period = int(self.T / self.dt)
+        step_period = 0
+        time = np.zeros((num_step_per_period), dtype=float)
+        values = np.zeros((npoints, num_step_per_period), dtype=float)
+        # ---------------------------------------------------------------------
+
         while t < tf:
             dt = min(dt, tf - t)
 
@@ -321,12 +355,21 @@ class WesterveltSpectralExplicit:
             if step % 100 == 0:
                 PETSc.Sys.syncPrint(f"t: {t:5.5},\t Steps: {step}/{nstep}")
 
-        u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
-        v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
-        u_.copy(result=self.u_n.vector)
-        v_.copy(result=self.v_n.vector)
+            # -----------------------------------------------------------------
+            # Collect data
+            if t > 0.09 / self.s0 and step_period < num_step_per_period:
+                u_.copy(result=self.u_n.vector)
+                self.u_n.vector.ghostUpdate(
+                    addv=PETSc.InsertMode.INSERT,
+                    mode=PETSc.ScatterMode.FORWARD)
+                u_eval = self.u_n.eval(points_on_proc, cells).flatten()
+                time[step_period] = t
+                values[:, step_period] = u_eval
+                step_period += 1
 
-        return self.u_n, self.v_n, t
+        with open(f"fenicsx-fus-P{self.degree}.npz", "wb") as out_file:
+            np.savez_compressed(out_file, t=time, p=values)
+        # -----------------------------------------------------------------
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)

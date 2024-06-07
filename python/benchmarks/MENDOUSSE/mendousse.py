@@ -13,12 +13,12 @@ from scipy.io import loadmat
 from mpi4py import MPI
 
 from dolfinx.common import Timer
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import (create_interval, locate_entities,
                           locate_entities_boundary, meshtags)
 
-from hifusim import WesterveltSpectralExplicit
-from hifusim.utils import compute_eval_params, compute_diffusivity_of_sound
+from fenicsxfus import WesterveltSpectralExplicit
+from fenicsxfus.utils import compute_diffusivity_of_sound
 
 # Source parameters
 f0 = 1e6  # source frequency (Hz)
@@ -45,13 +45,13 @@ L = 0.09
 lmbda = c0/f0  # wavelength (m)
 
 # FE parameters
-degree = 6
+degree = 10
 
 # RK parameter
 rk = 4
 
 # Mesh parameters
-epw = 10
+epw = 6
 nw = L / lmbda  # number of waves
 nx = int(epw * nw + 1)  # total number of elements
 h = L / nx
@@ -78,7 +78,7 @@ cells0 = locate_entities(
 cells1 = locate_entities(
     mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 
 c = Function(V_DG)
 c.x.array[:] = c0
@@ -138,25 +138,3 @@ class Lossy:
             np.exp(-self.a0*x[0])
 
         return val
-
-
-# Plot solution
-npts = 3 * degree * (nx+1)
-x0 = np.linspace(0, L, npts)
-points = np.zeros((3, npts))
-points[0] = x0
-x, cells = compute_eval_params(mesh, points)
-
-u_eval = u_e.eval(x, cells).flatten()
-
-V_ba = FunctionSpace(mesh, ("Lagrange", degree))
-u_linear = Function(V_ba)
-u_linear.interpolate(Lossy(c0, f0, p0, alphaNp, tf))
-u_linear_eval = u_linear.eval(x, cells).flatten()
-
-plt.figure(figsize=(14, 8))
-plt.plot(x.T[0], u_eval)
-plt.plot(x.T[0], u_linear_eval)
-plt.xlim([xsh - 2 * lmbda, xsh + 2 * lmbda])
-plt.savefig("u.png", bbox_inches="tight")
-plt.close()
