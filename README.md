@@ -6,10 +6,9 @@ FEniCSx implementation for focused ultrasound (FUS) simulation.
 
 ## Introduction
 
-A focused ultrasound (FUS) technique is a non-invasive medical 
-technique that uses ultrasound for thermal ablation.
-FUS generates acoustic waves using well-placed transducers to heat 
-unwanted tissue while keeping the surrounding tissue unaffected.
+Focused ultrasound (FUS) is a non-invasive medical technique that uses
+ultrasound for therapeutic purposes. FUS generates acoustic waves using
+transducers to treat diseases inside a patient body without incisions.
 
 ## Solver method
 
