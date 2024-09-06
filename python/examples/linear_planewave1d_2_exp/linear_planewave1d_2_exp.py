@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import (
     create_interval,
     locate_entities,
@@ -73,7 +73,7 @@ mt = meshtags(mesh, tdim - 1, indices, values[pos])
 cells0 = locate_entities(mesh, tdim, lambda x: x[0] < L / 2)
 cells1 = locate_entities(mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 c = Function(V_DG)
 c.x.array[:] = c0
 c.x.array[cells1] = c1
@@ -149,7 +149,7 @@ class Wave:
         return val.imag
 
 
-V_ba = FunctionSpace(mesh, ("Lagrange", degree))
+V_ba = functionspace(mesh, ("Lagrange", degree))
 u_ba = Function(V_ba)
 wave = Wave(c0, c1, rho0, rho1, f0, p0, tf)
 u_ba.interpolate(wave.field)

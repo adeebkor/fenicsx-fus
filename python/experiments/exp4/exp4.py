@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
+from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
@@ -65,7 +65,7 @@ values = np.hstack(
 mt = meshtags(mesh, tdim - 1, indices, values[pos])
 
 # Define a DG function space for the medium properties
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 c0 = Function(V_DG)
 c0.x.array[:] = speedOfSound
 
@@ -121,7 +121,7 @@ class Analytical:
         return val
 
 
-V_e = FunctionSpace(mesh, ("Lagrange", degreeOfBasis))
+V_e = functionspace(mesh, ("Lagrange", degreeOfBasis))
 u_e = Function(V_e)
 u_e.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, tf))
 

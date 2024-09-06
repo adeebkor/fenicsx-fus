@@ -47,7 +47,7 @@ class LinearSpectralNewmark:
         ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
-        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        cell_type = mesh.ufl_cell().cellname()
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
         )
@@ -116,7 +116,7 @@ class LinearSpectralNewmark:
         # Linear solver
         self.solver = PETSc.KSP().create(mesh.comm)
         self.solver.setType(PETSc.KSP.Type.PREONLY)
-        self.solver.getPC().setType(PETSc.PC.Type.LU)
+        self.solver.getPC().setType(PETSc.PC.Type.JACOBI)
         self.solver.setOperators(self.A)
 
     def init(self):
@@ -284,7 +284,7 @@ class LinearSpectralS2:
         ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
-        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        cell_type = mesh.ufl_cell().cellname()
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
         )
@@ -748,7 +748,7 @@ class LinearSpectralSponge:
         ds = Measure("ds", subdomain_data=meshtags, domain=mesh)
 
         # Define cell, finite element and function space
-        cell_type = basix.cell.string_to_type(mesh.ufl_cell().cellname())
+        cell_type = mesh.ufl_cell().cellname()
         FE = basix.ufl.element(
             basix.ElementFamily.P, cell_type, k, basix.LagrangeVariant.gll_warped
         )

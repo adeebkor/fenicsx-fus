@@ -15,7 +15,7 @@ from scipy.special import jv
 from mpi4py import MPI
 
 from dolfinx.common import Timer
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import (
     create_interval,
     locate_entities,
@@ -79,7 +79,7 @@ mt = meshtags(mesh, tdim - 1, indices, values[pos])
 cells0 = locate_entities(mesh, tdim, lambda x: x[0] < L / 2)
 cells1 = locate_entities(mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 
 c = Function(V_DG)
 c.x.array[:] = c0
@@ -190,7 +190,7 @@ class Lossy:
         return val
 
 
-V_ba = FunctionSpace(mesh, ("Lagrange", degree))
+V_ba = functionspace(mesh, ("Lagrange", degree))
 u_nonlinear = Function(V_ba)
 u_nonlinear.interpolate(Nonlinear(c0, f0, p0, rho0, alphaNp, beta0, tf))
 

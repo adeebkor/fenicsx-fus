@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
+from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import (
     create_interval,
     locate_entities,
@@ -70,7 +70,7 @@ mt = meshtags(mesh, tdim - 1, indices, values[pos])
 cells0 = locate_entities(mesh, tdim, lambda x: x[0] < L / 2)
 cells1 = locate_entities(mesh, tdim, lambda x: x[0] >= L / 2 - h)
 
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 c = Function(V_DG)
 c.x.array[:] = c0
 
@@ -122,7 +122,7 @@ class Analytical:
         return val
 
 
-V_ba = FunctionSpace(mesh, ("Lagrange", degree))
+V_ba = functionspace(mesh, ("Lagrange", degree))
 u_ba = Function(V_ba)
 u_ba.interpolate(Analytical(c0, f0, p0, tf))
 

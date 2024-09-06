@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function, assemble_scalar, form
+from dolfinx.fem import functionspace, Function, assemble_scalar, form
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
 from ufl import inner, dx
 
@@ -51,7 +51,7 @@ meshSize = domainLength / numberOfElements
 mesh = create_interval(MPI.COMM_WORLD, numberOfElements, [0, domainLength])
 
 # Define a DG function space for the physical parameters of the domain
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 c0 = Function(V_DG)
 c0.x.array[:] = speedOfSound
 
@@ -122,7 +122,7 @@ class Analytical:
         return val
 
 
-V_e = FunctionSpace(mesh, ("Lagrange", degreeOfBasis + 3))
+V_e = functionspace(mesh, ("Lagrange", degreeOfBasis + 3))
 u_e = Function(V_e)
 u_e.interpolate(Analytical(speedOfSound, sourceFrequency, sourceAmplitude, tf))
 

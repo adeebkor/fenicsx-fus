@@ -12,7 +12,7 @@
 import numpy as np
 from mpi4py import MPI
 
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.io import XDMFFile, VTXWriter
 from dolfinx import cpp
 
@@ -54,13 +54,13 @@ with XDMFFile(MPI.COMM_WORLD, "mesh.xdmf", "r") as fmesh:
 
 # Mesh parameters
 numCell = mesh.topology.index_map(tdim).size_local
-hmin = np.array([cpp.mesh.h(mesh, tdim, range(numCell)).min()])
+hmin = np.array([cpp.mesh.h(mesh._cpp_object, tdim, np.arange(numCell)).min()])
 meshSize = np.zeros(1)
 MPI.COMM_WORLD.Reduce(hmin, meshSize, op=MPI.MIN, root=0)
 MPI.COMM_WORLD.Bcast(meshSize, root=0)
 
 # Define DG functions to specify different medium
-V_DG = FunctionSpace(mesh, ("DG", 0))
+V_DG = functionspace(mesh, ("DG", 0))
 c0 = Function(V_DG)
 c0.x.array[:] = speedOfSoundWater
 c0.x.array[mt_cell.find(2)] = speedOfSoundBone

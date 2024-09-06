@@ -1,7 +1,7 @@
 import numpy as np
 
 from dolfinx.geometry import (
-    BoundingBoxTree,
+    bb_tree,
     compute_collisions_points,
     compute_colliding_cells,
 )
@@ -30,7 +30,7 @@ def compute_eval_params(mesh, points):
                      A list containing the cell index of the evaluation point.
     """
 
-    tree = BoundingBoxTree(mesh, mesh.topology.dim, padding=1e-12)
+    tree = bb_tree(mesh, mesh.topology.dim, padding=1e-12)
     cells = []
     points_on_proc = []
     cell_candidates = compute_collisions_points(tree, points.T)
