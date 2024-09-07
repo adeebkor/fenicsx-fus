@@ -32,7 +32,7 @@ jobs:
       OMPI_MCA_hwloc_base_binding_policy: none
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install linting tools
       run: python3 -m pip -v install --break-system-packages ruff
