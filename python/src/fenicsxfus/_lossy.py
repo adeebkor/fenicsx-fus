@@ -189,12 +189,12 @@ class LossySpectralExplicit:
         ) - window * self.p0 * self.w0**2 / self.s0 * np.sin(self.w0 * t)
 
         # Update fields
-        u.copy(result=self.u_n.vector)
-        self.u_n.vector.ghostUpdate(
+        u.copy(result=self.u_n.x.petsc_vec)
+        self.u_n.x.petsc_vec.ghostUpdate(
             addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
         )
-        v.copy(result=self.v_n.vector)
-        self.v_n.vector.ghostUpdate(
+        v.copy(result=self.v_n.x.petsc_vec)
+        self.v_n.x.petsc_vec.ghostUpdate(
             addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
         )
 
@@ -232,16 +232,16 @@ class LossySpectralExplicit:
         c_runge = self.c_runge
 
         # Placeholder vectors at time step n
-        u_ = self.u_n.vector.copy()
-        v_ = self.v_n.vector.copy()
+        u_ = self.u_n.x.petsc_vec.copy()
+        v_ = self.v_n.x.petsc_vec.copy()
 
         # Placeholder vectors at intermediate time step
-        un = self.u_n.vector.copy()
-        vn = self.v_n.vector.copy()
+        un = self.u_n.x.petsc_vec.copy()
+        vn = self.v_n.x.petsc_vec.copy()
 
         # Placeholder vectors at start of time step
-        u0 = self.u_n.vector.copy()
-        v0 = self.v_n.vector.copy()
+        u0 = self.u_n.x.petsc_vec.copy()
+        v0 = self.v_n.x.petsc_vec.copy()
 
         # Placeholder at k intermediate time step
         ku = u0.copy()
@@ -288,8 +288,8 @@ class LossySpectralExplicit:
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
-        u_.copy(result=self.u_n.vector)
-        v_.copy(result=self.v_n.vector)
+        u_.copy(result=self.u_n.x.petsc_vec)
+        v_.copy(result=self.v_n.x.petsc_vec)
 
         return self.u_n, self.v_n, t
 
@@ -523,12 +523,12 @@ class LossySpectralImplicit:
         ) - window * self.p0 * self.w0**2 / self.s0 * np.sin(self.w0 * t)
 
         # Update fields
-        u.copy(result=self.u_n.vector)
-        self.u_n.vector.ghostUpdate(
+        u.copy(result=self.u_n.x.petsc_vec)
+        self.u_n.x.petsc_vec.ghostUpdate(
             addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
         )
-        v.copy(result=self.v_n.vector)
-        self.v_n.vector.ghostUpdate(
+        v.copy(result=self.v_n.x.petsc_vec)
+        self.v_n.x.petsc_vec.ghostUpdate(
             addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
         )
 
@@ -565,16 +565,16 @@ class LossySpectralImplicit:
         c_runge = self.c_runge
 
         # Placeholder vectors at time step n
-        u_ = self.u_n.vector.copy()
-        v_ = self.v_n.vector.copy()
+        u_ = self.u_n.x.petsc_vec.copy()
+        v_ = self.v_n.x.petsc_vec.copy()
 
         # Placeholder vectors at intermediate time step
-        un = self.u_n.vector.copy()
-        vn = self.v_n.vector.copy()
+        un = self.u_n.x.petsc_vec.copy()
+        vn = self.v_n.x.petsc_vec.copy()
 
         # Placeholder vectors at start of time step
-        u0 = self.u_n.vector.copy()
-        v0 = self.v_n.vector.copy()
+        u0 = self.u_n.x.petsc_vec.copy()
+        v0 = self.v_n.x.petsc_vec.copy()
 
         # Placeholder at k intermediate time step
         ku = n_RK * [u0.copy()]
@@ -622,7 +622,7 @@ class LossySpectralImplicit:
 
         u_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
         v_.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
-        u_.copy(result=self.u_n.vector)
-        v_.copy(result=self.v_n.vector)
+        u_.copy(result=self.u_n.x.petsc_vec)
+        v_.copy(result=self.v_n.x.petsc_vec)
 
         return self.u_n, self.v_n, t
