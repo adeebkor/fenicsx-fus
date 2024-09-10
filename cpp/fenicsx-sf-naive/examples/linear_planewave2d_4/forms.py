@@ -34,8 +34,8 @@ md = {"quadrature_rule": "GLL", "quadrature_degree": qdegree[Q]}
 # Define forms
 a = inner(u/rho0/c0/c0, v) * dx(metadata=md)
 
-L = inner(1/rho0*g, v)*ds(1, metadata=md) \
-    - inner(1/rho0/c0*v_n, v)*ds(2, metadata=md)
+L = inner(1/rho0*g, v) * ds(1, metadata=md) \
+    - inner(1/rho0/c0*v_n, v) * ds(2, metadata=md)
 
 # Define forms to compute the norm
 Norm = inner(u_n, u_n) * dx
