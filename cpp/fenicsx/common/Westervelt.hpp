@@ -54,7 +54,8 @@ void axpy(la::Vector<T>& r, T alpha, const la::Vector<T>& x, const la::Vector<T>
 template <typename T, int P>
 class WesterveltSpectral {
 public:
-  WesterveltSpectral(std::shared_ptr<mesh::Mesh<T>> Mesh,
+  WesterveltSpectral(basix::FiniteElement<T> element,
+                     std::shared_ptr<mesh::Mesh<T>> Mesh,
                      std::shared_ptr<mesh::MeshTags<std::int32_t>> FacetTags,
                      std::shared_ptr<fem::Function<T>> speedOfSound,
                      std::shared_ptr<fem::Function<T>> density,
@@ -83,7 +84,7 @@ public:
 
     // Define function space
     V = std::make_shared<fem::FunctionSpace<T>>(
-        fem::create_functionspace(functionspace_form_forms_a, "u", mesh));
+        fem::create_functionspace(mesh, element));
 
     // Define field functions
     index_map = V->dofmap()->index_map;
@@ -104,22 +105,35 @@ public:
     std::fill(u_.begin(), u_.end(), 1.0);
 
     // Compute exterior facets
-    std::map<fem::IntegralType,
-        std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>>> fd;
-    auto facet_domains = fem::compute_integration_domains(
-      fem::IntegralType::exterior_facet, *V->mesh()->topology_mutable(), 
-      ft->indices(), mesh->topology()->dim() - 1, ft->values());
-    for (auto& facet : facet_domains) {
-      std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>> x;
-      x.emplace_back(facet.first, std::span(facet.second.data(), facet.second.size()));
-      fd.insert({fem::IntegralType::exterior_facet, std::move(x)});
-    } 
+    std::vector<std::int32_t> ft_unique(ft->values().size());
+    std::copy(ft->values().begin(), ft->values().end(), ft_unique.begin());
+    std::sort(ft_unique.begin(), ft_unique.end());
+    auto it = std::unique(ft_unique.begin(), ft_unique.end());
+    ft_unique.erase(it, ft_unique.end());
+    
+    std::map<fem::IntegralType, std::vector<std::pair<std::int32_t, std::vector<std::int32_t>>>> fd;
+    std::map<fem::IntegralType, std::vector<std::pair<std::int32_t, std::span<const std::int32_t>>>> fd_view;
+
+    std::vector<std::int32_t> facet_domains;
+    for (auto& tag : ft_unique) {
+      facet_domains = fem::compute_integration_domains(
+        fem::IntegralType::exterior_facet, *V->mesh()->topology_mutable(),
+        ft->find(tag), mesh->topology()->dim()-1);
+      fd[fem::IntegralType::exterior_facet].push_back(
+        {tag, facet_domains});
+    }
+
+    for (auto const& [key, val] : fd) {
+      for (auto const& [tag, vec] : val) {
+        fd_view[key].push_back({tag, std::span(vec.data(), vec.size())});
+      }
+    }
 
     // Define LHS form
     a = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
         *form_forms_a, {V},
         {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}, {"u_n", u_n}, {"beta0", beta0}},
-        {}, fd));
+        {}, fd_view, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -138,7 +152,7 @@ public:
                              {"rho0", rho0},
                              {"delta0", delta0},
                              {"beta0", beta0}},
-                            {}, fd));
+                            {}, fd_view, {}, {}));
     b = std::make_shared<la::Vector<T>>(index_map, bs);
     b_ = b->mutable_array();
   }

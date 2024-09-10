@@ -50,10 +50,10 @@ int main(int argc, char* argv[]) {
     const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
-    auto element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, 1);
+    auto coord_element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh<T>>(
-        fmesh.read_mesh(element, mesh::GhostMode::none, "planewave_2d_4"));
+        fmesh.read_mesh(coord_element, mesh::GhostMode::none, "planewave_2d_4"));
     mesh->topology()->create_connectivity(1, 2);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
         fmesh.read_meshtags(*mesh, "planewave_2d_4_cells"));
@@ -74,9 +74,21 @@ int main(int argc, char* argv[]) {
     MPI_Reduce(&meshSizeMinLocal, &meshSizeMinGlobal, 1, T_MPI, MPI_MIN, 0, MPI_COMM_WORLD);
     MPI_Bcast(&meshSizeMinGlobal, 1, T_MPI, 0, MPI_COMM_WORLD);
 
+    // Finite element
+    basix::FiniteElement element = basix::create_element<T>(
+      basix::element::family::P, basix::cell::type::quadrilateral, degreeOfBasis,
+      basix::element::lagrange_variant::gll_warped,
+      basix::element::dpc_variant::unset, false
+    );
+
     // Define DG function space for the physical parameters of the domain
+    basix::FiniteElement element_DG = basix::create_element<T>(
+      basix::element::family::P, basix::cell::type::quadrilateral, 0,
+      basix::element::lagrange_variant::gll_warped,
+      basix::element::dpc_variant::unset, true
+    );
     auto V_DG = std::make_shared<fem::FunctionSpace<T>>(
-        fem::create_functionspace(functionspace_form_forms_a, "c0", mesh));
+        fem::create_functionspace(mesh, element_DG));
     auto c0 = std::make_shared<fem::Function<T>>(V_DG);
     auto rho0 = std::make_shared<fem::Function<T>>(V_DG);
     auto delta0 = std::make_shared<fem::Function<T>>(V_DG);
@@ -128,8 +140,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Model
-    auto model = LossySpectral<T, 4>(mesh, mt_facet, c0, rho0, delta0, sourceFrequency,
-                                          sourceAmplitude, speedOfSound);
+    auto model = LossySpectral<T, 4>(element, mesh, mt_facet, c0, rho0, delta0, sourceFrequency,
+                                     sourceAmplitude, speedOfSound);
 
     // Solve
     model.init();
@@ -139,7 +151,7 @@ int main(int argc, char* argv[]) {
     auto u_n = model.u_sol();
 
     // Output to VTX
-    dolfinx::io::VTXWriter<T> u_out(mesh->comm(), "output_final.bp", {u_n}, "BP4");
+    dolfinx::io::VTXWriter<T> u_out(mesh->comm(), "output_final.bp", {u_n}, "bp5");
     u_out.write(0.0);
   }
 }

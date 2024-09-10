@@ -40,8 +40,8 @@ a = inner(u/rho0/c0/c0, v) * dx(metadata=md) \
     - inner(2*beta0/rho0/rho0/c0/c0/c0/c0*u_n*u, v) * dx(metadata=md)
 
 L = - inner(1/rho0*grad(u_n), grad(v)) * dx(metadata=md) \
-    + inner(1/rho0*g, v)*ds(1, metadata=md) \
-    - inner(1/rho0/c0*v_n, v)*ds(2, metadata=md) \
+    + inner(1/rho0*g, v) * ds(1, metadata=md) \
+    - inner(1/rho0/c0*v_n, v) * ds(2, metadata=md) \
     - inner(delta0/rho0/c0/c0*grad(v_n), grad(v)) * dx(metadata=md) \
     + inner(delta0/rho0/c0/c0*dg, v) * ds(1, metadata=md) \
     + inner(2*beta0/rho0/rho0/c0/c0/c0/c0*v_n*v_n, v) * dx(metadata=md)
