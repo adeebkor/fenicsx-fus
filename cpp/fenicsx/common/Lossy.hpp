@@ -126,7 +126,7 @@ public:
     }
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T, T>>(fem::create_form<T, T>(
+    a = std::make_shared<fem::Form<T>>(fem::create_form<T, T>(
         *form_forms_a, {V},
         {{"u", u}, {"c0", c0}, {"rho0", rho0}, {"delta0", delta0}}, 
         {}, fd_view, {}));
