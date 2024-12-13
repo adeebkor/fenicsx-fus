@@ -2,30 +2,30 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="3.0" xmlns:xi="https://www.w3.org/2001/XInclude">
   <Domain>
-    <Grid Name="planewave_circular_scatterer_2d_3" GridType="Uniform">
-      <Topology TopologyType="Quadrilateral" NumberOfElements="67812" NodesPerElement="4">
-        <DataItem Dimensions="67812 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planewave_circular_scatterer_2d_3/topology</DataItem>
+    <Grid Name="planewave_circular_scatterer_2d_4" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="16740" NodesPerElement="4">
+        <DataItem Dimensions="16740 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/planewave_circular_scatterer_2d_4/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="68368 2" Format="HDF">mesh.h5:/Mesh/planewave_circular_scatterer_2d_3/geometry</DataItem>
+        <DataItem Dimensions="17008 2" Format="HDF">mesh.h5:/Mesh/planewave_circular_scatterer_2d_4/geometry</DataItem>
       </Geometry>
     </Grid>
-    <Grid Name="planewave_circular_scatterer_2d_3_cells" GridType="Uniform">
-      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_circular_scatterer_2d_3']/Geometry)" />
-      <Topology TopologyType="Quadrilateral" NumberOfElements="67812" NodesPerElement="4">
-        <DataItem Dimensions="67812 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_3_cells/topology</DataItem>
+    <Grid Name="planewave_circular_scatterer_2d_4_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_circular_scatterer_2d_4']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="16740" NodesPerElement="4">
+        <DataItem Dimensions="16740 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_4_cells/topology</DataItem>
       </Topology>
-      <Attribute Name="planewave_circular_scatterer_2d_3_cells" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="67812 1" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_3_cells/Values</DataItem>
+      <Attribute Name="planewave_circular_scatterer_2d_4_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="16740 1" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_4_cells/Values</DataItem>
       </Attribute>
     </Grid>
-    <Grid Name="planewave_circular_scatterer_2d_3_facets" GridType="Uniform">
-      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_circular_scatterer_2d_3']/Geometry)" />
-      <Topology TopologyType="PolyLine" NumberOfElements="1112" NodesPerElement="2">
-        <DataItem Dimensions="1112 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_3_facets/topology</DataItem>
+    <Grid Name="planewave_circular_scatterer_2d_4_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='planewave_circular_scatterer_2d_4']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="536" NodesPerElement="2">
+        <DataItem Dimensions="536 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_4_facets/topology</DataItem>
       </Topology>
-      <Attribute Name="planewave_circular_scatterer_2d_3_facets" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="1112 1" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_3_facets/Values</DataItem>
+      <Attribute Name="planewave_circular_scatterer_2d_4_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="536 1" Format="HDF">mesh.h5:/MeshTags/planewave_circular_scatterer_2d_4_facets/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>

@@ -38,9 +38,9 @@ int main(int argc, char* argv[]) {
 
     // Domain parameters
     const T wavelength = speedOfSound / sourceFrequency;
-    const T scattererRadius = 2.0 * wavelength;
-    const T domainLength = 11 * scattererRadius + 2 * scattererRadius + 5 * scattererRadius; // (m)
-    // const T domainLength = 11 * wavelength + 2 * scattererRadius + 5 * wavelength; // (m)
+    const T scattererRadius = 0.5 * wavelength;
+    // const T domainLength = 11 * scattererRadius + 2 * scattererRadius + 5 * scattererRadius; // (m)
+    const T domainLength = 11 * wavelength + 2 * scattererRadius + 5 * wavelength; // (m)
     
     // FE parameters
     const int degreeOfBasis = 4;
@@ -49,12 +49,12 @@ int main(int argc, char* argv[]) {
     auto coord_element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, 1);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh<T>>(
-        fmesh.read_mesh(coord_element, mesh::GhostMode::none, "planewave_circular_scatterer_2d_3"));
+        fmesh.read_mesh(coord_element, mesh::GhostMode::none, "planewave_circular_scatterer_2d_4"));
     mesh->topology()->create_connectivity(1, 2);
     auto mt_cell = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(*mesh, "planewave_circular_scatterer_2d_3_cells"));
+        fmesh.read_meshtags(*mesh, "planewave_circular_scatterer_2d_4_cells"));
     auto mt_facet = std::make_shared<mesh::MeshTags<std::int32_t>>(
-        fmesh.read_meshtags(*mesh, "planewave_circular_scatterer_2d_3_facets"));
+        fmesh.read_meshtags(*mesh, "planewave_circular_scatterer_2d_4_facets"));
 
     // Mesh parameters
     const int tdim = mesh->topology()->dim();
