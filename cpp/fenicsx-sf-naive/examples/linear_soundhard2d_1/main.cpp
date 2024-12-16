@@ -1,7 +1,8 @@
 //
-// Linear solver for the 2D planewave problem
+// Linear solver for the 2D circular sound hard scatterer
 // - circular scatterer
-// ==========================================
+// - wavelength < scatterer radius
+// ======================================================
 // Copyright (C) 2024 Adeeb Arif Kor
 
 #include "Linear.hpp"
@@ -41,13 +42,12 @@ int main(int argc, char* argv[]) {
     const T scattererRadius = 1.0 * wavelength;
     const T domainScale = 8.0;
     const T domainLength =  1.5 * domainScale * scattererRadius + 2 * scattererRadius; // (m)
-    // const T domainLength = 11 * wavelength + 2 * scattererRadius + 5 * wavelength; // (m)
     
     // FE parameters
     const int degreeOfBasis = 4;
 
     // Read mesh and mesh tags
-    int geom_order = 2;
+    int geom_order = 1;
     auto coord_element = fem::CoordinateElement<T>(mesh::CellType::quadrilateral, geom_order);
     io::XDMFFile fmesh(MPI_COMM_WORLD, "../mesh.xdmf", "r");
     auto mesh = std::make_shared<mesh::Mesh<T>>(

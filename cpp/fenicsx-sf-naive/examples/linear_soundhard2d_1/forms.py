@@ -7,7 +7,7 @@ P = 4  # Degree of polynomial basis
 Q = 5  # Number of quadrature points
 
 # Define mesh and finite element
-geom_order = 2
+geom_order = 1
 coord_element = element("Lagrange", "quadrilateral", geom_order, shape=(2, ))
 mesh = Mesh(coord_element)
 e = element(basix.ElementFamily.P, basix.CellType.quadrilateral, P,
