@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="https://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="circular_scatterer_penetrable_2d_1" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral_9" NumberOfElements="18556" NodesPerElement="9">
+        <DataItem Dimensions="18556 9" NumberType="Int" Format="HDF">mesh.h5:/Mesh/circular_scatterer_penetrable_2d_1/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="74769 2" Format="HDF">mesh.h5:/Mesh/circular_scatterer_penetrable_2d_1/geometry</DataItem>
+      </Geometry>
+    </Grid>
+    <Grid Name="circular_scatterer_penetrable_2d_1_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_penetrable_2d_1']/Geometry)" />
+      <Topology TopologyType="Quadrilateral_9" NumberOfElements="18556" NodesPerElement="9">
+        <DataItem Dimensions="18556 9" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_penetrable_2d_1_cells/topology</DataItem>
+      </Topology>
+      <Attribute Name="circular_scatterer_penetrable_2d_1_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="18556 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_penetrable_2d_1_cells/Values</DataItem>
+      </Attribute>
+    </Grid>
+    <Grid Name="circular_scatterer_penetrable_2d_1_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_penetrable_2d_1']/Geometry)" />
+      <Topology TopologyType="Edge_3" NumberOfElements="544" NodesPerElement="3">
+        <DataItem Dimensions="544 3" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_penetrable_2d_1_facets/topology</DataItem>
+      </Topology>
+      <Attribute Name="circular_scatterer_penetrable_2d_1_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="544 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_penetrable_2d_1_facets/Values</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
