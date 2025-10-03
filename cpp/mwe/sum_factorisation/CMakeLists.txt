@@ -13,12 +13,12 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 find_package(DOLFINX REQUIRED)
 
-include_directories("../../common" ".")
+include_directories("../../fenicsx-sf/common" ".")
 
 # Executable
 add_executable(${PROJECT_NAME} main.cpp)
 
 # Target libraries
-target_link_libraries(${PROJECT_NAME} dolfinx blas lapack)
+target_link_libraries(${PROJECT_NAME} dolfinx)
 
 message(STATUS ${CMAKE_CXX_FLAGS})

@@ -6,12 +6,14 @@
 
 #include "sum_factorisation.hpp"
 
+using T = double;
+
 int main(int argc, char* argv[]) {
   const int M = 3;
   const int N = 2;
 
-  std::array<double, N*N*N> _x;
-  std::array<double, M*N> _dphi;
+  std::array<T, N*N*N> _x;
+  std::array<T, M*N> _dphi;
 
   // Fill the tensor with values from 0 to N*N*N
   for (int i = 0; i < N*N*N; i++) {
@@ -19,7 +21,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Print the tensor
-  double* xi = _x.data();
+  T* xi = _x.data();
   std::cout << "x = ";
   for (int i = 0; i < N*N*N; i++) {
     std::cout << *(xi + i) << " ";
@@ -32,7 +34,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Print the matrix
-  double* dphi = _dphi.data();
+  T* dphi = _dphi.data();
   std::cout << "dphi = ";
   for (int i = 0; i < M*N; i++) {
     std::cout << *(dphi + i) << " ";
@@ -40,8 +42,8 @@ int main(int argc, char* argv[]) {
   std::cout << "\n";
 
   // Perform contraction
-  std::array<double, M*N*N> _out{0};
-  contract<double, N, M, N, N, true>(dphi, xi, _out.data());
+  std::array<T, M*N*N> _out{0};
+  contract<T, N, M, N, N, true>(dphi, xi, _out.data());
 
   // Print output of contraction
   std::cout << "out = ";
@@ -51,8 +53,8 @@ int main(int argc, char* argv[]) {
   std::cout << "\n";
 
   // Perform transpose (ijk => kji)
-  std::array<double, M*N*N> _out_t{0};
-  transpose<double, M, N, N, N, 1, M*N>(_out.data(), _out_t.data());
+  std::array<T, M*N*N> _out_t{0};
+  transpose<T, M, N, N, N, 1, M*N>(_out.data(), _out_t.data());
 
   // Print transpose of output
   std::cout << "out^{T} = ";
