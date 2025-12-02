@@ -2,30 +2,30 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="3.0" xmlns:xi="https://www.w3.org/2001/XInclude">
   <Domain>
-    <Grid Name="circular_scatterer_soundhard_2d_1" GridType="Uniform">
-      <Topology TopologyType="Quadrilateral_9" NumberOfElements="16692" NodesPerElement="9">
-        <DataItem Dimensions="16692 9" NumberType="Int" Format="HDF">mesh.h5:/Mesh/circular_scatterer_soundhard_2d_1/topology</DataItem>
+    <Grid Name="circular_scatterer_soundhard_2d_3" GridType="Uniform">
+      <Topology TopologyType="Quadrilateral" NumberOfElements="4739" NodesPerElement="4">
+        <DataItem Dimensions="4739 4" NumberType="Int" Format="HDF">mesh.h5:/Mesh/circular_scatterer_soundhard_2d_3/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="67320 2" Format="HDF">mesh.h5:/Mesh/circular_scatterer_soundhard_2d_1/geometry</DataItem>
+        <DataItem Dimensions="4856 2" Format="HDF">mesh.h5:/Mesh/circular_scatterer_soundhard_2d_3/geometry</DataItem>
       </Geometry>
     </Grid>
-    <Grid Name="circular_scatterer_soundhard_2d_1_cells" GridType="Uniform">
-      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_soundhard_2d_1']/Geometry)" />
-      <Topology TopologyType="Quadrilateral_9" NumberOfElements="16692" NodesPerElement="9">
-        <DataItem Dimensions="16692 9" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_1_cells/topology</DataItem>
+    <Grid Name="circular_scatterer_soundhard_2d_3_cells" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_soundhard_2d_3']/Geometry)" />
+      <Topology TopologyType="Quadrilateral" NumberOfElements="4739" NodesPerElement="4">
+        <DataItem Dimensions="4739 4" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_3_cells/topology</DataItem>
       </Topology>
-      <Attribute Name="circular_scatterer_soundhard_2d_1_cells" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="16692 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_1_cells/Values</DataItem>
+      <Attribute Name="circular_scatterer_soundhard_2d_3_cells" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="4739 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_3_cells/Values</DataItem>
       </Attribute>
     </Grid>
-    <Grid Name="circular_scatterer_soundhard_2d_1_facets" GridType="Uniform">
-      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_soundhard_2d_1']/Geometry)" />
-      <Topology TopologyType="Edge_3" NumberOfElements="552" NodesPerElement="3">
-        <DataItem Dimensions="552 3" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_1_facets/topology</DataItem>
+    <Grid Name="circular_scatterer_soundhard_2d_3_facets" GridType="Uniform">
+      <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@Name='circular_scatterer_soundhard_2d_3']/Geometry)" />
+      <Topology TopologyType="PolyLine" NumberOfElements="192" NodesPerElement="2">
+        <DataItem Dimensions="192 2" NumberType="Int" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_3_facets/topology</DataItem>
       </Topology>
-      <Attribute Name="circular_scatterer_soundhard_2d_1_facets" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="552 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_1_facets/Values</DataItem>
+      <Attribute Name="circular_scatterer_soundhard_2d_3_facets" AttributeType="Scalar" Center="Cell">
+        <DataItem Dimensions="192 1" Format="HDF">mesh.h5:/MeshTags/circular_scatterer_soundhard_2d_3_facets/Values</DataItem>
       </Attribute>
     </Grid>
   </Domain>

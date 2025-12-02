@@ -356,7 +356,7 @@ public:
       }
       // ----------------------------------------------------------------------
       // Collect data
-      if (t > 10.5 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
+      if (t > 15 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
         kernels::copy(*u_, *u_n->x());
         u_n->x()->scatter_fwd();
 
