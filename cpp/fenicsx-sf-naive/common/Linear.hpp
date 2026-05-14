@@ -512,8 +512,8 @@ public:
     }
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
-        *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+    a = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
