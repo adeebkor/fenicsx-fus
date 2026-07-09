@@ -773,8 +773,9 @@ class LinearSpectralSponge:
                 [x[0] < 0.12, x[0] >= 0.12],
                 [
                     0.0,
-                    lambda x: delta0 / 5 / self.lmbda * x
-                    - 0.12 * delta0 / 5 / self.lmbda,
+                    lambda x: (
+                        delta0 / 5 / self.lmbda * x - 0.12 * delta0 / 5 / self.lmbda
+                    ),
                 ],
             )
         )
