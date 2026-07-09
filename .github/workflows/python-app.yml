@@ -5,7 +5,7 @@ name: FEniCSx-FUS CI
 
 on:
   push:
-    branches: 
+    branches:
       - "**"
   schedule:
     # '*' is a special character in YAML, so string must be quoted
@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: dolfinx/dolfinx:nightly
+    container: dolfinx/dolfinx:v0.9.0
     env:
       CC: gcc
       CXX: g++
@@ -26,28 +26,28 @@ jobs:
       OMPI_MCA_btl_vader_single_copy_mechanism: none
       OMPI_MCA_mpi_yield_when_idle: 1
       OMPI_MCA_hwloc_base_binding_policy: none
-    
+
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install linting tools
-      run: python3 -m pip -v install --break-system-packages ruff
+      - name: Install linting tools
+        run: python3 -m pip -v install --break-system-packages ruff
 
-    - name: Install Python test dependencies
-      run: python3 -m pip -v install --break-system-packages pytest
+      - name: Install Python test dependencies
+        run: python3 -m pip -v install --break-system-packages pytest
 
-    - name: Install Python package dependencies
-      run: python3 -m pip -v install --break-system-packages scipy
-    
-    - name: Install fenicsxfus package
-      run: python3 -m pip -v install --break-system-packages python/ --no-cache-dir
+      - name: Install Python package dependencies
+        run: python3 -m pip -v install --break-system-packages scipy
 
-    - name: ruff checks
-      run: |
-        ruff check python/tests/
-        ruff format --check python/src/fenicsxfus/
-    
-    - name: Run tests
-      run: |
-        cd python/
-        pytest tests/
+      - name: Install fenicsxfus package
+        run: python3 -m pip -v install --break-system-packages python/ --no-cache-dir
+
+      - name: ruff checks
+        run: |
+          ruff check python/tests/
+          ruff format --check python/src/fenicsxfus/
+
+      - name: Run tests
+        run: |
+          cd python/
+          pytest tests/
