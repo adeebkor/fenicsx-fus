@@ -124,8 +124,8 @@ public:
     }
 
     // Define LHS form
-    a = std::make_shared<fem::Form<T>>(fem::create_form<T>(
-        *form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}));
+    a = std::make_shared<fem::Form<T>>(
+        fem::create_form<T>(*form_forms_a, {V}, {{"u", u}, {"c0", c0}, {"rho0", rho0}}, {}, {}, {}));
 
     m = std::make_shared<la::Vector<T>>(index_map, bs);
     m_ = m->mutable_array();
@@ -226,6 +226,60 @@ public:
   /// @param[in] finalTime final time of the solver
   /// @param[in] timeStep  time step size of the solver
   void rk4(const T& startTime, const T& finalTime, const T& timeStep) {
+    // ------------------------------------------------------------------------
+    // Computing function evaluation parameters
+
+    std::string fname;
+
+    // Grid parameters
+    const std::size_t Nx = 251;
+    const std::size_t Ny = 251;
+
+    // Create evaluation point coordinates
+    std::vector<double> point_coordinates(3 * Nx * Ny);
+    for (std::size_t i = 0; i < Nx; ++i) {
+      for (std::size_t j = 0; j < Ny; ++j) {
+        point_coordinates[3*j + 3*i*Ny] = i * 13.0 / (Nx - 1) - 6.5; 
+        point_coordinates[3*j + 3*i*Ny + 1] = j * 13.0 / (Ny - 1) - 6.5;
+        point_coordinates[3*j + 3*i*Ny + 2] = 0.0; 
+      }
+    }
+
+    const int tdim = mesh->topology()->dim();
+    mesh->topology()->create_entities(tdim);
+    auto map = mesh->topology()->index_map(tdim);
+    const std::int32_t num_entities = map->size_local() + map->num_ghosts();
+    std::vector<std::int32_t> entities(num_entities);
+    std::iota(entities.begin(), entities.end(), 0);
+
+    // Compute evaluation parameters
+    auto bb_tree = geometry::BoundingBoxTree(*mesh, tdim, entities);
+    auto cell_candidates = compute_collisions<double>(bb_tree, point_coordinates);
+    auto colliding_cells = geometry::compute_colliding_cells<double>(
+      *mesh, cell_candidates, point_coordinates);
+
+    std::vector<std::int32_t> cells;
+    std::vector<double> points_on_proc;
+
+    for (std::size_t i = 0; i < Nx*Ny; ++i) {
+      auto link = colliding_cells.links(i);
+      if (link.size() > 0) {
+        points_on_proc.push_back(point_coordinates[3*i]);
+        points_on_proc.push_back(point_coordinates[3*i + 1]);
+        points_on_proc.push_back(point_coordinates[3*i + 2]);
+        cells.push_back(link[0]);
+      }
+    }
+
+    std::size_t num_points_local = points_on_proc.size() / 3;
+    std::vector<T> u_eval(num_points_local);
+
+    T* u_value = u_eval.data();
+    double* p_value = points_on_proc.data();
+
+    int numStepPerPeriod = period / timeStep + 3;
+    int step_period = 0;
+    // ------------------------------------------------------------------------
 
     // Time-stepping parameters
     T t = startTime;
@@ -304,6 +358,37 @@ public:
                     << u_->array()[0] << std::endl;
         }
       }
+      // ----------------------------------------------------------------------
+      // Collect data
+      if (t > 27.5 / s0 + 6.0 / freq && step_period < numStepPerPeriod) {
+        kernels::copy(*u_, *u_n->x());
+        u_n->x()->scatter_fwd();
+
+        // Evaluate function
+        u_n->eval(points_on_proc, {num_points_local, 3}, cells, u_eval,
+                  {num_points_local, 1});
+        u_value = u_eval.data();
+
+        // Write evaluation from each process to a single text file
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        for (int i = 0; i < mpi_size; ++i) {
+          if (mpi_rank == i) {
+            fname = "data/pressure_field_" + 
+                    std::to_string(step_period) + ".txt";
+            std::ofstream txt_file(fname, std::ios_base::app);
+            for (std::size_t i = 0; i < num_points_local; ++i) {
+              txt_file << *(p_value + 3 * i) << ","
+                       << *(p_value + 3 * i + 1) << "," 
+                       << *(u_value + i) << std::endl;
+            }
+            txt_file.close();
+          }
+          MPI_Barrier(MPI_COMM_WORLD);
+        }
+        step_period++;
+      }
+      // ----------------------------------------------------------------------
     }
 
     // Prepare solution at final time
