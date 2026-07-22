@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     const T density2 = 1900;      // (kg/m^3)
 
     // Source parameters
-    const T sourceFrequency = 120;      // (Hz)
+    const T sourceFrequency = 240;      // (Hz)
     const T sourceSpeed = 1.0;  // (m/s)
     const T sourceAmplitude = density1 * speedOfSound1 * sourceSpeed; // (Pa)
     const T period = 1 / sourceFrequency; // (s)
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     // Domain parameters
     const T wavelength = speedOfSound1 / sourceFrequency;
     const T scattererRadius = 1.0;
-    const T simLength =  15.0 + wavelength; // Simulation length (m)
+    const T simLength = 10.0 + 4*wavelength; // Simulation length (m)
 
     // FE parameters
     const int degreeOfBasis = 4;
@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
     rho0->x()->scatter_fwd();
 
     // Temporal parameters
-    const T CFL = 0.5;
+    const T CFL = 0.4;
     T timeStepSize = CFL * meshSizeMinGlobal / (speedOfSound2 * degreeOfBasis * degreeOfBasis);
     const int stepPerPeriod = period / timeStepSize + 1;
     timeStepSize = period / stepPerPeriod;
