@@ -1,12 +1,10 @@
-import pytest
 import numpy as np
-from mpi4py import MPI
-
-from dolfinx.fem import functionspace, Function, assemble_scalar, form
+import pytest
+from dolfinx.fem import Function, assemble_scalar, form, functionspace
 from dolfinx.mesh import create_interval, locate_entities_boundary, meshtags
-from ufl import inner, dx
-
 from fenicsxfus import LinearExplicit
+from mpi4py import MPI
+from ufl import dx, inner
 
 
 @pytest.mark.parametrize("degree, epw", [(3, 8), (4, 4), (5, 2), (6, 2)])

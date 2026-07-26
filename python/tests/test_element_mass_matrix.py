@@ -1,12 +1,11 @@
-import pytest
-import numpy as np
-from mpi4py import MPI
-
 import basix
 import basix.ufl
 import dolfinx.fem.petsc
 import dolfinx.mesh
+import numpy as np
+import pytest
 import ufl
+from mpi4py import MPI
 
 
 @pytest.mark.parametrize("dimension", [1, 2, 3])
@@ -39,10 +38,7 @@ def test_diagonal(dimension, p):
         )
         cell_type = ufl.hexahedron
     else:
-        raise Exception(
-            "Dimension {} is not a valid \
-                        dimension!".format(dimension)
-        )
+        raise Exception(f"Dimension {dimension} is not a valid dimension!") # noqa
 
     # Create function space
     # cell_type = basix.cell.string_to_type(cell_type.cellname())
